@@ -1,0 +1,833 @@
+<title>Balloon Pop Math — Free Addition &amp; Subtraction Game for Kids | GameSpace</title>
+<meta name="description" content="Pop the balloon with the right answer! A free math practice game for kids ages 5–8 covering addition, subtraction and times tables, with counting dots for beginners and no-fail gameplay.">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>
+  /* ============================================================
+     BALLOON POP MATH — arithmetic practice for kids (ages 4–8)
+     Pop the balloon with the right answer!
+     All difficulty / speed / color knobs live in CONFIG (JS).
+     ============================================================ */
+
+  :root {
+    --sky-top:    #B8A9E8;   /* dawn lavender */
+    --sky-mid:    #F6C6D8;
+    --sky-bottom: #FFDFC2;   /* warm peach */
+    --ink:        #4A3B66;
+    --cream:      #FFF9F2;
+    --leaf:       #58B368;
+    --leaf-dark:  #3F9450;
+    --sun:        #FFB25E;
+    --gold:       #FFC93C;
+    --font-kids: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+
+  body {
+    font-family: var(--font-kids);
+    color: var(--ink);
+    background: linear-gradient(180deg, var(--sky-top), var(--sky-mid) 55%, var(--sky-bottom));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 12px 24px;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  h1 {
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    margin: 6px 0 10px;
+    color: #fff;
+    text-shadow: 0 3px 0 rgba(74, 59, 102, 0.3);
+    letter-spacing: 1px;
+    text-wrap: balance;
+  }
+
+  .game-wrap {
+    position: relative;
+    width: min(100%, 900px);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 12px 32px rgba(90, 60, 120, 0.3);
+    background: var(--sky-top);
+  }
+
+  canvas { display: block; width: 100%; height: auto; touch-action: manipulation; }
+
+  /* --- Question card ------------------------------------------- */
+  .question-card {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--cream);
+    border: 4px solid var(--gold);
+    border-radius: 20px;
+    padding: 8px 26px 10px;
+    text-align: center;
+    box-shadow: 0 4px 0 rgba(74, 59, 102, 0.2);
+    min-width: 220px;
+  }
+  .question-card .equation {
+    font-size: clamp(1.7rem, 5vw, 2.6rem);
+    font-weight: bold;
+    letter-spacing: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .question-card .dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+    min-height: 16px;
+    flex-wrap: wrap;
+  }
+  .dot-group { display: flex; gap: 4px; flex-wrap: wrap; max-width: 160px; justify-content: center; }
+  .dot { width: 13px; height: 13px; border-radius: 50%; }
+  .dot.a { background: #FF6B8A; }
+  .dot.b { background: #4EA8DE; }
+  .dots .plus { font-weight: bold; font-size: 1rem; color: #8A7BA8; }
+
+  /* --- HUD chips ------------------------------------------------ */
+  .hud-left {
+    position: absolute; top: 12px; left: 12px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .chip {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--cream);
+    border: 3px solid var(--gold);
+    border-radius: 999px;
+    padding: 4px 14px 4px 10px;
+    font-size: clamp(0.95rem, 2.5vw, 1.2rem);
+    font-weight: bold;
+    box-shadow: 0 3px 0 rgba(74, 59, 102, 0.15);
+    width: fit-content;
+  }
+  .chip.streak { border-color: #FF8A5C; }
+
+  .hud-right { position: absolute; top: 12px; right: 12px; display: flex; gap: 8px; }
+  .icon-btn {
+    font-size: 1.25rem;
+    font-family: var(--font-kids);
+    background: var(--cream);
+    border: 3px solid #D8C9F0;
+    border-radius: 999px;
+    min-width: 48px; height: 48px;
+    padding: 0 12px;
+    cursor: pointer;
+    font-weight: bold;
+    color: var(--ink);
+    box-shadow: 0 3px 0 rgba(74, 59, 102, 0.15);
+  }
+  .icon-btn:focus-visible { outline: 4px solid var(--gold); }
+  .icon-btn.off { opacity: 0.45; }
+
+  /* --- Feedback banner ------------------------------------------ */
+  .feedback {
+    position: absolute;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: clamp(1.1rem, 3.5vw, 1.6rem);
+    font-weight: bold;
+    color: #fff;
+    background: rgba(74, 59, 102, 0.65);
+    border-radius: 999px;
+    padding: 8px 26px;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+    text-align: center;
+    max-width: 90%;
+  }
+  .feedback.show { opacity: 1; }
+
+  /* --- Overlays --------------------------------------------------- */
+  .overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 16px;
+    background: rgba(255, 249, 242, 0.88);
+    backdrop-filter: blur(2px);
+    text-align: center;
+    padding: 20px;
+  }
+  .overlay[hidden] { display: none; }
+  .overlay .big-msg {
+    font-size: clamp(1.5rem, 5vw, 2.4rem);
+    font-weight: bold;
+    text-wrap: balance;
+  }
+  .overlay .sub-msg { font-size: clamp(1rem, 3vw, 1.25rem); color: #6B5B8A; max-width: 36ch; }
+
+  .mode-buttons { display: flex; flex-direction: column; gap: 12px; width: min(100%, 340px); }
+  .mode-btn {
+    font-family: var(--font-kids);
+    font-size: clamp(1.1rem, 3.5vw, 1.5rem);
+    font-weight: bold;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 16px 20px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: transform 0.08s ease;
+  }
+  .mode-btn small { display: block; font-size: 0.72em; font-weight: normal; opacity: 0.92; }
+  .mode-btn:active { transform: translateY(3px); }
+  .mode-btn:focus-visible { outline: 5px solid var(--gold); outline-offset: 3px; }
+  .mode-easy   { background: #58B368; box-shadow: 0 6px 0 #3F9450; }
+  .mode-medium { background: #4EA8DE; box-shadow: 0 6px 0 #3A87B8; }
+  .mode-hard   { background: #B58CF0; box-shadow: 0 6px 0 #9468D0; }
+
+  .hint { margin-top: 12px; font-size: 0.95rem; color: #7A5B8A; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .feedback { transition: none; }
+    .mode-btn { transition: none; }
+  }
+</style>
+
+<h1>🎈 Balloon Pop Math!</h1>
+
+<div class="game-wrap">
+  <canvas id="game" width="900" height="600" aria-label="Balloon Pop Math game"></canvas>
+
+  <!-- Question card -->
+  <div class="question-card">
+    <div class="equation" id="equation">Ready?</div>
+    <div class="dots" id="dots" aria-hidden="true"></div>
+  </div>
+
+  <!-- HUD -->
+  <div class="hud-left">
+    <div class="chip">⭐ <span id="score">0</span></div>
+    <div class="chip streak">🔥 Streak: <span id="streak">0</span></div>
+  </div>
+  <div class="hud-right">
+    <button class="icon-btn" id="menuBtn" aria-label="Change level">Menu</button>
+    <button class="icon-btn" id="musicBtn" aria-label="Turn music on or off">🎵</button>
+    <button class="icon-btn" id="soundBtn" aria-label="Turn sound on or off">🔊</button>
+  </div>
+
+  <!-- Feedback banner -->
+  <div class="feedback" id="feedback" aria-live="polite"></div>
+
+  <!-- Start / menu overlay -->
+  <div class="overlay" id="menuOverlay">
+    <div class="big-msg">Pop the balloon with the right answer!</div>
+    <div class="sub-msg">Pick your level. Wrong guesses are okay — just try again! 💛</div>
+    <div class="mode-buttons">
+      <button class="mode-btn mode-easy" data-mode="easy">🌱 Easy
+        <small>Adding up to 10 (with counting dots)</small></button>
+      <button class="mode-btn mode-medium" data-mode="medium">🌟 Medium
+        <small>Adding &amp; subtracting up to 20</small></button>
+      <button class="mode-btn mode-hard" data-mode="hard">🚀 Hard
+        <small>Times tables up to 5 × 5</small></button>
+    </div>
+  </div>
+</div>
+
+<div class="hint">Tap or click a balloon to pop it!</div>
+
+<script>
+/* ==================================================================
+   CONFIG — tweak the game here!
+   ================================================================== */
+const CONFIG = {
+  width: 900,
+  height: 600,
+
+  balloonRadius: 46,        // balloon size (hit area is even bigger)
+  hitPadding: 14,           // extra forgiving tap radius
+  riseSpeed: 34,            // px per second — gentle float
+  riseSpeedHard: 44,        // slightly livelier for the hard mode
+  wobbleAmount: 14,         // horizontal sway in px
+
+  streakCelebration: 5,     // every N correct in a row = rainbow party
+
+  balloonColors: [
+    { main: '#FF6B8A', dark: '#E04A6B' },   // pink
+    { main: '#4EA8DE', dark: '#3A87B8' },   // blue
+    { main: '#58B368', dark: '#3F9450' },   // green
+    { main: '#FFB25E', dark: '#E8923A' },   // orange
+    { main: '#B58CF0', dark: '#9468D0' }    // purple
+  ],
+
+  cheers:      ['Yay!', 'Woohoo!', 'You got it!', 'Super!', 'Amazing!', 'Math star!'],
+  encourages:  ['Almost! Try again 💛', 'Good try! Look again 🌟', 'So close! One more try 💪']
+};
+
+/* ==================================================================
+   Setup
+   ================================================================== */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = CONFIG.width, H = CONFIG.height;
+
+const equationEl = document.getElementById('equation');
+const dotsEl     = document.getElementById('dots');
+const scoreEl    = document.getElementById('score');
+const streakEl   = document.getElementById('streak');
+const feedbackEl = document.getElementById('feedback');
+const menuOverlay = document.getElementById('menuOverlay');
+
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ==================================================================
+   Tiny sound helper (WebAudio — no audio files)
+   ================================================================== */
+let audioCtx = null;
+let soundOn = true;
+
+function beep(freq, duration, type = 'sine', volume = 0.14, slideTo = null, delay = 0) {
+  if (!soundOn) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t0 = audioCtx.currentTime + delay;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t0);
+    if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t0 + duration);
+    gain.gain.setValueAtTime(volume, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + duration);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(t0);
+    osc.stop(t0 + duration);
+  } catch (e) { /* no audio — game still works */ }
+}
+const sndPop     = () => beep(520, 0.09, 'square', 0.1, 220);
+const sndCorrect = () => { beep(660, 0.14, 'triangle'); beep(990, 0.2, 'triangle', 0.14, null, 0.12); };
+const sndWrong   = () => beep(300, 0.22, 'sine', 0.08, 240);        // soft, friendly
+const sndFanfare = () => { [523, 659, 784, 1047].forEach((f, i) => beep(f, 0.22, 'triangle', 0.14, null, i * 0.13)); };
+
+document.getElementById('soundBtn').addEventListener('click', (e) => {
+  soundOn = !soundOn;
+  e.currentTarget.textContent = soundOn ? '🔊' : '🔇';
+});
+
+/* ==================================================================
+   Background music — a gentle floating waltz (WebAudio, no files)
+   ================================================================== */
+let musicOn = true, musicTimer = null, musicStep = 0, musicNext = 0;
+const NOTE = (() => {
+  const s = { C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11 };
+  return (n) => {
+    const m = n.match(/^([A-G]#?)(\d)$/);
+    return 440 * Math.pow(2, (s[m[1]] + (parseInt(m[2], 10) - 4) * 12 - 9) / 12);
+  };
+})();
+const MELODY = ['F5','G5','A5',null,'C6','A5','G5',null,'A5','G5','F5',null,'G5','E5','F5',null];
+const BASS   = ['F3',null,'C3',null,'A#2',null,'C3',null,'F3',null,'C3',null,'C3',null,'F3',null];
+const STEP_LEN = 60 / 100 / 2;   // 8th notes at a dreamy 100 BPM
+
+function playMusicNote(freq, t, dur, type, vol) {
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(t); o.stop(t + dur);
+}
+function startMusic() {
+  if (!musicOn || musicTimer) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    musicStep = 0;
+    musicNext = audioCtx.currentTime + 0.05;
+    musicTimer = setInterval(() => {
+      while (musicNext < audioCtx.currentTime + 0.15) {
+        const m = MELODY[musicStep % MELODY.length];
+        const b = BASS[musicStep % BASS.length];
+        if (m) playMusicNote(NOTE(m), musicNext, STEP_LEN * 0.9, 'sine', 0.04);
+        if (b) playMusicNote(NOTE(b), musicNext, STEP_LEN * 1.8, 'triangle', 0.05);
+        musicNext += STEP_LEN;
+        musicStep++;
+      }
+    }, 50);
+  } catch (e) {}
+}
+function stopMusic() { clearInterval(musicTimer); musicTimer = null; }
+
+document.getElementById('musicBtn').addEventListener('click', (e) => {
+  musicOn = !musicOn;
+  e.currentTarget.classList.toggle('off', !musicOn);
+  if (!musicOn) stopMusic();
+  else if (state.playing) startMusic();
+});
+
+/* ==================================================================
+   Question generation
+   ================================================================== */
+function randInt(lo, hi) { return lo + Math.floor(Math.random() * (hi - lo + 1)); }
+
+function makeQuestion(mode) {
+  let a, b, op, answer;
+
+  if (mode === 'easy') {
+    // addition, sum ≤ 10
+    a = randInt(1, 9);
+    b = randInt(1, 10 - a);
+    op = '+';
+    answer = a + b;
+  } else if (mode === 'medium') {
+    if (Math.random() < 0.5) {
+      a = randInt(2, 15);
+      b = randInt(1, 20 - a);
+      op = '+';
+      answer = a + b;
+    } else {
+      // subtraction with a friendly non-negative result
+      answer = randInt(1, 12);
+      b = randInt(1, 8);
+      a = answer + b;               // a - b = answer, a ≤ 20
+      op = '−';
+    }
+  } else { // hard: times tables to 5×5
+    a = randInt(2, 5);
+    b = randInt(1, 5);
+    op = '×';
+    answer = a * b;
+  }
+
+  // Build 3 unique, plausible distractors near the answer (never negative)
+  const wrong = new Set();
+  const offsets = [1, -1, 2, -2, 3, -3, 4, -4, 5];
+  for (const off of offsets.sort(() => Math.random() - 0.5)) {
+    const v = answer + off;
+    if (v >= 0 && v !== answer) wrong.add(v);
+    if (wrong.size === 3) break;
+  }
+  // fallback (tiny answers): fill upward
+  let extra = answer + 6;
+  while (wrong.size < 3) { wrong.add(extra++); }
+
+  return { a, b, op, answer, choices: shuffle([answer, ...wrong]) };
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/* ==================================================================
+   Game state
+   ================================================================== */
+const state = {
+  mode: null,               // 'easy' | 'medium' | 'hard'
+  playing: false,
+  time: 0,
+  score: 0,
+  streak: 0,
+  question: null,
+  balloons: [],             // {x, baseX, y, value, color, phase, popping, popT, wobbleKick}
+  particles: [],
+  popups: [],
+  locked: false             // brief lock while celebrating a correct answer
+};
+
+/* ==================================================================
+   Round / balloon management
+   ================================================================== */
+function newRound() {
+  state.question = makeQuestion(state.mode);
+  const q = state.question;
+
+  equationEl.textContent = `${q.a} ${q.op} ${q.b} = ?`;
+  renderDots(q);
+
+  // 4 balloons spread across the width, staggered below the screen
+  const lanes = shuffle([0, 1, 2, 3]);
+  state.balloons = q.choices.map((value, i) => {
+    const laneX = 130 + lanes[i] * ((W - 260) / 3);
+    return {
+      value,
+      x: laneX,
+      baseX: laneX,
+      y: H + 80 + i * 105 + Math.random() * 40,
+      color: CONFIG.balloonColors[randInt(0, CONFIG.balloonColors.length - 1)],
+      phase: Math.random() * Math.PI * 2,
+      popping: false,
+      popT: 0,
+      wobbleKick: 0
+    };
+  });
+  state.locked = false;
+}
+
+/* Counting dots under the equation — easy mode only */
+function renderDots(q) {
+  dotsEl.innerHTML = '';
+  if (state.mode !== 'easy') return;
+  const groupA = document.createElement('div');
+  groupA.className = 'dot-group';
+  for (let i = 0; i < q.a; i++) {
+    const d = document.createElement('span');
+    d.className = 'dot a';
+    groupA.appendChild(d);
+  }
+  const plus = document.createElement('span');
+  plus.className = 'plus';
+  plus.textContent = '+';
+  const groupB = document.createElement('div');
+  groupB.className = 'dot-group';
+  for (let i = 0; i < q.b; i++) {
+    const d = document.createElement('span');
+    d.className = 'dot b';
+    groupB.appendChild(d);
+  }
+  dotsEl.append(groupA, plus, groupB);
+}
+
+/* ==================================================================
+   Feedback helpers
+   ================================================================== */
+let feedbackTimer = null;
+function showFeedback(text, ms = 1400) {
+  feedbackEl.textContent = text;
+  feedbackEl.classList.add('show');
+  clearTimeout(feedbackTimer);
+  feedbackTimer = setTimeout(() => feedbackEl.classList.remove('show'), ms);
+}
+
+function burst(x, y, big = false) {
+  const n = reducedMotion ? 8 : (big ? 36 : 18);
+  for (let i = 0; i < n; i++) {
+    const a = (Math.PI * 2 * i) / n + Math.random() * 0.5;
+    const sp = 130 + Math.random() * (big ? 260 : 170);
+    state.particles.push({
+      x, y,
+      vx: Math.cos(a) * sp,
+      vy: Math.sin(a) * sp - 90,
+      life: big ? 1.3 : 0.9,
+      color: ['#FFC93C', '#FF6B8A', '#4EA8DE', '#B58CF0', '#58B368', '#FFB25E'][i % 6],
+      size: 4 + Math.random() * 5,
+      rot: Math.random() * 6.28
+    });
+  }
+}
+
+function cheerPopup(x, y, text) {
+  state.popups.push({ x, y, text, life: 1.1 });
+}
+
+/* ==================================================================
+   Input — pop balloons by tap/click
+   ================================================================== */
+canvas.addEventListener('pointerdown', (e) => {
+  if (!state.playing || state.locked) return;
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (W / rect.width);
+  const my = (e.clientY - rect.top) * (H / rect.height);
+
+  const R = CONFIG.balloonRadius + CONFIG.hitPadding;
+  for (const b of state.balloons) {
+    if (b.popping) continue;
+    const dx = mx - b.x;
+    const dy = my - b.y;
+    if (dx * dx + dy * dy <= R * R * 1.3) {      // slightly oval, generous
+      handleGuess(b);
+      return;
+    }
+  }
+});
+
+function handleGuess(b) {
+  const q = state.question;
+
+  if (b.value === q.answer) {
+    /* ---------- Correct! ---------- */
+    b.popping = true;
+    b.popT = 0;
+    sndPop();
+    sndCorrect();
+    state.score++;
+    state.streak++;
+    scoreEl.textContent = String(state.score);
+    streakEl.textContent = String(state.streak);
+    burst(b.x, b.y);
+    cheerPopup(b.x, b.y - 40, CONFIG.cheers[randInt(0, CONFIG.cheers.length - 1)]);
+    equationEl.textContent = `${q.a} ${q.op} ${q.b} = ${q.answer} ✔`;
+    state.locked = true;
+
+    const isParty = state.streak > 0 && state.streak % CONFIG.streakCelebration === 0;
+    if (isParty) {
+      sndFanfare();
+      showFeedback(`🌈 ${state.streak} in a row! You're a math star! 🌈`, 2200);
+      burst(W / 2, H / 2, true);
+    }
+
+    // short pause so kids see the completed equation, then next round
+    setTimeout(newRound, isParty ? 2000 : 1300);
+  } else {
+    /* ---------- Not quite — gentle nudge, no penalty ---------- */
+    sndWrong();
+    b.wobbleKick = 1;                            // balloon wiggles "no no"
+    state.streak = 0;
+    streakEl.textContent = '0';
+    showFeedback(CONFIG.encourages[randInt(0, CONFIG.encourages.length - 1)]);
+  }
+}
+
+/* ==================================================================
+   Menu
+   ================================================================== */
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    state.mode = btn.dataset.mode;
+    menuOverlay.hidden = true;
+    state.playing = true;
+    state.streak = 0;
+    streakEl.textContent = '0';
+    newRound();
+    startMusic();
+  });
+});
+
+document.getElementById('menuBtn').addEventListener('click', () => {
+  state.playing = false;
+  stopMusic();
+  menuOverlay.hidden = false;
+  equationEl.textContent = 'Ready?';
+  dotsEl.innerHTML = '';
+});
+
+/* ==================================================================
+   Update
+   ================================================================== */
+function update(dt) {
+  state.time += dt;
+  if (!state.playing) return;
+
+  const rise = state.mode === 'hard' ? CONFIG.riseSpeedHard : CONFIG.riseSpeed;
+
+  for (const b of state.balloons) {
+    if (b.popping) {
+      b.popT += dt;
+      continue;
+    }
+    b.phase += dt * 1.6;
+    if (b.wobbleKick > 0) b.wobbleKick = Math.max(0, b.wobbleKick - dt * 2.2);
+
+    b.y -= rise * dt;
+    const kick = Math.sin(state.time * 26) * 10 * b.wobbleKick;   // "no-no" shake
+    b.x = b.baseX + Math.sin(b.phase) * CONFIG.wobbleAmount + kick;
+
+    // Wrap: balloons that float off the top re-enter from the bottom,
+    // so the correct answer can never escape.
+    if (b.y < -CONFIG.balloonRadius - 70) {
+      b.y = H + 70;
+    }
+  }
+
+  // particles
+  for (const p of state.particles) {
+    p.vy += 520 * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.rot += dt * 5;
+    p.life -= dt;
+  }
+  state.particles = state.particles.filter(p => p.life > 0);
+
+  // popups
+  for (const t of state.popups) { t.y -= 55 * dt; t.life -= dt; }
+  state.popups = state.popups.filter(t => t.life > 0);
+}
+
+/* ==================================================================
+   Drawing
+   ================================================================== */
+function drawBackground() {
+  // sky
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#B8A9E8');
+  sky.addColorStop(0.55, '#F6C6D8');
+  sky.addColorStop(1, '#FFDFC2');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, H);
+
+  // low warm sun
+  ctx.fillStyle = '#FFB25E';
+  ctx.globalAlpha = 0.85;
+  ctx.beginPath();
+  ctx.arc(W * 0.78, H - 118, 55, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 0.25;
+  ctx.beginPath();
+  ctx.arc(W * 0.78, H - 118, 85, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // soft clouds
+  ctx.fillStyle = 'rgba(255,255,255,0.8)';
+  drawCloud(150 + Math.sin(state.time * 0.12) * 12, 120, 1.0);
+  drawCloud(620, 80 + Math.sin(state.time * 0.09) * 8, 0.8);
+  drawCloud(420, 200, 0.55);
+
+  // rolling hills
+  ctx.fillStyle = '#7BC47F';
+  ctx.beginPath();
+  ctx.arc(W * 0.2, H + 95, 210, Math.PI, 0);
+  ctx.fill();
+  ctx.fillStyle = '#58B368';
+  ctx.beginPath();
+  ctx.arc(W * 0.65, H + 120, 260, Math.PI, 0);
+  ctx.fill();
+  ctx.fillStyle = '#3F9450';
+  ctx.fillRect(0, H - 26, W, 26);
+
+  // tiny trees on the hills
+  drawTree(W * 0.12, H - 52);
+  drawTree(W * 0.32, H - 40);
+  drawTree(W * 0.55, H - 58);
+  drawTree(W * 0.9, H - 44);
+}
+
+function drawCloud(x, y, s) {
+  ctx.beginPath();
+  ctx.arc(x, y, 24 * s, 0, Math.PI * 2);
+  ctx.arc(x + 26 * s, y + 6 * s, 18 * s, 0, Math.PI * 2);
+  ctx.arc(x - 26 * s, y + 7 * s, 16 * s, 0, Math.PI * 2);
+  ctx.arc(x + 4 * s, y - 12 * s, 16 * s, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawTree(x, y) {
+  ctx.fillStyle = '#8A5A38';
+  ctx.fillRect(x - 3, y - 14, 6, 14);
+  ctx.fillStyle = '#2F7A3C';
+  ctx.beginPath();
+  ctx.arc(x, y - 22, 13, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawBalloon(b) {
+  const r = CONFIG.balloonRadius;
+  ctx.save();
+  ctx.translate(b.x, b.y);
+
+  if (b.popping) {
+    // quick pop: expand + fade
+    const t = Math.min(1, b.popT / 0.25);
+    ctx.globalAlpha = 1 - t;
+    ctx.scale(1 + t * 0.7, 1 + t * 0.7);
+  }
+
+  // string with a little curve
+  ctx.strokeStyle = 'rgba(74,59,102,0.55)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, r * 1.08);
+  ctx.quadraticCurveTo(8, r * 1.5, -3, r * 1.95);
+  ctx.stroke();
+
+  // balloon body (slightly oval)
+  const grad = ctx.createRadialGradient(-r * 0.35, -r * 0.4, r * 0.15, 0, 0, r * 1.15);
+  grad.addColorStop(0, '#FFFFFF');
+  grad.addColorStop(0.25, b.color.main);
+  grad.addColorStop(1, b.color.dark);
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, r * 0.88, r, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // knot
+  ctx.fillStyle = b.color.dark;
+  ctx.beginPath();
+  ctx.moveTo(-7, r * 0.97);
+  ctx.lineTo(7, r * 0.97);
+  ctx.lineTo(0, r * 1.16);
+  ctx.closePath();
+  ctx.fill();
+
+  // shine
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.beginPath();
+  ctx.ellipse(-r * 0.34, -r * 0.42, r * 0.16, r * 0.26, -0.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // the number
+  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeStyle = 'rgba(74,59,102,0.35)';
+  ctx.lineWidth = 5;
+  ctx.font = `bold ${b.value >= 10 ? 34 : 40}px "Comic Sans MS", "Chalkboard SE", sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.strokeText(String(b.value), 0, 2);
+  ctx.fillText(String(b.value), 0, 2);
+
+  ctx.restore();
+}
+
+function drawStar(x, y, r, rot = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  ctx.beginPath();
+  for (let i = 0; i < 5; i++) {
+    const a = (Math.PI * 2 * i) / 5 - Math.PI / 2;
+    const a2 = a + Math.PI / 5;
+    ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    ctx.lineTo(Math.cos(a2) * r * 0.45, Math.sin(a2) * r * 0.45);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawEffects() {
+  for (const p of state.particles) {
+    ctx.globalAlpha = Math.max(0, Math.min(1, p.life));
+    ctx.fillStyle = p.color;
+    drawStar(p.x, p.y, p.size, p.rot);
+  }
+  ctx.globalAlpha = 1;
+
+  for (const t of state.popups) {
+    ctx.globalAlpha = Math.min(1, t.life * 1.6);
+    ctx.font = 'bold 32px "Comic Sans MS", "Chalkboard SE", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = '#FFF';
+    ctx.strokeText(t.text, t.x, t.y);
+    ctx.fillStyle = '#B85C8A';
+    ctx.fillText(t.text, t.x, t.y);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function draw() {
+  drawBackground();
+  if (state.playing) {
+    // draw balloons back-to-front by y so overlaps look right
+    [...state.balloons].sort((a, b2) => a.y - b2.y).forEach(drawBalloon);
+  }
+  drawEffects();
+}
+
+/* ==================================================================
+   Main loop
+   ================================================================== */
+let lastT = performance.now();
+function frame(now) {
+  const dt = Math.min(0.033, (now - lastT) / 1000);
+  lastT = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>

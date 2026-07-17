@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Memory Match — Free Card Matching Game for Kids | GameSpace</title>
+<meta name="description" content="Flip the cards and find the pairs! A free memory game for kids ages 2–6 with animal, fruit, vehicle and alphabet decks, three board sizes and a voice that names every card.">
+<style>
+  /* ============================================================
+     MEMORY MATCH — flip cards, find the pairs! (ages 2–6)
+     Four decks (Animals, Fruits, Vehicles, ABC letter-to-picture)
+     and three board sizes. The voice names every card you flip.
+     ============================================================ */
+
+  :root {
+    --felt:      #2AA198;   /* soft teal card table */
+    --felt-deep: #1F8A82;
+    --cream:     #FFF9EF;
+    --ink:       #2E4A46;
+    --gold:      #FFC93C;
+    --accent:    #FF7A59;
+    --accent-dk: #E85C3A;
+    --font-kids: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+
+  body {
+    font-family: var(--font-kids);
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 50% 0%, #3DB8AE 0%, var(--felt) 55%, var(--felt-deep) 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 10px 24px;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  h1 {
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    margin: 4px 0 8px;
+    color: #FFF;
+    text-shadow: 0 3px 0 rgba(30, 70, 65, 0.35);
+    letter-spacing: 1px;
+  }
+
+  .game-wrap {
+    position: relative;
+    width: min(100%, 720px);
+    min-height: 560px;
+    border-radius: 26px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 4px solid rgba(255, 255, 255, 0.35);
+    box-shadow: 0 12px 30px rgba(20, 60, 55, 0.35);
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    overflow: hidden;
+  }
+
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    background: var(--cream);
+    border: 3px solid var(--gold);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-weight: bold;
+    font-size: clamp(0.9rem, 2.6vw, 1.15rem);
+  }
+  .toggles { display: flex; gap: 6px; }
+  .icon-btn {
+    font-size: 1.15rem;
+    background: var(--cream);
+    border: 3px solid rgba(255,255,255,0.6);
+    border-radius: 999px;
+    width: 46px; height: 46px;
+    cursor: pointer;
+  }
+  .icon-btn.off { opacity: 0.45; }
+  .icon-btn:focus-visible { outline: 4px solid var(--gold); }
+
+  /* --- Card grid ---------------------------------------------------- */
+  .board {
+    flex: 1;
+    display: grid;
+    gap: clamp(8px, 2vw, 14px);
+    padding: 14px 6px 8px;
+    align-content: center;
+    justify-content: center;
+  }
+
+  .mcard {
+    perspective: 700px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    width: clamp(70px, 20vw, 118px);
+    height: clamp(88px, 25vw, 148px);
+  }
+  .mcard:focus-visible { outline: 4px dashed var(--gold); border-radius: 16px; }
+
+  .inner {
+    width: 100%; height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.45s cubic-bezier(0.4, 0.1, 0.3, 1.2);
+  }
+  .mcard.flipped .inner { transform: rotateY(180deg); }
+
+  .face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .face.front {                     /* face-down side */
+    background:
+      repeating-linear-gradient(45deg, #FF9A7A 0 12px, #FF8563 12px 24px);
+    border: 4px solid #FFF;
+    box-shadow: 0 5px 0 rgba(20, 60, 55, 0.3);
+    font-size: clamp(1.6rem, 5vw, 2.2rem);
+  }
+  .face.back {                      /* the picture side */
+    background: var(--cream);
+    border: 4px solid var(--gold);
+    transform: rotateY(180deg);
+    font-size: clamp(2.2rem, 8vw, 3.6rem);
+    font-weight: bold;
+    color: var(--accent-dk);
+  }
+
+  .mcard.matched { pointer-events: none; }
+  .mcard.matched .inner { animation: matchedJiggle 0.6s ease; }
+  .mcard.matched .face.back { border-color: #58B368; box-shadow: 0 0 0 4px rgba(88, 179, 104, 0.4); }
+  @keyframes matchedJiggle {
+    0%, 100% { transform: rotateY(180deg) scale(1); }
+    40%      { transform: rotateY(180deg) scale(1.15) rotate(-4deg); }
+    70%      { transform: rotateY(180deg) scale(1.05) rotate(3deg); }
+  }
+
+  /* --- Overlays ------------------------------------------------------- */
+  .overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 14px;
+    background: rgba(31, 138, 130, 0.94);
+    text-align: center;
+    padding: 18px;
+    z-index: 10;
+    color: #FFF;
+  }
+  .overlay[hidden] { display: none; }
+  .overlay .big-msg { font-size: clamp(1.4rem, 4.5vw, 2.1rem); font-weight: bold; text-wrap: balance; }
+  .overlay .sub-msg { font-size: clamp(0.95rem, 3vw, 1.2rem); opacity: 0.9; }
+
+  .pick-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .pick-btn {
+    font-family: var(--font-kids);
+    font-size: clamp(1rem, 3vw, 1.25rem);
+    font-weight: bold;
+    color: var(--ink);
+    background: var(--cream);
+    border: 4px solid transparent;
+    border-radius: 18px;
+    padding: 12px 18px;
+    cursor: pointer;
+  }
+  .pick-btn.selected { border-color: var(--gold); background: #FFF3D0; }
+  .pick-btn:focus-visible { outline: 4px solid var(--gold); }
+
+  .btn-primary {
+    font-family: var(--font-kids);
+    font-size: clamp(1.2rem, 4vw, 1.7rem);
+    font-weight: bold;
+    color: #FFF;
+    background: var(--accent);
+    border: none;
+    border-radius: 999px;
+    padding: 16px 46px;
+    cursor: pointer;
+    box-shadow: 0 6px 0 var(--accent-dk);
+    letter-spacing: 1px;
+  }
+  .btn-primary:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--accent-dk); }
+  .btn-primary:focus-visible { outline: 5px solid var(--gold); outline-offset: 3px; }
+
+  .confetti {
+    position: absolute; top: -20px;
+    font-size: 1.4rem;
+    animation: confettiFall linear forwards;
+    pointer-events: none;
+    z-index: 12;
+  }
+  @keyframes confettiFall { to { transform: translateY(640px) rotate(720deg); opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .inner { transition: none; }
+    .mcard.matched .inner { animation: none; }
+    .confetti { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🃏 Memory Match!</h1>
+
+<div class="game-wrap">
+  <div class="topbar">
+    <div class="chips">
+      <div class="chip">⭐ <span id="stars">0</span></div>
+      <div class="chip">👆 Moves: <span id="moves">0</span></div>
+    </div>
+    <div class="toggles">
+      <button class="icon-btn" id="menuBtn" aria-label="Back to menu">🏠</button>
+      <button class="icon-btn" id="musicBtn" aria-label="Turn music on or off">🎵</button>
+      <button class="icon-btn" id="voiceBtn" aria-label="Turn the talking voice on or off">🗣️</button>
+      <button class="icon-btn" id="soundBtn" aria-label="Turn sounds on or off">🔊</button>
+    </div>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <!-- Menu -->
+  <div class="overlay" id="menuOverlay">
+    <div class="big-msg">Flip the cards and find the pairs!</div>
+    <div class="sub-msg">Pick a deck:</div>
+    <div class="pick-row" id="deckRow"></div>
+    <div class="sub-msg">Pick a size:</div>
+    <div class="pick-row" id="sizeRow"></div>
+    <button class="btn-primary" id="startBtn">▶ PLAY</button>
+  </div>
+
+  <!-- Win -->
+  <div class="overlay" id="winOverlay" hidden>
+    <div class="big-msg">🎉 You found ALL the pairs!</div>
+    <div class="sub-msg" id="winSub"></div>
+    <button class="btn-primary" id="againBtn">🔄 Play again</button>
+  </div>
+</div>
+
+<script>
+/* ==================================================================
+   DECKS — [emoji, spoken name]. The ABC deck pairs a letter card
+   with its picture card (like the ABC Talking Friends game).
+   ================================================================== */
+const DECKS = {
+  animals:  { label: '🐶 Animals',  items: [['🐶','Dog'],['🐱','Cat'],['🐰','Bunny'],['🦊','Fox'],['🐸','Frog'],['🐵','Monkey'],['🐧','Penguin'],['🦁','Lion']] },
+  fruits:   { label: '🍎 Fruits',   items: [['🍎','Apple'],['🍌','Banana'],['🍇','Grapes'],['🍓','Strawberry'],['🍊','Orange'],['🍉','Watermelon'],['🍒','Cherries'],['🥝','Kiwi']] },
+  vehicles: { label: '🚗 Vehicles', items: [['🚗','Car'],['🚒','Fire truck'],['🚜','Tractor'],['🚂','Train'],['✈️','Airplane'],['🚁','Helicopter'],['🚀','Rocket'],['⛵','Boat']] },
+  abc:      { label: '🔤 ABC',      items: [['A','🍎','A is for Apple'],['B','⚽','B is for Ball'],['C','🐱','C is for Cat'],['D','🐶','D is for Dog'],['E','🐘','E is for Elephant'],['F','🐟','F is for Fish'],['G','🍇','G is for Grapes'],['H','🎩','H is for Hat']] }
+};
+const SIZES = [
+  { label: 'Small (3 pairs)',  pairs: 3, cols: 3 },
+  { label: 'Medium (6 pairs)', pairs: 6, cols: 4 },
+  { label: 'Big (8 pairs)',    pairs: 8, cols: 4 }
+];
+
+/* ==================================================================
+   Audio + voice
+   ================================================================== */
+let audioCtx = null, soundOn = true, voiceOn = true;
+function tone(freq, dur, type = 'triangle', vol = 0.12, when = 0, slideTo = null) {
+  if (!soundOn) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t0 = audioCtx.currentTime + when;
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t0);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
+    g.gain.setValueAtTime(vol, t0);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(t0); o.stop(t0 + dur);
+  } catch (e) {}
+}
+const sndFlip  = () => tone(520, 0.08, 'sine', 0.08, 0, 700);
+const sndMatch = () => { tone(660, 0.15); tone(990, 0.22, 'triangle', 0.14, 0.12); };
+const sndMiss  = () => tone(300, 0.2, 'sine', 0.07, 0, 240);
+const sndWin   = () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.25, 'triangle', 0.14, i * 0.14));
+
+function say(text) {
+  if (!voiceOn) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.9; u.pitch = 1.1;
+    window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+document.getElementById('soundBtn').addEventListener('click', (e) => {
+  soundOn = !soundOn;
+  e.currentTarget.textContent = soundOn ? '🔊' : '🔇';
+  e.currentTarget.classList.toggle('off', !soundOn);
+});
+document.getElementById('voiceBtn').addEventListener('click', (e) => {
+  voiceOn = !voiceOn;
+  e.currentTarget.classList.toggle('off', !voiceOn);
+  if (!voiceOn) try { window.speechSynthesis.cancel(); } catch (err) {}
+});
+
+/* ==================================================================
+   Background music — a light "thinking cap" tune (WebAudio, no files)
+   ================================================================== */
+let musicOn = true, musicTimer = null, musicStep = 0, musicNext = 0;
+const NOTE = (() => {
+  const s = { C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11 };
+  return (n) => {
+    const m = n.match(/^([A-G]#?)(\d)$/);
+    return 440 * Math.pow(2, (s[m[1]] + (parseInt(m[2], 10) - 4) * 12 - 9) / 12);
+  };
+})();
+const MELODY = ['A4','C5','E5','C5','B4','D5','G4','B4','A4','C5','E5','G5','E5','C5','A4',null];
+const BASS   = ['A2',null,'E3',null,'G2',null,'D3',null,'A2',null,'E3',null,'A2',null,'E3',null];
+const STEP_LEN = 60 / 108 / 2;   // 8th notes at a curious 108 BPM
+
+function playMusicNote(freq, t, dur, type, vol) {
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(t); o.stop(t + dur);
+}
+function startMusic() {
+  if (!musicOn || musicTimer) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    musicStep = 0;
+    musicNext = audioCtx.currentTime + 0.05;
+    musicTimer = setInterval(() => {
+      while (musicNext < audioCtx.currentTime + 0.15) {
+        const m = MELODY[musicStep % MELODY.length];
+        const b = BASS[musicStep % BASS.length];
+        if (m) playMusicNote(NOTE(m), musicNext, STEP_LEN * 0.9, 'triangle', 0.03);
+        if (b) playMusicNote(NOTE(b), musicNext, STEP_LEN * 1.8, 'triangle', 0.045);
+        musicNext += STEP_LEN;
+        musicStep++;
+      }
+    }, 50);
+  } catch (e) {}
+}
+function stopMusic() { clearInterval(musicTimer); musicTimer = null; }
+
+document.getElementById('musicBtn').addEventListener('click', (e) => {
+  musicOn = !musicOn;
+  e.currentTarget.classList.toggle('off', !musicOn);
+  if (!musicOn) stopMusic();
+  else if (menuOverlay.hidden) startMusic();
+});
+
+/* ==================================================================
+   State + menu
+   ================================================================== */
+const boardEl = document.getElementById('board');
+const movesEl = document.getElementById('moves');
+const starsEl = document.getElementById('stars');
+const menuOverlay = document.getElementById('menuOverlay');
+const winOverlay  = document.getElementById('winOverlay');
+const gameWrap    = document.querySelector('.game-wrap');
+
+const state = { deck: 'animals', size: 1, first: null, lock: false, moves: 0, matched: 0, totalPairs: 0 };
+
+const deckRow = document.getElementById('deckRow');
+Object.entries(DECKS).forEach(([key, d]) => {
+  const b = document.createElement('button');
+  b.className = 'pick-btn' + (key === state.deck ? ' selected' : '');
+  b.textContent = d.label;
+  b.addEventListener('click', () => {
+    state.deck = key;
+    [...deckRow.children].forEach(c => c.classList.toggle('selected', c === b));
+  });
+  deckRow.appendChild(b);
+});
+const sizeRow = document.getElementById('sizeRow');
+SIZES.forEach((s, i) => {
+  const b = document.createElement('button');
+  b.className = 'pick-btn' + (i === state.size ? ' selected' : '');
+  b.textContent = s.label;
+  b.addEventListener('click', () => {
+    state.size = i;
+    [...sizeRow.children].forEach(c => c.classList.toggle('selected', c === b));
+  });
+  sizeRow.appendChild(b);
+});
+
+document.getElementById('startBtn').addEventListener('click', () => { menuOverlay.hidden = true; newGame(); startMusic(); });
+document.getElementById('againBtn').addEventListener('click', () => { winOverlay.hidden = true; newGame(); startMusic(); });
+document.getElementById('menuBtn').addEventListener('click', () => { winOverlay.hidden = true; menuOverlay.hidden = false; stopMusic(); });
+
+/* ==================================================================
+   Build a game
+   ================================================================== */
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function newGame() {
+  const size = SIZES[state.size];
+  const isABC = state.deck === 'abc';
+  const items = shuffle([...DECKS[state.deck].items]).slice(0, size.pairs);
+
+  // build the card list: two cards per pair
+  let cards = [];
+  items.forEach((it, pairId) => {
+    if (isABC) {
+      // letter card + picture card
+      cards.push({ pairId, show: it[0], name: it[2] });
+      cards.push({ pairId, show: it[1], name: it[2] });
+    } else {
+      cards.push({ pairId, show: it[0], name: it[1] });
+      cards.push({ pairId, show: it[0], name: it[1] });
+    }
+  });
+  shuffle(cards);
+
+  state.first = null;
+  state.lock = false;
+  state.moves = 0;
+  state.matched = 0;
+  state.totalPairs = size.pairs;
+  movesEl.textContent = '0';
+
+  boardEl.innerHTML = '';
+  boardEl.style.gridTemplateColumns = `repeat(${size.cols}, auto)`;
+  cards.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'mcard';
+    btn.setAttribute('aria-label', 'card, face down');
+    btn.innerHTML = `<div class="inner">
+        <div class="face front">✨</div>
+        <div class="face back">${c.show}</div>
+      </div>`;
+    btn.dataset.pairId = c.pairId;
+    btn.dataset.name = c.name;
+    btn.addEventListener('click', () => flip(btn));
+    boardEl.appendChild(btn);
+  });
+
+  say('Flip the cards and find the pairs!');
+}
+
+/* ==================================================================
+   Flip logic
+   ================================================================== */
+function flip(card) {
+  if (state.lock || card.classList.contains('flipped')) return;
+
+  card.classList.add('flipped');
+  sndFlip();
+  say(card.dataset.name);
+
+  if (!state.first) {
+    state.first = card;
+    return;
+  }
+
+  // second card of the attempt
+  state.moves++;
+  movesEl.textContent = String(state.moves);
+  const a = state.first, b = card;
+  state.first = null;
+
+  if (a.dataset.pairId === b.dataset.pairId) {
+    a.classList.add('matched');
+    b.classList.add('matched');
+    state.matched++;
+    sndMatch();
+    say(`It's a match! ${b.dataset.name}!`);
+    if (state.matched === state.totalPairs) setTimeout(win, 700);
+  } else {
+    state.lock = true;
+    sndMiss();
+    setTimeout(() => {
+      a.classList.remove('flipped');
+      b.classList.remove('flipped');
+      state.lock = false;
+    }, 950);
+  }
+}
+
+function win() {
+  sndWin();
+  starsEl.textContent = String(parseInt(starsEl.textContent, 10) + 1);
+  document.getElementById('winSub').textContent =
+    `${state.totalPairs} pairs in ${state.moves} moves — amazing memory!`;
+  say(`You found all the pairs in ${state.moves} moves! Amazing memory!`);
+  celebrate();
+  winOverlay.hidden = false;
+}
+
+function celebrate() {
+  const emojis = ['🎉', '⭐', '✨', '🎊', '💚'];
+  for (let i = 0; i < 22; i++) {
+    const c = document.createElement('span');
+    c.className = 'confetti';
+    c.textContent = emojis[i % emojis.length];
+    c.style.left = Math.random() * 95 + '%';
+    c.style.animationDuration = (1.4 + Math.random() * 1.4) + 's';
+    c.style.animationDelay = (Math.random() * 0.4) + 's';
+    gameWrap.appendChild(c);
+    setTimeout(() => c.remove(), 3200);
+  }
+}
+</script>
+</body>
+</html>

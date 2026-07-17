@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Pattern Party — What Comes Next? Free Logic Game for Kids | GameSpace</title>
+<meta name="description" content="Red, blue, red, blue… what comes next? A free pattern recognition game for kids ages 3–6 with colors, shapes, animals and fruits, read aloud so pre-readers can play alone.">
+<style>
+  /* ============================================================
+     PATTERN PARTY — "what comes next?" for little ones (ages 3–6)
+     Patterns of colors, shapes, animals and fruits.
+     Levels: AB → AAB/ABB → ABC. The voice reads every pattern
+     out loud so pre-readers can play alone.
+     ============================================================ */
+
+  :root {
+    --party:     #FFF3D6;
+    --party-dp:  #FFE3A0;
+    --ink:       #6B4A2A;
+    --gold:      #F0A500;
+    --gold-dk:   #C98700;
+    --pink:      #FF6B8A;
+    --cream:     #FFFDF6;
+    --good:      #58B368;
+    --good-dk:   #3F9450;
+    --font-kids: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+
+  body {
+    font-family: var(--font-kids);
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 15% 10%, #FFE9BC 0%, transparent 40%),
+      radial-gradient(circle at 85% 90%, #FFE0EA 0%, transparent 40%),
+      var(--party);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 10px 24px;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  h1 {
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    margin: 4px 0 8px;
+    color: var(--gold-dk);
+    text-shadow: 0 2px 0 #FFF;
+    letter-spacing: 1px;
+  }
+
+  .game-wrap {
+    position: relative;
+    width: min(100%, 760px);
+    min-height: 540px;
+    border-radius: 26px;
+    background: var(--cream);
+    border: 5px solid var(--party-dp);
+    box-shadow: 0 12px 30px rgba(150, 100, 30, 0.25);
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    overflow: hidden;
+  }
+
+  /* bunting flags along the top */
+  .bunting {
+    display: flex;
+    justify-content: space-around;
+    margin: -12px -12px 0;
+  }
+  .bunting span {
+    width: 0; height: 0;
+    border-left: 16px solid transparent;
+    border-right: 16px solid transparent;
+    border-top: 24px solid var(--f, var(--pink));
+  }
+
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    background: #FFF;
+    border: 3px solid var(--gold);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-weight: bold;
+    font-size: clamp(0.9rem, 2.6vw, 1.15rem);
+  }
+  .toggles { display: flex; gap: 6px; }
+  .icon-btn {
+    font-size: 1.15rem;
+    background: #FFF;
+    border: 3px solid var(--party-dp);
+    border-radius: 999px;
+    width: 46px; height: 46px;
+    cursor: pointer;
+  }
+  .icon-btn.off { opacity: 0.45; }
+  .icon-btn:focus-visible { outline: 4px solid var(--gold); }
+
+  .prompt {
+    text-align: center;
+    font-size: clamp(1.15rem, 3.6vw, 1.6rem);
+    font-weight: bold;
+    margin: 14px 8px 4px;
+    min-height: 2em;
+    text-wrap: balance;
+  }
+
+  /* --- The pattern row ------------------------------------------------ */
+  .pattern {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(6px, 2vw, 16px);
+    flex-wrap: wrap;
+    padding: 16px 8px;
+    min-height: 110px;
+  }
+  .pat-item {
+    font-size: clamp(2.4rem, 9vw, 4rem);
+    line-height: 1;
+  }
+  .pat-slot {
+    width: clamp(58px, 12vw, 92px);
+    height: clamp(58px, 12vw, 92px);
+    border: 4px dashed var(--gold);
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(2rem, 8vw, 3.4rem);
+    color: var(--gold);
+    background: #FFF8E6;
+  }
+  .pat-slot.filled {
+    border-style: solid;
+    border-color: var(--good);
+    background: #F0FAF0;
+    animation: popIn 0.4s cubic-bezier(0.2, 1.6, 0.4, 1);
+  }
+  @keyframes popIn {
+    0% { transform: scale(0.2); }
+    100% { transform: scale(1); }
+  }
+
+  .replay-btn {
+    font-family: var(--font-kids);
+    font-size: 1rem;
+    font-weight: bold;
+    background: #FFF;
+    color: var(--ink);
+    border: 3px solid var(--party-dp);
+    border-radius: 999px;
+    padding: 8px 20px;
+    cursor: pointer;
+    margin: 0 auto;
+    display: block;
+  }
+  .replay-btn:focus-visible { outline: 4px solid var(--gold); }
+
+  /* --- Answer choices --------------------------------------------------- */
+  .choices {
+    display: flex;
+    justify-content: center;
+    gap: clamp(12px, 4vw, 28px);
+    padding: 18px 8px 22px;
+    flex-wrap: wrap;
+  }
+  .choice {
+    font-size: clamp(2.6rem, 10vw, 4.2rem);
+    line-height: 1;
+    background: #FFF;
+    border: 5px solid var(--party-dp);
+    border-radius: 24px;
+    width: clamp(88px, 22vw, 132px);
+    height: clamp(88px, 22vw, 132px);
+    cursor: pointer;
+    box-shadow: 0 7px 0 rgba(150, 100, 30, 0.18);
+    transition: transform 0.08s ease;
+  }
+  .choice:hover { border-color: var(--gold); }
+  .choice:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(150,100,30,0.18); }
+  .choice:focus-visible { outline: 5px solid var(--gold); }
+  .choice.wrong { animation: shakeNo 0.45s ease; }
+  @keyframes shakeNo {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-9px); }
+    50% { transform: translateX(8px); }
+    75% { transform: translateX(-5px); }
+  }
+
+  /* --- Overlays ----------------------------------------------------------- */
+  .overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 16px;
+    background: rgba(255, 253, 246, 0.95);
+    text-align: center;
+    padding: 20px;
+    z-index: 10;
+  }
+  .overlay[hidden] { display: none; }
+  .overlay .big-msg { font-size: clamp(1.4rem, 4.5vw, 2.1rem); font-weight: bold; text-wrap: balance; }
+  .mode-buttons { display: flex; flex-direction: column; gap: 12px; width: min(100%, 340px); }
+  .mode-btn {
+    font-family: var(--font-kids);
+    font-size: clamp(1.1rem, 3.5vw, 1.45rem);
+    font-weight: bold;
+    color: #FFF;
+    border: none;
+    border-radius: 999px;
+    padding: 16px 20px;
+    cursor: pointer;
+  }
+  .mode-btn small { display: block; font-size: 0.72em; font-weight: normal; opacity: 0.95; }
+  .mode-btn:active { transform: translateY(3px); }
+  .mode-btn:focus-visible { outline: 5px solid var(--gold); outline-offset: 3px; }
+  .m1 { background: var(--good);  box-shadow: 0 6px 0 var(--good-dk); }
+  .m2 { background: var(--gold);  box-shadow: 0 6px 0 var(--gold-dk); }
+  .m3 { background: var(--pink);  box-shadow: 0 6px 0 #E04A6B; }
+
+  .confetti {
+    position: absolute; top: -20px;
+    font-size: 1.4rem;
+    animation: confettiFall linear forwards;
+    pointer-events: none;
+    z-index: 12;
+  }
+  @keyframes confettiFall { to { transform: translateY(620px) rotate(720deg); opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pat-slot.filled, .choice.wrong { animation: none; }
+    .confetti { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🎉 Pattern Party!</h1>
+
+<div class="game-wrap">
+  <div class="bunting" aria-hidden="true">
+    <span style="--f:#FF6B8A"></span><span style="--f:#F0A500"></span><span style="--f:#58B368"></span>
+    <span style="--f:#4EA8DE"></span><span style="--f:#B58CF0"></span><span style="--f:#FF6B8A"></span>
+    <span style="--f:#F0A500"></span><span style="--f:#58B368"></span><span style="--f:#4EA8DE"></span>
+  </div>
+
+  <div class="topbar">
+    <div class="chips">
+      <div class="chip">⭐ <span id="stars">0</span></div>
+      <div class="chip">🔥 Streak: <span id="streak">0</span></div>
+    </div>
+    <div class="toggles">
+      <button class="icon-btn" id="menuBtn" aria-label="Back to menu">🏠</button>
+      <button class="icon-btn" id="musicBtn" aria-label="Turn music on or off">🎵</button>
+      <button class="icon-btn" id="voiceBtn" aria-label="Turn the talking voice on or off">🗣️</button>
+      <button class="icon-btn" id="soundBtn" aria-label="Turn sounds on or off">🔊</button>
+    </div>
+  </div>
+
+  <div class="prompt" id="prompt">What comes next?</div>
+  <div class="pattern" id="pattern"></div>
+  <button class="replay-btn" id="replayBtn">🔁 Say the pattern again</button>
+  <div class="choices" id="choices"></div>
+
+  <!-- Menu -->
+  <div class="overlay" id="menuOverlay">
+    <div class="big-msg">Can you guess what comes next?</div>
+    <div class="mode-buttons">
+      <button class="mode-btn m1" data-level="1">🌱 Easy
+        <small>Simple patterns: red, blue, red, blue…</small></button>
+      <button class="mode-btn m2" data-level="2">🌟 Medium
+        <small>Trickier: red, red, blue, red, red…</small></button>
+      <button class="mode-btn m3" data-level="3">🚀 Super
+        <small>Three things: red, blue, green, red…</small></button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==================================================================
+   ITEM SETS — [emoji, spoken name]
+   ================================================================== */
+const ITEM_SETS = [
+  { name: 'colors',  items: [['🔴','red'],['🔵','blue'],['🟡','yellow'],['🟢','green'],['🟣','purple']] },
+  { name: 'shapes',  items: [['⭐','star'],['❤️','heart'],['🔺','triangle'],['🟦','square'],['⚫','circle']] },
+  { name: 'animals', items: [['🐶','dog'],['🐱','cat'],['🐸','frog'],['🐰','bunny']] },
+  { name: 'fruits',  items: [['🍎','apple'],['🍌','banana'],['🍇','grapes'],['🍓','strawberry']] }
+];
+
+/* Pattern templates per level. Letters map to distinct items.
+   The pattern repeats until we have `show` items, then one "?"
+   AB for level 1; AAB/ABB for level 2; ABC/AABB for level 3. */
+const LEVEL_TEMPLATES = {
+  1: [ ['A','B'] ],
+  2: [ ['A','A','B'], ['A','B','B'] ],
+  3: [ ['A','B','C'], ['A','A','B','B'] ]
+};
+const SHOW_COUNT = { 1: 5, 2: 5, 3: 6 };   // items shown before the "?"
+
+/* ==================================================================
+   Audio + voice
+   ================================================================== */
+let audioCtx = null, soundOn = true, voiceOn = true;
+function tone(freq, dur, type = 'triangle', vol = 0.12, when = 0) {
+  if (!soundOn) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t0 = audioCtx.currentTime + when;
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(vol, t0);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(t0); o.stop(t0 + dur);
+  } catch (e) {}
+}
+const sndYes  = () => { tone(660, 0.15); tone(990, 0.22, 'triangle', 0.14, 0.12); };
+const sndNo   = () => tone(300, 0.2, 'sine', 0.07);
+const sndTick = (i) => tone(420 + i * 40, 0.1, 'sine', 0.06);
+
+function say(text, onDone) {
+  if (!voiceOn) { if (onDone) setTimeout(onDone, 400); return; }
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.85; u.pitch = 1.1;
+    if (onDone) { u.onend = onDone; u.onerror = onDone; }
+    window.speechSynthesis.speak(u);
+  } catch (e) { if (onDone) setTimeout(onDone, 400); }
+}
+
+document.getElementById('soundBtn').addEventListener('click', (e) => {
+  soundOn = !soundOn;
+  e.currentTarget.textContent = soundOn ? '🔊' : '🔇';
+  e.currentTarget.classList.toggle('off', !soundOn);
+});
+document.getElementById('voiceBtn').addEventListener('click', (e) => {
+  voiceOn = !voiceOn;
+  e.currentTarget.classList.toggle('off', !voiceOn);
+  if (!voiceOn) try { window.speechSynthesis.cancel(); } catch (err) {}
+});
+
+/* ==================================================================
+   Background music — a bouncy party tune, kept quiet under the
+   talking voice. (WebAudio, no files)
+   ================================================================== */
+let musicOn = true, musicTimer = null, musicStep = 0, musicNext = 0;
+const NOTE = (() => {
+  const s = { C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11 };
+  return (n) => {
+    const m = n.match(/^([A-G]#?)(\d)$/);
+    return 440 * Math.pow(2, (s[m[1]] + (parseInt(m[2], 10) - 4) * 12 - 9) / 12);
+  };
+})();
+const MELODY = ['D5','F#5','A5','F#5','G5','B5','A5','F#5','D5','F#5','A5','D6','A5','F#5','D5',null];
+const BASS   = ['D3',null,'A3',null,'G3',null,'A3',null,'D3',null,'A3',null,'D3',null,'A3',null];
+const STEP_LEN = 60 / 120 / 2;   // 8th notes at a party 120 BPM
+
+function playMusicNote(freq, t, dur, type, vol) {
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(t); o.stop(t + dur);
+}
+function startMusic() {
+  if (!musicOn || musicTimer) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    musicStep = 0;
+    musicNext = audioCtx.currentTime + 0.05;
+    musicTimer = setInterval(() => {
+      while (musicNext < audioCtx.currentTime + 0.15) {
+        const m = MELODY[musicStep % MELODY.length];
+        const b = BASS[musicStep % BASS.length];
+        if (m) playMusicNote(NOTE(m), musicNext, STEP_LEN * 0.9, 'triangle', 0.025);
+        if (b) playMusicNote(NOTE(b), musicNext, STEP_LEN * 1.8, 'triangle', 0.035);
+        musicNext += STEP_LEN;
+        musicStep++;
+      }
+    }, 50);
+  } catch (e) {}
+}
+function stopMusic() { clearInterval(musicTimer); musicTimer = null; }
+
+document.getElementById('musicBtn').addEventListener('click', (e) => {
+  musicOn = !musicOn;
+  e.currentTarget.classList.toggle('off', !musicOn);
+  if (!musicOn) stopMusic();
+  else if (menuOverlay.hidden) startMusic();
+});
+
+/* ==================================================================
+   State + round building
+   ================================================================== */
+const patternEl = document.getElementById('pattern');
+const choicesEl = document.getElementById('choices');
+const promptEl  = document.getElementById('prompt');
+const starsEl   = document.getElementById('stars');
+const streakEl  = document.getElementById('streak');
+const menuOverlay = document.getElementById('menuOverlay');
+const gameWrap    = document.querySelector('.game-wrap');
+
+const state = { level: 1, answer: null, answerName: '', sequence: [], locked: false };
+
+const randOf = (arr) => arr[Math.floor(Math.random() * arr.length)];
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function newRound() {
+  state.locked = false;
+
+  const set = randOf(ITEM_SETS);
+  const template = randOf(LEVEL_TEMPLATES[state.level]);
+  const show = SHOW_COUNT[state.level];
+
+  // map template letters (A/B/C) to distinct random items from the set
+  const letters = [...new Set(template)];
+  const picks = shuffle([...set.items]).slice(0, letters.length);
+  const map = {};
+  letters.forEach((L, i) => { map[L] = picks[i]; });
+
+  // build the visible sequence + the answer (the next item)
+  const seq = [];
+  for (let i = 0; i <= show; i++) seq.push(map[template[i % template.length]]);
+  const visible = seq.slice(0, show);
+  const answer = seq[show];
+
+  state.sequence = visible;
+  state.answer = answer[0];
+  state.answerName = answer[1];
+
+  // render pattern row
+  patternEl.innerHTML = '';
+  visible.forEach(it => {
+    const d = document.createElement('div');
+    d.className = 'pat-item';
+    d.textContent = it[0];
+    patternEl.appendChild(d);
+  });
+  const slot = document.createElement('div');
+  slot.className = 'pat-slot';
+  slot.id = 'answerSlot';
+  slot.textContent = '?';
+  patternEl.appendChild(slot);
+
+  // render 3 choices: the answer + 2 different items from the same set
+  const wrongPool = set.items.filter(it => it[0] !== state.answer);
+  const options = shuffle([answer, ...shuffle(wrongPool).slice(0, 2)]);
+  choicesEl.innerHTML = '';
+  options.forEach(it => {
+    const b = document.createElement('button');
+    b.className = 'choice';
+    b.textContent = it[0];
+    b.setAttribute('aria-label', it[1]);
+    b.addEventListener('click', () => onChoice(b, it));
+    choicesEl.appendChild(b);
+  });
+
+  promptEl.textContent = 'What comes next?';
+  readPattern();
+}
+
+/* read the pattern out loud, ticking each item as it's named */
+function readPattern() {
+  const names = state.sequence.map(it => it[1]);
+  names.forEach((_, i) => setTimeout(() => sndTick(i), i * 420));
+  say(names.join(', ') + '... what comes next?');
+}
+document.getElementById('replayBtn').addEventListener('click', readPattern);
+
+/* ==================================================================
+   Answer handling
+   ================================================================== */
+function onChoice(btn, item) {
+  if (state.locked) return;
+
+  if (item[0] === state.answer) {
+    state.locked = true;
+    const slot = document.getElementById('answerSlot');
+    slot.textContent = item[0];
+    slot.classList.add('filled');
+    sndYes();
+
+    starsEl.textContent = String(parseInt(starsEl.textContent, 10) + 1);
+    const streak = parseInt(streakEl.textContent, 10) + 1;
+    streakEl.textContent = String(streak);
+
+    const isParty = streak % 5 === 0;
+    promptEl.textContent = isParty ? `🌈 ${streak} in a row! Pattern superstar! 🌈` : `Yes! ${item[1]} comes next!`;
+    if (isParty) celebrate();
+    say(`Yes! ${item[1]} comes next! ${isParty ? 'You are a pattern superstar!' : 'Great job!'}`,
+        () => setTimeout(newRound, isParty ? 900 : 500));
+  } else {
+    btn.classList.remove('wrong');
+    void btn.offsetWidth;
+    btn.classList.add('wrong');
+    sndNo();
+    streakEl.textContent = '0';
+    promptEl.textContent = 'Almost! Listen again… 💛';
+    say(`That is ${item[1]}. Let's listen again!`, () => setTimeout(readPattern, 300));
+  }
+}
+
+/* ==================================================================
+   Menu + confetti
+   ================================================================== */
+document.querySelectorAll('.mode-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    state.level = parseInt(b.dataset.level, 10);
+    menuOverlay.hidden = true;
+    streakEl.textContent = '0';
+    newRound();
+    startMusic();
+  });
+});
+document.getElementById('menuBtn').addEventListener('click', () => {
+  try { window.speechSynthesis.cancel(); } catch (e) {}
+  stopMusic();
+  menuOverlay.hidden = false;
+});
+
+function celebrate() {
+  const emojis = ['🎉', '⭐', '✨', '🎊', '💛'];
+  for (let i = 0; i < 22; i++) {
+    const c = document.createElement('span');
+    c.className = 'confetti';
+    c.textContent = emojis[i % emojis.length];
+    c.style.left = Math.random() * 95 + '%';
+    c.style.animationDuration = (1.4 + Math.random() * 1.4) + 's';
+    c.style.animationDelay = (Math.random() * 0.4) + 's';
+    gameWrap.appendChild(c);
+    setTimeout(() => c.remove(), 3200);
+  }
+}
+</script>
+</body>
+</html>

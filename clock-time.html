@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>What Time Is It? — Free Telling Time Game for Kids | GameSpace</title>
+<meta name="description" content="Tick tock! Kids ages 5–8 learn to read an analog clock — o'clock, half past and quarter times — with a learn mode that speaks every time and gentle three-choice quizzes.">
+<style>
+  /* ============================================================
+     WHAT TIME IS IT? — learn to read the clock! (ages 5–8)
+     📖 Learn: step the hands and hear every time read aloud.
+     🎯 Quiz: read the clock, pick the right answer from three.
+     Levels: o'clock → half past → quarter past / quarter to.
+     ============================================================ */
+
+  :root {
+    --dusk:     #E8ECFB;
+    --dusk-dp:  #C9D2F0;
+    --ink:      #35406B;
+    --indigo:   #4A6FE0;
+    --indigo-dk:#3A57B8;
+    --gold:     #FFC93C;
+    --good:     #58B368;
+    --font-kids: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body {
+    font-family: var(--font-kids);
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 15% 12%, #F4F6FE 0%, transparent 45%),
+      var(--dusk);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 10px 10px 24px;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  h1 {
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    margin: 4px 0 8px;
+    color: var(--indigo-dk);
+    text-shadow: 0 2px 0 #FFF;
+    letter-spacing: 1px;
+  }
+  .game-wrap {
+    position: relative;
+    width: min(100%, 640px);
+    min-height: 580px;
+    border-radius: 26px;
+    background: #FFFFFF;
+    border: 5px solid var(--dusk-dp);
+    box-shadow: 0 12px 30px rgba(60, 80, 160, 0.22);
+    display: flex; flex-direction: column;
+    padding: 12px;
+    overflow: hidden;
+  }
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    background: #FFF; border: 3px solid var(--gold); border-radius: 999px;
+    padding: 4px 14px; font-weight: bold;
+    font-size: clamp(0.9rem, 2.6vw, 1.15rem);
+  }
+  .toggles { display: flex; gap: 6px; }
+  .icon-btn {
+    font-size: 1.1rem; background: #FFF;
+    border: 3px solid var(--dusk-dp); border-radius: 999px;
+    width: 44px; height: 44px; cursor: pointer;
+  }
+  .icon-btn.off { opacity: 0.45; }
+  .icon-btn:focus-visible { outline: 4px solid var(--gold); }
+
+  .prompt {
+    text-align: center;
+    font-size: clamp(1.1rem, 3.4vw, 1.5rem);
+    font-weight: bold;
+    min-height: 2em;
+    margin: 8px 8px 0;
+    text-wrap: balance;
+  }
+
+  .clock-holder { align-self: center; padding: 6px 0; }
+  canvas { display: block; width: min(78vw, 320px); height: auto; }
+
+  /* --- learn-mode hand buttons --- */
+  .hand-controls { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; padding: 4px 0; }
+  .hand-btn {
+    font-family: var(--font-kids);
+    font-size: clamp(1rem, 3vw, 1.2rem);
+    font-weight: bold;
+    color: #FFF; background: var(--indigo);
+    border: none; border-radius: 999px;
+    padding: 12px 24px; cursor: pointer;
+    box-shadow: 0 5px 0 var(--indigo-dk);
+  }
+  .hand-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--indigo-dk); }
+  .hand-btn:focus-visible { outline: 4px solid var(--gold); }
+
+  /* --- quiz answers --- */
+  .answers { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; padding: 6px 0 14px; }
+  .ans-btn {
+    font-family: var(--font-kids);
+    font-size: clamp(1rem, 3.2vw, 1.3rem);
+    font-weight: bold;
+    color: var(--ink); background: #FFF;
+    border: 4px solid var(--dusk-dp); border-radius: 18px;
+    padding: 14px 22px; cursor: pointer;
+    box-shadow: 0 5px 0 rgba(60, 80, 160, 0.15);
+  }
+  .ans-btn:hover { border-color: var(--indigo); }
+  .ans-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(60,80,160,0.15); }
+  .ans-btn:focus-visible { outline: 4px solid var(--gold); }
+  .ans-btn.wrong { animation: shakeNo 0.45s ease; }
+  @keyframes shakeNo {
+    0%,100% { transform: translateX(0); } 25% { transform: translateX(-9px); }
+    50% { transform: translateX(8px); } 75% { transform: translateX(-5px); }
+  }
+
+  [hidden] { display: none !important; }
+
+  .overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 14px;
+    background: rgba(255, 255, 255, 0.96);
+    text-align: center; padding: 20px; z-index: 10;
+  }
+  .overlay[hidden] { display: none !important; }
+  .overlay .big-msg { font-size: clamp(1.4rem, 4.5vw, 2rem); font-weight: bold; text-wrap: balance; }
+  .mode-buttons { display: flex; flex-direction: column; gap: 12px; width: min(100%, 360px); }
+  .mode-btn {
+    font-family: var(--font-kids);
+    font-size: clamp(1.05rem, 3.4vw, 1.4rem);
+    font-weight: bold; color: #FFF; border: none; border-radius: 999px;
+    padding: 15px 20px; cursor: pointer;
+  }
+  .mode-btn small { display: block; font-size: 0.72em; font-weight: normal; opacity: 0.95; }
+  .mode-btn:active { transform: translateY(3px); }
+  .mode-btn:focus-visible { outline: 5px solid var(--gold); outline-offset: 3px; }
+  .m-learn { background: var(--indigo); box-shadow: 0 6px 0 var(--indigo-dk); }
+  .m-q1 { background: var(--good); box-shadow: 0 6px 0 #3F9450; }
+  .m-q2 { background: #F0A500;    box-shadow: 0 6px 0 #C98700; }
+  .m-q3 { background: #B58CF0;    box-shadow: 0 6px 0 #9468D0; }
+
+  .confetti {
+    position: absolute; top: -20px; font-size: 1.4rem;
+    animation: confettiFall linear forwards;
+    pointer-events: none; z-index: 12;
+  }
+  @keyframes confettiFall { to { transform: translateY(660px) rotate(720deg); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .ans-btn.wrong { animation: none; }
+    .confetti { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🕐 What Time Is It?</h1>
+
+<div class="game-wrap">
+  <div class="topbar">
+    <div class="chip">⭐ <span id="stars">0</span></div>
+    <div class="toggles">
+      <button class="icon-btn" id="menuBtn" aria-label="Back to menu">🏠</button>
+      <button class="icon-btn" id="musicBtn" aria-label="Turn music on or off">🎵</button>
+      <button class="icon-btn" id="voiceBtn" aria-label="Turn the talking voice on or off">🗣️</button>
+      <button class="icon-btn" id="soundBtn" aria-label="Turn sounds on or off">🔊</button>
+    </div>
+  </div>
+
+  <div class="prompt" id="prompt">What time is it?</div>
+
+  <div class="clock-holder">
+    <canvas id="clock" width="320" height="320" aria-label="Clock face"></canvas>
+  </div>
+
+  <div class="hand-controls" id="learnControls" hidden>
+    <button class="hand-btn" id="hourBtn">🕐 +1 hour</button>
+    <button class="hand-btn" id="minBtn">⏩ +15 minutes</button>
+  </div>
+
+  <div class="answers" id="answers" hidden></div>
+
+  <div class="overlay" id="menuOverlay">
+    <div class="big-msg">Tick tock! Let's learn the clock!</div>
+    <div class="mode-buttons">
+      <button class="mode-btn m-learn" data-mode="learn">📖 Learn the clock
+        <small>Move the hands and hear every time</small></button>
+      <button class="mode-btn m-q1" data-mode="1">🌱 Quiz: o'clock
+        <small>3 o'clock, 7 o'clock…</small></button>
+      <button class="mode-btn m-q2" data-mode="2">🌟 Quiz: half past
+        <small>half past 2, half past 9…</small></button>
+      <button class="mode-btn m-q3" data-mode="3">🚀 Quiz: quarters
+        <small>quarter past, quarter to…</small></button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==================================================================
+   Audio + voice + background music
+   ================================================================== */
+let audioCtx = null, soundOn = true, voiceOn = true;
+function ensureCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+function tone(freq, dur, type = 'triangle', vol = 0.12, when = 0) {
+  if (!soundOn) return;
+  try {
+    ensureCtx();
+    const t0 = audioCtx.currentTime + when;
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(vol, t0);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(t0); o.stop(t0 + dur);
+  } catch (e) {}
+}
+const sndTick = () => tone(900, 0.05, 'square', 0.05);
+const sndYes  = () => { tone(660, 0.15); tone(990, 0.22, 'triangle', 0.14, 0.12); };
+const sndNo   = () => tone(300, 0.2, 'sine', 0.07);
+const sndWin  = () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.25, 'triangle', 0.14, i * 0.14));
+
+function say(text) {
+  if (!voiceOn) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.88; u.pitch = 1.1;
+    window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+let musicOn = true, musicTimer = null, musicStep = 0, musicNext = 0;
+const NOTE = (() => {
+  const s = { C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11 };
+  return (n) => { const m = n.match(/^([A-G]#?)(\d)$/);
+    return 440 * Math.pow(2, (s[m[1]] + (parseInt(m[2],10) - 4) * 12 - 9) / 12); };
+})();
+/* a tick-tock waltz: steady like a pendulum */
+const MELODY = ['E5',null,'C5',null,'E5',null,'G5',null,'F5',null,'D5',null,'C5',null,null,null];
+const BASS   = ['C3',null,'G2',null,'C3',null,'G2',null,'G2',null,'D3',null,'C3',null,'G2',null];
+const STEP_LEN = 60 / 88 / 2;
+
+function playMusicNote(freq, t, dur, type, vol) {
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(t); o.stop(t + dur);
+}
+function startMusic() {
+  if (!musicOn || musicTimer) return;
+  try {
+    ensureCtx();
+    musicStep = 0; musicNext = audioCtx.currentTime + 0.05;
+    musicTimer = setInterval(() => {
+      while (musicNext < audioCtx.currentTime + 0.15) {
+        const m = MELODY[musicStep % MELODY.length], b = BASS[musicStep % BASS.length];
+        if (m) playMusicNote(NOTE(m), musicNext, STEP_LEN * 0.9, 'triangle', 0.025);
+        if (b) playMusicNote(NOTE(b), musicNext, STEP_LEN * 1.8, 'triangle', 0.035);
+        musicNext += STEP_LEN; musicStep++;
+      }
+    }, 50);
+  } catch (e) {}
+}
+function stopMusic() { clearInterval(musicTimer); musicTimer = null; }
+
+document.getElementById('soundBtn').addEventListener('click', (e) => {
+  soundOn = !soundOn;
+  e.currentTarget.textContent = soundOn ? '🔊' : '🔇';
+  e.currentTarget.classList.toggle('off', !soundOn);
+});
+document.getElementById('voiceBtn').addEventListener('click', (e) => {
+  voiceOn = !voiceOn;
+  e.currentTarget.classList.toggle('off', !voiceOn);
+  if (!voiceOn) try { window.speechSynthesis.cancel(); } catch (err) {}
+});
+document.getElementById('musicBtn').addEventListener('click', (e) => {
+  musicOn = !musicOn;
+  e.currentTarget.classList.toggle('off', !musicOn);
+  if (!musicOn) stopMusic();
+  else if (state.mode) startMusic();
+});
+
+/* ==================================================================
+   Clock drawing
+   ================================================================== */
+const canvas = document.getElementById('clock');
+const ctx = canvas.getContext('2d');
+const C = 160;   // center
+
+function drawClock(hour, minute) {
+  ctx.clearRect(0, 0, 320, 320);
+
+  // face
+  ctx.beginPath();
+  ctx.arc(C, C, 148, 0, Math.PI * 2);
+  ctx.fillStyle = '#FFFDF6';
+  ctx.fill();
+  ctx.lineWidth = 10;
+  ctx.strokeStyle = '#4A6FE0';
+  ctx.stroke();
+
+  // minute ticks
+  for (let i = 0; i < 60; i++) {
+    const a = (Math.PI * 2 * i) / 60 - Math.PI / 2;
+    const long = i % 5 === 0;
+    ctx.beginPath();
+    ctx.moveTo(C + Math.cos(a) * (long ? 128 : 136), C + Math.sin(a) * (long ? 128 : 136));
+    ctx.lineTo(C + Math.cos(a) * 141, C + Math.sin(a) * 141);
+    ctx.lineWidth = long ? 4 : 2;
+    ctx.strokeStyle = long ? '#35406B' : '#B9C4E8';
+    ctx.stroke();
+  }
+
+  // numbers
+  ctx.fillStyle = '#35406B';
+  ctx.font = 'bold 26px "Comic Sans MS", "Chalkboard SE", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (let n = 1; n <= 12; n++) {
+    const a = (Math.PI * 2 * n) / 12 - Math.PI / 2;
+    ctx.fillText(String(n), C + Math.cos(a) * 106, C + Math.sin(a) * 106);
+  }
+
+  // hour hand (short, thick) — moves smoothly with the minutes
+  const hourA = (Math.PI * 2 * ((hour % 12) + minute / 60)) / 12 - Math.PI / 2;
+  ctx.beginPath();
+  ctx.moveTo(C, C);
+  ctx.lineTo(C + Math.cos(hourA) * 62, C + Math.sin(hourA) * 62);
+  ctx.lineWidth = 12;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#35406B';
+  ctx.stroke();
+
+  // minute hand (long)
+  const minA = (Math.PI * 2 * minute) / 60 - Math.PI / 2;
+  ctx.beginPath();
+  ctx.moveTo(C, C);
+  ctx.lineTo(C + Math.cos(minA) * 96, C + Math.sin(minA) * 96);
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = '#E85C4A';
+  ctx.stroke();
+
+  // center pin
+  ctx.beginPath();
+  ctx.arc(C, C, 10, 0, Math.PI * 2);
+  ctx.fillStyle = '#FFC93C';
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = '#35406B';
+  ctx.stroke();
+}
+
+/* ==================================================================
+   Time words
+   ================================================================== */
+function timeWords(hour, minute) {
+  const h = ((hour - 1) % 12) + 1;
+  const nextH = (h % 12) + 1;
+  if (minute === 0)  return `${h} o'clock`;
+  if (minute === 30) return `half past ${h}`;
+  if (minute === 15) return `quarter past ${h}`;
+  if (minute === 45) return `quarter to ${nextH}`;
+  return `${h}:${String(minute).padStart(2, '0')}`;
+}
+
+/* ==================================================================
+   Game state + modes
+   ================================================================== */
+const promptEl  = document.getElementById('prompt');
+const starsEl   = document.getElementById('stars');
+const answersEl = document.getElementById('answers');
+const learnControls = document.getElementById('learnControls');
+const menuOverlay   = document.getElementById('menuOverlay');
+const gameWrap      = document.querySelector('.game-wrap');
+
+const state = { mode: null, hour: 3, minute: 0, answer: '', locked: false };
+
+const randInt = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* --- Learn mode --- */
+document.getElementById('hourBtn').addEventListener('click', () => {
+  state.hour = (state.hour % 12) + 1;
+  learnUpdate();
+});
+document.getElementById('minBtn').addEventListener('click', () => {
+  state.minute = (state.minute + 15) % 60;
+  if (state.minute === 0) state.hour = (state.hour % 12) + 1;
+  learnUpdate();
+});
+function learnUpdate() {
+  sndTick();
+  drawClock(state.hour, state.minute);
+  const words = timeWords(state.hour, state.minute);
+  promptEl.textContent = `It is ${words}!`;
+  say(`It is ${words}!`);
+}
+
+/* --- Quiz mode --- */
+function minuteForLevel(level) {
+  if (level === 1) return 0;
+  if (level === 2) return Math.random() < 0.5 ? 0 : 30;
+  return [0, 15, 30, 45][randInt(0, 3)];
+}
+
+function newQuiz() {
+  state.locked = false;
+  state.hour = randInt(1, 12);
+  state.minute = minuteForLevel(state.mode);
+  state.answer = timeWords(state.hour, state.minute);
+  drawClock(state.hour, state.minute);
+  promptEl.textContent = 'What time is it? 🤔';
+
+  // wrong options: different times of the same style
+  const wrong = new Set();
+  while (wrong.size < 2) {
+    const wh = randInt(1, 12);
+    const wm = minuteForLevel(state.mode);
+    const w = timeWords(wh, wm);
+    if (w !== state.answer) wrong.add(w);
+  }
+
+  answersEl.innerHTML = '';
+  shuffle([state.answer, ...wrong]).forEach(w => {
+    const b = document.createElement('button');
+    b.className = 'ans-btn';
+    b.textContent = w;
+    b.addEventListener('click', () => onAnswer(b, w));
+    answersEl.appendChild(b);
+  });
+
+  say('What time is it?');
+}
+
+function onAnswer(btn, w) {
+  if (state.locked) return;
+  if (w === state.answer) {
+    state.locked = true;
+    sndYes();
+    starsEl.textContent = String(parseInt(starsEl.textContent, 10) + 1);
+    const stars = parseInt(starsEl.textContent, 10);
+    promptEl.textContent = `🎉 Yes! It is ${state.answer}!`;
+    if (stars % 5 === 0) { sndWin(); celebrate(); }
+    say(`Yes! It is ${state.answer}! ${stars % 5 === 0 ? 'You are a time-telling star!' : 'Great job!'}`);
+    setTimeout(newQuiz, 1700);
+  } else {
+    btn.classList.remove('wrong');
+    void btn.offsetWidth;
+    btn.classList.add('wrong');
+    sndNo();
+    say(`Not quite. Look at the little hour hand and the big minute hand, and try again!`);
+  }
+}
+
+/* --- Menu wiring --- */
+document.querySelectorAll('.mode-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    const m = b.dataset.mode;
+    menuOverlay.hidden = true;
+    startMusic();
+    if (m === 'learn') {
+      state.mode = 'learn';
+      learnControls.hidden = false;
+      answersEl.hidden = true;
+      state.hour = 3; state.minute = 0;
+      drawClock(3, 0);
+      promptEl.textContent = 'It is 3 o\'clock!';
+      say(`This is a clock! The little hand shows the hour, the big hand shows the minutes. It is 3 o'clock! Press the buttons to move the hands!`);
+    } else {
+      state.mode = parseInt(m, 10);
+      learnControls.hidden = true;
+      answersEl.hidden = false;
+      newQuiz();
+    }
+  });
+});
+document.getElementById('menuBtn').addEventListener('click', () => {
+  state.mode = null;
+  stopMusic();
+  try { window.speechSynthesis.cancel(); } catch (e) {}
+  menuOverlay.hidden = false;
+});
+
+function celebrate() {
+  const emojis = ['🎉', '⭐', '✨', '🕐', '💙'];
+  for (let i = 0; i < 22; i++) {
+    const c = document.createElement('span');
+    c.className = 'confetti';
+    c.textContent = emojis[i % emojis.length];
+    c.style.left = Math.random() * 95 + '%';
+    c.style.animationDuration = (1.4 + Math.random() * 1.4) + 's';
+    c.style.animationDelay = (Math.random() * 0.4) + 's';
+    gameWrap.appendChild(c);
+    setTimeout(() => c.remove(), 3200);
+  }
+}
+
+drawClock(3, 0);
+</script>
+</body>
+</html>

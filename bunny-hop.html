@@ -1,0 +1,998 @@
+<title>Bunny Hop — Free Jumping Game for Kids Ages 4–7 | GameSpace</title>
+<meta name="description" content="Help Bunny jump over friendly mushrooms and beach balls! A free, gentle side-scrolling game for kids ages 4–7 with cheerful music, star collecting and no scary fail states.">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>
+  /* ============================================================
+     BUNNY HOP — a gentle jumping game for ages 4–7
+     All colors / speeds / sizes live in the CONFIG object in JS.
+     ============================================================ */
+
+  :root {
+    --sky-top:    #8ED4F5;
+    --sky-bottom: #D8F2FF;
+    --grass:      #6FCB5A;
+    --coral:      #FF7A59;
+    --coral-dark: #E85C3A;
+    --gold:       #FFC93C;
+    --ink:        #3A4A5A;
+    --cream:      #FFF9EF;
+    --font-kids: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+  }
+
+  body {
+    font-family: var(--font-kids);
+    color: var(--ink);
+    background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 70%, var(--grass) 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 12px 24px;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  h1 {
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    margin: 6px 0 10px;
+    color: #fff;
+    text-shadow: 0 3px 0 rgba(58, 74, 90, 0.25);
+    letter-spacing: 1px;
+    text-wrap: balance;
+  }
+
+  /* --- Game frame ------------------------------------------------ */
+  .game-wrap {
+    position: relative;
+    width: min(100%, 960px);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 12px 32px rgba(40, 80, 120, 0.25);
+    background: var(--sky-top);
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    touch-action: manipulation;
+  }
+
+  /* --- HUD: star score chip -------------------------------------- */
+  .hud {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--cream);
+    border: 3px solid var(--gold);
+    border-radius: 999px;
+    padding: 6px 18px 6px 12px;
+    font-size: clamp(1.1rem, 3vw, 1.5rem);
+    font-weight: bold;
+    box-shadow: 0 3px 0 rgba(58, 74, 90, 0.15);
+  }
+  .hud .star-icon { font-size: 1.2em; }
+
+  .sound-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 1.4rem;
+    background: var(--cream);
+    border: 3px solid #B9DFF5;
+    border-radius: 999px;
+    width: 52px;
+    height: 52px;
+    cursor: pointer;
+    box-shadow: 0 3px 0 rgba(58, 74, 90, 0.15);
+  }
+  .sound-btn:focus-visible { outline: 4px solid var(--gold); }
+  .music-btn { right: 74px; }
+  .music-btn.off { opacity: 0.45; }
+
+  /* --- Overlays (start / oops) ------------------------------------ */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: rgba(255, 249, 239, 0.82);
+    backdrop-filter: blur(2px);
+    text-align: center;
+    padding: 20px;
+  }
+  .overlay[hidden] { display: none; }
+
+  .overlay .big-msg {
+    font-size: clamp(1.6rem, 5vw, 2.6rem);
+    font-weight: bold;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+  .overlay .sub-msg {
+    font-size: clamp(1rem, 3vw, 1.3rem);
+    color: #5A6B7A;
+    max-width: 32ch;
+  }
+
+  /* --- Buttons ----------------------------------------------------- */
+  .btn {
+    font-family: var(--font-kids);
+    font-weight: bold;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    color: #fff;
+    letter-spacing: 1px;
+  }
+  .btn:focus-visible { outline: 5px solid var(--gold); outline-offset: 3px; }
+
+  .btn-primary {
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    padding: 18px 54px;
+    background: var(--coral);
+    box-shadow: 0 6px 0 var(--coral-dark);
+    transition: transform 0.08s ease;
+  }
+  .btn-primary:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 var(--coral-dark);
+  }
+
+  /* The giant JUMP button under the canvas */
+  .jump-btn {
+    margin-top: 18px;
+    font-size: clamp(1.8rem, 6vw, 2.6rem);
+    padding: 22px 0;
+    width: min(100%, 420px);
+    background: var(--coral);
+    box-shadow: 0 8px 0 var(--coral-dark);
+    transition: transform 0.06s ease;
+  }
+  .jump-btn:active {
+    transform: translateY(6px);
+    box-shadow: 0 2px 0 var(--coral-dark);
+  }
+
+  .hint {
+    margin-top: 12px;
+    font-size: 0.95rem;
+    color: #4A6B85;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn-primary, .jump-btn { transition: none; }
+  }
+</style>
+
+<h1>🐰 Bunny Hop!</h1>
+
+<div class="game-wrap">
+  <canvas id="game" width="900" height="500" aria-label="Bunny Hop jumping game"></canvas>
+
+  <div class="hud" aria-live="polite">
+    <span class="star-icon">⭐</span>
+    <span>Stars: <span id="score">0</span></span>
+  </div>
+
+  <button class="sound-btn" id="soundBtn" aria-label="Turn sound on or off">🔊</button>
+  <button class="sound-btn music-btn" id="musicBtn" aria-label="Turn music on or off">🎵</button>
+
+  <!-- Start screen -->
+  <div class="overlay" id="startOverlay">
+    <div class="big-msg">Help Bunny hop over the mushrooms!</div>
+    <div class="sub-msg">Press the big JUMP button, tap the screen, or press the space bar.</div>
+    <button class="btn btn-primary" id="startBtn">▶ START</button>
+  </div>
+
+  <!-- Gentle "oops" screen — no scary fail state -->
+  <div class="overlay" id="oopsOverlay" hidden>
+    <div class="big-msg">Oops! Let's try again! 💛</div>
+    <div class="sub-msg">You collected <strong><span id="finalScore">0</span> stars</strong>. Amazing hopping!</div>
+    <button class="btn btn-primary" id="againBtn">🔄 Play Again</button>
+  </div>
+</div>
+
+<button class="jump-btn btn" id="jumpBtn" aria-label="Jump">⬆ JUMP!</button>
+<div class="hint">Keyboard: Space or ↑ to jump</div>
+
+<script>
+/* ==================================================================
+   CONFIG — tweak the game here!
+   All speeds are in pixels-per-second, so the game feels the same
+   on fast and slow screens.
+   ================================================================== */
+const CONFIG = {
+  // World
+  width: 900,
+  height: 500,
+  groundY: 410,            // top of the grass
+
+  // Difficulty (kept gentle for ages 4–7)
+  startSpeed: 250,         // world scroll speed at the start
+  maxSpeed: 360,           // speed never exceeds this
+  speedRamp: 3,            // +px/s every second (very gradual)
+  spawnGapMin: 1.6,        // seconds between obstacles (min)
+  spawnGapMax: 2.6,        // seconds between obstacles (max)
+
+  // Bunny physics
+  playerX: 150,            // bunny's fixed x position
+  gravity: 2300,
+  jumpVelocity: -930,      // negative = up. Bigger magnitude = higher jump
+  coyoteTime: 0.12,        // grace period after leaving the ground
+  jumpBuffer: 0.14,        // early-press forgiveness before landing
+
+  // Forgiving hitboxes: shrink everything so near-misses still pass
+  playerPad: 12,
+  obstaclePad: 8,
+
+  // Colors (bunny + world)
+  colors: {
+    bunny:      '#FFF6EC',
+    bunnyEar:   '#FFC9D4',
+    bunnyCheek: '#FFB3C1',
+    mushCap:    '#FF6B6B',
+    mushSpot:   '#FFF6EC',
+    mushStem:   '#FFE8D6',
+    log:        '#A8734B',
+    logEnd:     '#D9A876',
+    ball1:      '#FF7A59',
+    ball2:      '#4EC3E0',
+    star:       '#FFC93C',
+    grass:      '#6FCB5A',
+    grassDark:  '#57B446',
+    hillFar:    '#A5DE8F',
+    hillNear:   '#84D06C',
+    sun:        '#FFDD55',
+    cloud:      '#FFFFFF'
+  },
+
+  cheers: ['Yay!', 'Woohoo!', 'Great jump!', 'Super!', 'Hooray!', 'Nice hop!']
+};
+
+/* ==================================================================
+   Setup
+   ================================================================== */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = CONFIG.width, H = CONFIG.height;
+
+const scoreEl      = document.getElementById('score');
+const finalScoreEl = document.getElementById('finalScore');
+const startOverlay = document.getElementById('startOverlay');
+const oopsOverlay  = document.getElementById('oopsOverlay');
+
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ==================================================================
+   Tiny sound helper (WebAudio beeps — no audio files needed)
+   ================================================================== */
+let audioCtx = null;
+let soundOn = true;
+
+function beep(freq, duration, type = 'sine', volume = 0.15, slideTo = null) {
+  if (!soundOn) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, audioCtx.currentTime + duration);
+    gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  } catch (e) { /* audio unavailable — game still works fine */ }
+}
+const sndJump  = () => beep(300, 0.25, 'sine', 0.12, 620);       // happy "boing"
+const sndStar  = () => { beep(880, 0.12, 'triangle'); setTimeout(() => beep(1320, 0.18, 'triangle'), 90); };
+const sndOops  = () => beep(320, 0.4, 'sine', 0.1, 180);         // soft "aww", not harsh
+
+document.getElementById('soundBtn').addEventListener('click', (e) => {
+  soundOn = !soundOn;
+  e.currentTarget.textContent = soundOn ? '🔊' : '🔇';
+});
+
+/* ==================================================================
+   Background music — a happy looping chiptune, generated live
+   with WebAudio (no audio files). Plays while the bunny is running.
+   ================================================================== */
+let musicOn = true;
+let musicTimer = null;
+let musicStep = 0;
+let musicNextTime = 0;
+
+// note name ("C5", "F#4") → frequency in Hz
+const NOTE = (() => {
+  const semis = { C: 0, 'C#': 1, D: 2, 'D#': 3, E: 4, F: 5, 'F#': 6, G: 7, 'G#': 8, A: 9, 'A#': 10, B: 11 };
+  return (n) => {
+    const m = n.match(/^([A-G]#?)(\d)$/);
+    return 440 * Math.pow(2, (semis[m[1]] + (parseInt(m[2], 10) - 4) * 12 - 9) / 12);
+  };
+})();
+
+// 4 bars of bouncy melody in C major (8th notes), null = rest
+const MELODY = [
+  'C5', 'E5', 'G5', 'E5', 'A5', 'G5', 'E5', 'G5',
+  'F5', 'A5', 'C6', 'A5', 'G5', 'E5', 'C5', 'E5',
+  'D5', 'F5', 'A5', 'F5', 'G5', 'B5', 'D6', 'B5',
+  'C6', 'G5', 'E5', 'G5', 'C5', null, 'C5', null
+];
+// simple oom-pah bass under the melody
+const BASS = [
+  'C3', null, 'G3', null, 'A3', null, 'G3', null,
+  'F3', null, 'C4', null, 'C3', null, 'G3', null,
+  'D3', null, 'F3', null, 'G3', null, 'G3', null,
+  'C3', null, 'G3', null, 'C3', null, 'C3', null
+];
+const STEP_LEN = 60 / 132 / 2;   // 8th notes at a cheerful 132 BPM
+
+function playNote(freq, t, dur, type, vol) {
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  osc.connect(g).connect(audioCtx.destination);
+  osc.start(t);
+  osc.stop(t + dur);
+}
+
+// lookahead scheduler: queue up any notes due in the next 150ms
+function scheduleMusic() {
+  while (musicNextTime < audioCtx.currentTime + 0.15) {
+    const m = MELODY[musicStep % MELODY.length];
+    const b = BASS[musicStep % BASS.length];
+    if (m) playNote(NOTE(m), musicNextTime, STEP_LEN * 0.9, 'square', 0.035);
+    if (b) playNote(NOTE(b), musicNextTime, STEP_LEN * 1.8, 'triangle', 0.06);
+    musicNextTime += STEP_LEN;
+    musicStep++;
+  }
+}
+
+function startMusic() {
+  if (!musicOn || musicTimer) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    musicStep = 0;
+    musicNextTime = audioCtx.currentTime + 0.05;
+    musicTimer = setInterval(scheduleMusic, 50);
+  } catch (e) { /* no audio — game still works */ }
+}
+
+function stopMusic() {
+  clearInterval(musicTimer);
+  musicTimer = null;
+}
+
+document.getElementById('musicBtn').addEventListener('click', (e) => {
+  musicOn = !musicOn;
+  e.currentTarget.classList.toggle('off', !musicOn);
+  if (!musicOn) stopMusic();
+  else if (state.mode === 'playing') startMusic();
+});
+
+/* ==================================================================
+   Game state
+   ================================================================== */
+const state = {
+  mode: 'start',           // 'start' | 'playing' | 'oops'
+  speed: CONFIG.startSpeed,
+  score: 0,
+  time: 0,
+
+  // Bunny
+  py: CONFIG.groundY,      // bunny's feet y
+  vy: 0,
+  grounded: true,
+  coyote: 0,
+  jumpBufferT: 0,
+  squash: 0,               // landing squash timer (for cute animation)
+
+  obstacles: [],           // {type, x, w, h, cleared, rot}
+  stars: [],               // floating pickups {x, y, collected}
+  particles: [],           // celebration bursts
+  popups: [],              // "Yay!" texts
+
+  spawnTimer: 1.2,
+  starTimer: 3.5,
+
+  // Scenery
+  clouds: [
+    { x: 120, y: 70,  s: 1.0, drift: 18 },
+    { x: 480, y: 120, s: 0.7, drift: 12 },
+    { x: 760, y: 55,  s: 1.2, drift: 24 }
+  ],
+  groundOffset: 0,
+  hillOffsetFar: 0,
+  hillOffsetNear: 0,
+  flowers: []
+};
+
+// Pre-place flowers along the ground (they scroll and wrap around)
+for (let i = 0; i < 14; i++) {
+  state.flowers.push({
+    x: Math.random() * W,
+    y: CONFIG.groundY + 20 + Math.random() * 55,
+    hue: ['#FF8FAB', '#FFD166', '#B58CF0', '#7FD8F7'][i % 4],
+    size: 5 + Math.random() * 4
+  });
+}
+
+function resetGame() {
+  state.speed = CONFIG.startSpeed;
+  state.score = 0;
+  state.time = 0;
+  state.py = CONFIG.groundY;
+  state.vy = 0;
+  state.grounded = true;
+  state.coyote = 0;
+  state.jumpBufferT = 0;
+  state.squash = 0;
+  state.obstacles = [];
+  state.stars = [];
+  state.particles = [];
+  state.popups = [];
+  state.spawnTimer = 1.4;
+  state.starTimer = 3.0;
+  scoreEl.textContent = '0';
+}
+
+/* ==================================================================
+   Input — button, tap, keyboard. Jump buffering makes it forgiving.
+   ================================================================== */
+function requestJump() {
+  if (state.mode !== 'playing') return;
+  state.jumpBufferT = CONFIG.jumpBuffer;
+}
+
+function doJump() {
+  state.vy = CONFIG.jumpVelocity;
+  state.grounded = false;
+  state.coyote = 0;
+  state.jumpBufferT = 0;
+  sndJump();
+}
+
+const jumpBtn = document.getElementById('jumpBtn');
+jumpBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); requestJump(); });
+canvas.addEventListener('pointerdown', () => requestJump());
+
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' || e.code === 'ArrowUp') {
+    // don't jump when a button has focus and space would "click" it twice
+    if (document.activeElement && document.activeElement.tagName === 'BUTTON') {
+      if (document.activeElement.id === 'jumpBtn') e.preventDefault();
+      else return;
+    }
+    e.preventDefault();
+    if (!e.repeat) requestJump();
+  }
+});
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  startOverlay.hidden = true;
+  resetGame();
+  state.mode = 'playing';
+  startMusic();
+});
+
+document.getElementById('againBtn').addEventListener('click', () => {
+  oopsOverlay.hidden = true;
+  resetGame();
+  state.mode = 'playing';
+  startMusic();
+});
+
+/* ==================================================================
+   Spawning
+   ================================================================== */
+function spawnObstacle() {
+  const types = ['mushroom', 'log', 'ball'];
+  const type = types[Math.floor(Math.random() * types.length)];
+  let w, h;
+  if (type === 'mushroom')      { w = 54; h = 58; }
+  else if (type === 'log')      { w = 92; h = 44; }
+  else /* ball */               { w = 52; h = 52; }
+  state.obstacles.push({ type, x: W + 60, w, h, cleared: false, rot: 0 });
+}
+
+function spawnStar() {
+  // Place a star at comfortable jump-arc height so grabbing it feels natural
+  state.stars.push({ x: W + 40, y: CONFIG.groundY - 130 - Math.random() * 40, collected: false, wobble: Math.random() * 6.28 });
+}
+
+/* ==================================================================
+   Celebration effects
+   ================================================================== */
+function burst(x, y) {
+  const n = reducedMotion ? 6 : 16;
+  for (let i = 0; i < n; i++) {
+    const a = (Math.PI * 2 * i) / n + Math.random() * 0.5;
+    const sp = 120 + Math.random() * 160;
+    state.particles.push({
+      x, y,
+      vx: Math.cos(a) * sp,
+      vy: Math.sin(a) * sp - 80,
+      life: 0.9,
+      color: ['#FFC93C', '#FF8FAB', '#7FD8F7', '#B58CF0', '#8CE99A'][i % 5],
+      size: 4 + Math.random() * 4,
+      rot: Math.random() * 6.28
+    });
+  }
+}
+
+function cheerPopup(x, y) {
+  const word = CONFIG.cheers[Math.floor(Math.random() * CONFIG.cheers.length)];
+  state.popups.push({ x, y, text: word, life: 1.0 });
+}
+
+function addStarScore(x, y) {
+  state.score++;
+  scoreEl.textContent = String(state.score);
+  burst(x, y);
+  cheerPopup(x, y - 30);
+}
+
+/* ==================================================================
+   Update loop
+   ================================================================== */
+function update(dt) {
+  if (state.mode !== 'playing') return;
+
+  state.time += dt;
+  state.speed = Math.min(CONFIG.maxSpeed, state.speed + CONFIG.speedRamp * dt);
+
+  /* --- Bunny physics with coyote time + jump buffer --- */
+  if (state.grounded) state.coyote = CONFIG.coyoteTime;
+  else state.coyote = Math.max(0, state.coyote - dt);
+
+  if (state.jumpBufferT > 0) {
+    state.jumpBufferT -= dt;
+    if (state.grounded || state.coyote > 0) doJump();
+  }
+
+  if (!state.grounded) {
+    state.vy += CONFIG.gravity * dt;
+    state.py += state.vy * dt;
+    if (state.py >= CONFIG.groundY) {          // landed
+      state.py = CONFIG.groundY;
+      state.vy = 0;
+      state.grounded = true;
+      state.squash = 0.18;                     // little landing squash
+    }
+  }
+  if (state.squash > 0) state.squash -= dt;
+
+  /* --- Scroll scenery --- */
+  state.groundOffset   = (state.groundOffset   + state.speed * dt)        % 80;
+  state.hillOffsetFar  = (state.hillOffsetFar  + state.speed * dt * 0.15) % (W * 2);
+  state.hillOffsetNear = (state.hillOffsetNear + state.speed * dt * 0.35) % (W * 2);
+  for (const c of state.clouds) {
+    c.x -= c.drift * dt;
+    if (c.x < -160) c.x = W + 160;
+  }
+  for (const f of state.flowers) {
+    f.x -= state.speed * dt;
+    if (f.x < -20) f.x = W + Math.random() * 60;
+  }
+
+  /* --- Spawning --- */
+  state.spawnTimer -= dt;
+  if (state.spawnTimer <= 0) {
+    spawnObstacle();
+    state.spawnTimer = CONFIG.spawnGapMin + Math.random() * (CONFIG.spawnGapMax - CONFIG.spawnGapMin);
+  }
+  state.starTimer -= dt;
+  if (state.starTimer <= 0) {
+    spawnStar();
+    state.starTimer = 4 + Math.random() * 4;
+  }
+
+  /* --- Obstacles: move, detect clears + collisions --- */
+  const px = CONFIG.playerX;
+  const pTop = state.py - 62;                  // bunny is ~62px tall
+  const pPad = CONFIG.playerPad;
+  const pL = px - 24 + pPad, pR = px + 24 - pPad;
+  const pT = pTop + pPad,    pB = state.py - 2;
+
+  for (const o of state.obstacles) {
+    o.x -= state.speed * dt;
+    if (o.type === 'ball') o.rot -= (state.speed * dt) / 26;  // roll
+
+    const oPad = CONFIG.obstaclePad;
+    const oL = o.x - o.w / 2 + oPad, oR = o.x + o.w / 2 - oPad;
+    const oT = CONFIG.groundY - o.h + oPad;
+
+    // Collision (AABB, generous padding)
+    if (pR > oL && pL < oR && pB > oT) {
+      gentleOops();
+      return;
+    }
+    // Cleared! Obstacle fully passed behind the bunny
+    if (!o.cleared && oR < pL) {
+      o.cleared = true;
+      addStarScore(o.x, CONFIG.groundY - o.h - 10);
+      sndStar();
+    }
+  }
+  state.obstacles = state.obstacles.filter(o => o.x > -120);
+
+  /* --- Star pickups --- */
+  for (const s of state.stars) {
+    s.x -= state.speed * dt;
+    s.wobble += dt * 3;
+    if (!s.collected &&
+        Math.abs(s.x - px) < 44 &&
+        Math.abs(s.y - (state.py - 34)) < 52) {
+      s.collected = true;
+      addStarScore(s.x, s.y);
+      sndStar();
+    }
+  }
+  state.stars = state.stars.filter(s => s.x > -40 && !s.collected);
+
+  /* --- Particles + popups --- */
+  for (const p of state.particles) {
+    p.vy += 500 * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.rot += dt * 5;
+    p.life -= dt;
+  }
+  state.particles = state.particles.filter(p => p.life > 0);
+
+  for (const t of state.popups) { t.y -= 55 * dt; t.life -= dt; }
+  state.popups = state.popups.filter(t => t.life > 0);
+}
+
+function gentleOops() {
+  state.mode = 'oops';
+  stopMusic();
+  sndOops();
+  finalScoreEl.textContent = String(state.score);
+  // small delay so kids see where they bumped, then the friendly overlay
+  setTimeout(() => { oopsOverlay.hidden = false; }, 450);
+}
+
+/* ==================================================================
+   Drawing
+   ================================================================== */
+const C = CONFIG.colors;
+
+function drawBackground() {
+  // Sky
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#8ED4F5');
+  sky.addColorStop(0.75, '#D8F2FF');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, H);
+
+  // Sun with soft rays
+  ctx.save();
+  ctx.translate(W - 110, 80);
+  ctx.fillStyle = C.sun;
+  ctx.globalAlpha = 0.35;
+  for (let i = 0; i < 8; i++) {
+    ctx.save();
+    ctx.rotate((Math.PI / 4) * i + state.time * 0.15);
+    ctx.fillRect(-6, -78, 12, 34);
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+  ctx.beginPath();
+  ctx.arc(0, 0, 42, 0, Math.PI * 2);
+  ctx.fill();
+  // smiley sun face
+  ctx.fillStyle = '#E8A800';
+  ctx.beginPath(); ctx.arc(-13, -6, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(13, -6, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#E8A800';
+  ctx.lineWidth = 3.5;
+  ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(0, 4, 14, 0.25 * Math.PI, 0.75 * Math.PI); ctx.stroke();
+  ctx.restore();
+
+  // Clouds
+  ctx.fillStyle = C.cloud;
+  for (const c of state.clouds) drawCloud(c.x, c.y, c.s);
+
+  // Parallax hills
+  drawHills(state.hillOffsetFar, C.hillFar, 90);
+  drawHills(state.hillOffsetNear, C.hillNear, 55);
+
+  // Grass
+  ctx.fillStyle = C.grass;
+  ctx.fillRect(0, CONFIG.groundY, W, H - CONFIG.groundY);
+  // grass tufts scrolling
+  ctx.fillStyle = C.grassDark;
+  for (let x = -state.groundOffset; x < W; x += 80) {
+    ctx.beginPath();
+    ctx.ellipse(x + 20, CONFIG.groundY + 6, 26, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Flowers
+  for (const f of state.flowers) drawFlower(f);
+}
+
+function drawCloud(x, y, s) {
+  ctx.beginPath();
+  ctx.arc(x, y, 26 * s, 0, Math.PI * 2);
+  ctx.arc(x + 30 * s, y + 6 * s, 20 * s, 0, Math.PI * 2);
+  ctx.arc(x - 30 * s, y + 8 * s, 18 * s, 0, Math.PI * 2);
+  ctx.arc(x + 6 * s, y - 14 * s, 18 * s, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawHills(offset, color, height) {
+  ctx.fillStyle = color;
+  const baseY = CONFIG.groundY;
+  const hw = 260;                                 // half-width of each hill
+  const start = -((offset) % hw) - hw;
+  for (let x = start; x < W + hw; x += hw) {
+    ctx.beginPath();
+    ctx.arc(x + hw / 2, baseY + 30, height + 40, Math.PI, 0);
+    ctx.fill();
+  }
+}
+
+function drawFlower(f) {
+  ctx.save();
+  ctx.translate(f.x, f.y);
+  ctx.fillStyle = f.hue;
+  for (let i = 0; i < 5; i++) {
+    const a = (Math.PI * 2 * i) / 5;
+    ctx.beginPath();
+    ctx.arc(Math.cos(a) * f.size, Math.sin(a) * f.size, f.size * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = '#FFE066';
+  ctx.beginPath();
+  ctx.arc(0, 0, f.size * 0.55, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+/* --- The bunny 🐰 (drawn with circles — easy to recolor in CONFIG) --- */
+function drawBunny() {
+  const x = CONFIG.playerX;
+  const y = state.py;                       // feet position
+  const airborne = !state.grounded;
+
+  // squash & stretch for a lively feel
+  let sx = 1, sy = 1;
+  if (state.squash > 0)      { sx = 1.15; sy = 0.85; }
+  else if (airborne)         { sx = 0.92; sy = 1.1; }
+  const hopBob = state.grounded && !reducedMotion ? Math.sin(state.time * 14) * 2 : 0;
+
+  ctx.save();
+  ctx.translate(x, y + hopBob);
+  ctx.scale(sx, sy);
+
+  // shadow (stays on ground, fades with height)
+  ctx.restore();
+  const shadowScale = Math.max(0.35, 1 - (CONFIG.groundY - y) / 260);
+  ctx.save();
+  ctx.globalAlpha = 0.18 * shadowScale;
+  ctx.fillStyle = '#2A4A2A';
+  ctx.beginPath();
+  ctx.ellipse(x, CONFIG.groundY + 8, 32 * shadowScale, 8 * shadowScale, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(x, y + hopBob);
+  ctx.scale(sx, sy);
+
+  // ears (tilt back a little when jumping)
+  const earTilt = airborne ? 0.35 : 0.08;
+  ctx.fillStyle = C.bunny;
+  for (const side of [-1, 1]) {
+    ctx.save();
+    ctx.translate(side * 10, -52);
+    ctx.rotate(side * earTilt);
+    ctx.beginPath();
+    ctx.ellipse(0, -16, 8, 20, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = C.bunnyEar;
+    ctx.beginPath();
+    ctx.ellipse(0, -15, 4, 13, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = C.bunny;
+    ctx.restore();
+  }
+
+  // body
+  ctx.beginPath();
+  ctx.ellipse(0, -22, 24, 24, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // head
+  ctx.beginPath();
+  ctx.arc(2, -46, 17, 0, Math.PI * 2);
+  ctx.fill();
+  // fluffy tail
+  ctx.beginPath();
+  ctx.arc(-22, -16, 8, 0, Math.PI * 2);
+  ctx.fill();
+
+  // face
+  ctx.fillStyle = '#3A4A5A';
+  ctx.beginPath(); ctx.arc(8, -48, 2.6, 0, Math.PI * 2); ctx.fill();   // eye
+  ctx.beginPath(); ctx.arc(-4, -48, 2.6, 0, Math.PI * 2); ctx.fill();  // eye
+  ctx.fillStyle = C.bunnyCheek;
+  ctx.beginPath(); ctx.arc(12, -42, 3.5, 0, Math.PI * 2); ctx.fill();  // cheek
+  ctx.beginPath(); ctx.arc(-8, -42, 3.5, 0, Math.PI * 2); ctx.fill();  // cheek
+  ctx.fillStyle = '#FF8FAB';
+  ctx.beginPath(); ctx.arc(2, -43, 2.2, 0, Math.PI * 2); ctx.fill();   // nose
+  // smile
+  ctx.strokeStyle = '#3A4A5A';
+  ctx.lineWidth = 1.8;
+  ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(2, -41, 5, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+
+  // feet (tuck when airborne)
+  ctx.fillStyle = C.bunny;
+  if (airborne) {
+    ctx.beginPath(); ctx.ellipse(6, -4, 10, 6, -0.4, 0, Math.PI * 2); ctx.fill();
+  } else {
+    ctx.beginPath(); ctx.ellipse(10, -2, 11, 6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-10, -2, 11, 6, 0, 0, Math.PI * 2); ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+/* --- Obstacles: friendly mushroom, log, beach ball --- */
+function drawObstacle(o) {
+  const gy = CONFIG.groundY;
+  ctx.save();
+  ctx.translate(o.x, gy);
+
+  if (o.type === 'mushroom') {
+    // stem
+    ctx.fillStyle = C.mushStem;
+    ctx.beginPath();
+    ctx.roundRect(-13, -34, 26, 34, 8);
+    ctx.fill();
+    // cap
+    ctx.fillStyle = C.mushCap;
+    ctx.beginPath();
+    ctx.arc(0, -32, 28, Math.PI, 0);
+    ctx.closePath();
+    ctx.fill();
+    // spots
+    ctx.fillStyle = C.mushSpot;
+    ctx.beginPath(); ctx.arc(-11, -42, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(9, -46, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(2, -36, 3, 0, Math.PI * 2); ctx.fill();
+    // sleepy happy face on the stem
+    ctx.fillStyle = '#C98960';
+    ctx.beginPath(); ctx.arc(-6, -22, 1.8, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(6, -22, 1.8, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#C98960'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(0, -19, 4, 0.2 * Math.PI, 0.8 * Math.PI); ctx.stroke();
+
+  } else if (o.type === 'log') {
+    ctx.fillStyle = C.log;
+    ctx.beginPath();
+    ctx.roundRect(-o.w / 2, -o.h, o.w, o.h, 14);
+    ctx.fill();
+    // end circle (tree rings)
+    ctx.fillStyle = C.logEnd;
+    ctx.beginPath();
+    ctx.ellipse(-o.w / 2 + 10, -o.h / 2, 10, o.h / 2 - 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = C.log;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(-o.w / 2 + 10, -o.h / 2, 5, o.h / 4, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    // bark lines
+    ctx.strokeStyle = '#8A5A38';
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(6, -o.h + 10); ctx.lineTo(24, -o.h + 12); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(10, -14); ctx.lineTo(30, -12); ctx.stroke();
+
+  } else { // rolling beach ball
+    const r = o.w / 2;
+    ctx.translate(0, -r);
+    ctx.rotate(o.rot);
+    for (let i = 0; i < 6; i++) {
+      ctx.fillStyle = i % 2 ? C.ball1 : C.ball2;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, r, (i * Math.PI) / 3, ((i + 1) * Math.PI) / 3);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = '#FFF';
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.28, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawStar(x, y, r, rot = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  ctx.beginPath();
+  for (let i = 0; i < 5; i++) {
+    const a = (Math.PI * 2 * i) / 5 - Math.PI / 2;
+    const a2 = a + Math.PI / 5;
+    ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    ctx.lineTo(Math.cos(a2) * r * 0.45, Math.sin(a2) * r * 0.45);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawEffects() {
+  // particles
+  for (const p of state.particles) {
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = p.color;
+    drawStar(p.x, p.y, p.size, p.rot);
+  }
+  ctx.globalAlpha = 1;
+
+  // cheer popups
+  for (const t of state.popups) {
+    ctx.globalAlpha = Math.min(1, t.life * 1.6);
+    ctx.font = 'bold 30px "Comic Sans MS", "Chalkboard SE", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = '#FFF';
+    ctx.strokeText(t.text, t.x, t.y);
+    ctx.fillStyle = '#FF7A59';
+    ctx.fillText(t.text, t.x, t.y);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function draw() {
+  drawBackground();
+  for (const s of state.stars) {
+    ctx.fillStyle = C.star;
+    drawStar(s.x, s.y + Math.sin(s.wobble) * 5, 15, Math.sin(s.wobble * 0.7) * 0.2);
+  }
+  for (const o of state.obstacles) drawObstacle(o);
+  drawBunny();
+  drawEffects();
+}
+
+/* ==================================================================
+   Main loop
+   ================================================================== */
+let lastT = performance.now();
+function frame(now) {
+  // clamp dt so a background tab doesn't cause a giant physics step
+  const dt = Math.min(0.033, (now - lastT) / 1000);
+  lastT = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>

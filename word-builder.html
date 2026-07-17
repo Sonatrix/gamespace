@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Word Builder — Free Spelling &amp; Phonics Game for Kids | GameSpace</title>
+<meta name="description" content="Spell your first words! Kids tap letter tiles to build CAT, DOG, FISH and STAR while every letter speaks its phonics sound, then blends into the whole word. Free, ages 4–6.">
+<style>
+  /* ============================================================
+     WORD BUILDER — spell your first words! (ages 4–6)
+     A picture appears (🐱), the voice says "Can you spell CAT?",
+     and the child taps letter tiles into the slots. Every tile
+     speaks its phonic sound; finishing a word blends the sounds:
+     "c... a... t... CAT!" with a celebration.
+
+     Guided mode: only the next correct letter clicks into place —
+     wrong tiles wiggle and say their sound, so there is no fail.
+     ============================================================ */
+
+  :root {
+    --sky:      #E8ECFB;
+    --board:    #FFFFFF;
+    --ink:      #3D3A6B;
+    --violet:   #6C63D2;
+    --violet-dk:#5350AD;
+    --gold:     #FFC93C;
+    --good:     #58B368;
+    --good-dk:  #3F9450;
+    --wood:     #F3D9A6;
+    --wood-dk:  #D9B36C;
+    --font-kids: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+
+  body {
+    font-family: var(--font-kids);
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 12% 15%, #F5E8FB 0%, transparent 40%),
+      radial-gradient(circle at 88% 85%, #DDF3F8 0%, transparent 40%),
+      var(--sky);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 10px 24px;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  h1 {
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    margin: 4px 0 8px;
+    color: var(--violet);
+    text-shadow: 0 2px 0 #FFF;
+    letter-spacing: 1px;
+  }
+
+  .game-wrap {
+    position: relative;
+    width: min(100%, 720px);
+    min-height: 580px;
+    border-radius: 26px;
+    background: var(--board);
+    border: 5px solid #D5D9F2;
+    box-shadow: 0 12px 30px rgba(70, 60, 140, 0.22);
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    overflow: hidden;
+  }
+
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    background: #FFF;
+    border: 3px solid var(--gold);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-weight: bold;
+    font-size: clamp(0.9rem, 2.6vw, 1.15rem);
+  }
+  .toggles { display: flex; gap: 6px; }
+  .icon-btn {
+    font-size: 1.15rem;
+    background: #FFF;
+    border: 3px solid #D5D9F2;
+    border-radius: 999px;
+    width: 46px; height: 46px;
+    cursor: pointer;
+  }
+  .icon-btn.off { opacity: 0.45; }
+  .icon-btn:focus-visible { outline: 4px solid var(--gold); }
+
+  /* --- The picture ---------------------------------------------------- */
+  .picture-zone { text-align: center; padding: 6px 0 0; }
+  .picture {
+    font-size: clamp(4.5rem, 16vw, 7rem);
+    line-height: 1.15;
+    display: inline-block;
+  }
+  .picture.happy { animation: happyBounce 0.7s ease 2; }
+  @keyframes happyBounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    35%      { transform: translateY(-22px) scale(1.15) rotate(-5deg); }
+    70%      { transform: translateY(0) scale(1.02) rotate(3deg); }
+  }
+  .prompt {
+    text-align: center;
+    font-size: clamp(1.1rem, 3.4vw, 1.5rem);
+    font-weight: bold;
+    min-height: 2em;
+    margin: 4px 10px;
+    text-wrap: balance;
+  }
+  .hear-btn {
+    font-family: var(--font-kids);
+    font-size: 1rem;
+    font-weight: bold;
+    background: #FFF;
+    color: var(--ink);
+    border: 3px solid #D5D9F2;
+    border-radius: 999px;
+    padding: 8px 20px;
+    cursor: pointer;
+    margin: 0 auto;
+    display: block;
+  }
+  .hear-btn:focus-visible { outline: 4px solid var(--gold); }
+
+  /* --- Letter slots ------------------------------------------------------ */
+  .slots {
+    display: flex;
+    justify-content: center;
+    gap: clamp(8px, 2.4vw, 16px);
+    padding: 18px 8px 8px;
+  }
+  .slot {
+    width: clamp(60px, 15vw, 92px);
+    height: clamp(66px, 16vw, 100px);
+    border: 4px dashed var(--violet);
+    border-radius: 18px;
+    background: #F4F3FC;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(2.2rem, 9vw, 3.6rem);
+    font-weight: bold;
+    color: var(--violet);
+    text-transform: uppercase;
+  }
+  .slot.filled {
+    border-style: solid;
+    border-color: var(--good);
+    background: #F0FAF0;
+    color: var(--good-dk);
+    animation: slotPop 0.35s cubic-bezier(0.2, 1.6, 0.4, 1);
+  }
+  @keyframes slotPop {
+    0% { transform: scale(0.4); }
+    100% { transform: scale(1); }
+  }
+  .slot.next { box-shadow: 0 0 0 4px rgba(255, 201, 60, 0.55); }
+
+  /* --- Letter tiles -------------------------------------------------------- */
+  .tiles {
+    display: flex;
+    justify-content: center;
+    gap: clamp(8px, 2.4vw, 16px);
+    flex-wrap: wrap;
+    padding: 20px 10px 24px;
+  }
+  .tile {
+    font-family: var(--font-kids);
+    width: clamp(60px, 15vw, 92px);
+    height: clamp(66px, 16vw, 100px);
+    font-size: clamp(2.2rem, 9vw, 3.6rem);
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #7A5A26;
+    background: linear-gradient(180deg, #FAE8C4, var(--wood));
+    border: 4px solid var(--wood-dk);
+    border-radius: 18px;
+    cursor: pointer;
+    box-shadow: 0 6px 0 var(--wood-dk);
+    transition: transform 0.08s ease, opacity 0.3s ease;
+  }
+  .tile:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--wood-dk); }
+  .tile:focus-visible { outline: 5px solid var(--gold); }
+  .tile.used { opacity: 0; pointer-events: none; transform: scale(0.3); }
+  .tile.wrong { animation: shakeNo 0.45s ease; }
+  @keyframes shakeNo {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-9px); }
+    50% { transform: translateX(8px); }
+    75% { transform: translateX(-5px); }
+  }
+
+  .actions { text-align: center; padding-bottom: 16px; }
+  .big-btn {
+    font-family: var(--font-kids);
+    font-size: clamp(1.2rem, 4vw, 1.6rem);
+    font-weight: bold;
+    color: #FFF;
+    background: var(--good);
+    border: none;
+    border-radius: 999px;
+    padding: 15px 44px;
+    cursor: pointer;
+    box-shadow: 0 6px 0 var(--good-dk);
+    letter-spacing: 1px;
+  }
+  .big-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--good-dk); }
+  .big-btn:focus-visible { outline: 5px solid var(--gold); outline-offset: 3px; }
+  .big-btn[hidden] { display: none; }
+
+  /* --- Menu overlay ----------------------------------------------------------- */
+  .overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 16px;
+    background: rgba(255, 255, 255, 0.95);
+    text-align: center;
+    padding: 20px;
+    z-index: 10;
+  }
+  .overlay[hidden] { display: none; }
+  .overlay .big-msg { font-size: clamp(1.4rem, 4.5vw, 2.1rem); font-weight: bold; text-wrap: balance; }
+  .mode-buttons { display: flex; flex-direction: column; gap: 12px; width: min(100%, 340px); }
+  .mode-btn {
+    font-family: var(--font-kids);
+    font-size: clamp(1.1rem, 3.5vw, 1.45rem);
+    font-weight: bold;
+    color: #FFF;
+    border: none;
+    border-radius: 999px;
+    padding: 16px 20px;
+    cursor: pointer;
+  }
+  .mode-btn small { display: block; font-size: 0.72em; font-weight: normal; opacity: 0.95; }
+  .mode-btn:active { transform: translateY(3px); }
+  .mode-btn:focus-visible { outline: 5px solid var(--gold); outline-offset: 3px; }
+  .m3 { background: var(--good);   box-shadow: 0 6px 0 var(--good-dk); }
+  .m4 { background: var(--violet); box-shadow: 0 6px 0 var(--violet-dk); }
+
+  .confetti {
+    position: absolute; top: -20px;
+    font-size: 1.4rem;
+    animation: confettiFall linear forwards;
+    pointer-events: none;
+    z-index: 12;
+  }
+  @keyframes confettiFall { to { transform: translateY(660px) rotate(720deg); opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .picture.happy, .slot.filled, .tile.wrong { animation: none; }
+    .confetti { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🧱 Word Builder!</h1>
+
+<div class="game-wrap">
+  <div class="topbar">
+    <div class="chip">⭐ <span id="stars">0</span></div>
+    <div class="toggles">
+      <button class="icon-btn" id="menuBtn" aria-label="Back to menu">🏠</button>
+      <button class="icon-btn" id="musicBtn" aria-label="Turn music on or off">🎵</button>
+      <button class="icon-btn" id="voiceBtn" aria-label="Turn the talking voice on or off">🗣️</button>
+      <button class="icon-btn" id="soundBtn" aria-label="Turn sounds on or off">🔊</button>
+    </div>
+  </div>
+
+  <div class="picture-zone"><span class="picture" id="picture">🐱</span></div>
+  <div class="prompt" id="prompt">Can you spell CAT?</div>
+  <button class="hear-btn" id="hearBtn">🔁 Hear the word again</button>
+
+  <div class="slots" id="slots"></div>
+  <div class="tiles" id="tiles"></div>
+
+  <div class="actions">
+    <button class="big-btn" id="nextBtn" hidden>▶ Next word!</button>
+  </div>
+
+  <!-- Menu -->
+  <div class="overlay" id="menuOverlay">
+    <div class="big-msg">Let's build words, one letter at a time!</div>
+    <div class="mode-buttons">
+      <button class="mode-btn m3" data-level="3">🌱 Little words
+        <small>3 letters: cat, dog, sun…</small></button>
+      <button class="mode-btn m4" data-level="4">🌟 Bigger words
+        <small>4 letters: fish, star, cake…</small></button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==================================================================
+   WORDS — [word, emoji]. Add your own — they just work!
+   ================================================================== */
+const WORDS = {
+  3: [
+    ['cat','🐱'], ['dog','🐶'], ['sun','☀️'], ['bus','🚌'], ['hat','🎩'],
+    ['pig','🐷'], ['fox','🦊'], ['hen','🐔'], ['bed','🛏️'], ['pen','🖊️'],
+    ['box','📦'], ['car','🚗'], ['bee','🐝'], ['egg','🥚'], ['owl','🦉'],
+    ['ant','🐜'], ['cow','🐮'], ['key','🔑']
+  ],
+  4: [
+    ['fish','🐟'], ['frog','🐸'], ['star','⭐'], ['cake','🎂'], ['moon','🌙'],
+    ['tree','🌲'], ['duck','🦆'], ['bear','🐻'], ['lion','🦁'], ['boat','⛵'],
+    ['corn','🌽'], ['kite','🪁'], ['ship','🚢'], ['drum','🥁'], ['sock','🧦']
+  ]
+};
+
+/* Phonic sounds, same as ABC Talking Friends */
+const PHONICS = {
+  a:'ah', b:'buh', c:'kuh', d:'duh', e:'eh', f:'fff', g:'guh', h:'huh',
+  i:'ih', j:'juh', k:'kuh', l:'lll', m:'mmm', n:'nnn', o:'oh', p:'puh',
+  q:'kwuh', r:'ruh', s:'sss', t:'tuh', u:'uh', v:'vvv', w:'wuh', x:'ks',
+  y:'yuh', z:'zzz'
+};
+
+const DISTRACTORS = 3;    // extra wrong letter tiles per word
+
+/* ==================================================================
+   Audio + voice
+   ================================================================== */
+let audioCtx = null, soundOn = true, voiceOn = true;
+function tone(freq, dur, type = 'triangle', vol = 0.12, when = 0) {
+  if (!soundOn) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t0 = audioCtx.currentTime + when;
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(vol, t0);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(t0); o.stop(t0 + dur);
+  } catch (e) {}
+}
+const sndPlace = (i) => tone(440 + i * 70, 0.14, 'triangle', 0.12);
+const sndNo    = () => tone(300, 0.2, 'sine', 0.07);
+const sndWin   = () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.25, 'triangle', 0.14, i * 0.14));
+
+function say(text, onDone) {
+  if (!voiceOn) { if (onDone) setTimeout(onDone, 400); return; }
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.8; u.pitch = 1.1;
+    if (onDone) { u.onend = onDone; u.onerror = onDone; }
+    window.speechSynthesis.speak(u);
+  } catch (e) { if (onDone) setTimeout(onDone, 400); }
+}
+
+document.getElementById('soundBtn').addEventListener('click', (e) => {
+  soundOn = !soundOn;
+  e.currentTarget.textContent = soundOn ? '🔊' : '🔇';
+  e.currentTarget.classList.toggle('off', !soundOn);
+});
+document.getElementById('voiceBtn').addEventListener('click', (e) => {
+  voiceOn = !voiceOn;
+  e.currentTarget.classList.toggle('off', !voiceOn);
+  if (!voiceOn) try { window.speechSynthesis.cancel(); } catch (err) {}
+});
+
+/* ==================================================================
+   Background music — a gentle building-blocks tune, kept quiet so
+   the phonics voice always stays clear. (WebAudio, no files)
+   ================================================================== */
+let musicOn = true, musicTimer = null, musicStep = 0, musicNext = 0;
+const NOTE = (() => {
+  const s = { C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11 };
+  return (n) => {
+    const m = n.match(/^([A-G]#?)(\d)$/);
+    return 440 * Math.pow(2, (s[m[1]] + (parseInt(m[2], 10) - 4) * 12 - 9) / 12);
+  };
+})();
+const MELODY = ['C5','E5','G5','B5','A5','G5','E5',null,'D5','F5','A5','C6','B5','G5','E5',null];
+const BASS   = ['C3',null,'G3',null,'F3',null,'G3',null,'D3',null,'F3',null,'G3',null,'C3',null];
+const STEP_LEN = 60 / 96 / 2;   // 8th notes at a thoughtful 96 BPM
+
+function playMusicNote(freq, t, dur, type, vol) {
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(t); o.stop(t + dur);
+}
+function startMusic() {
+  if (!musicOn || musicTimer) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    musicStep = 0;
+    musicNext = audioCtx.currentTime + 0.05;
+    musicTimer = setInterval(() => {
+      while (musicNext < audioCtx.currentTime + 0.15) {
+        const m = MELODY[musicStep % MELODY.length];
+        const b = BASS[musicStep % BASS.length];
+        if (m) playMusicNote(NOTE(m), musicNext, STEP_LEN * 0.9, 'triangle', 0.025);
+        if (b) playMusicNote(NOTE(b), musicNext, STEP_LEN * 1.8, 'triangle', 0.035);
+        musicNext += STEP_LEN;
+        musicStep++;
+      }
+    }, 50);
+  } catch (e) {}
+}
+function stopMusic() { clearInterval(musicTimer); musicTimer = null; }
+
+document.getElementById('musicBtn').addEventListener('click', (e) => {
+  musicOn = !musicOn;
+  e.currentTarget.classList.toggle('off', !musicOn);
+  if (!musicOn) stopMusic();
+  else if (menuOverlay.hidden) startMusic();
+});
+
+/* ==================================================================
+   State + round building
+   ================================================================== */
+const pictureEl = document.getElementById('picture');
+const promptEl  = document.getElementById('prompt');
+const slotsEl   = document.getElementById('slots');
+const tilesEl   = document.getElementById('tiles');
+const nextBtn   = document.getElementById('nextBtn');
+const starsEl   = document.getElementById('stars');
+const menuOverlay = document.getElementById('menuOverlay');
+const gameWrap    = document.querySelector('.game-wrap');
+
+const state = { level: 3, word: '', emoji: '', filled: 0, done: false, lastWord: '' };
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function newWord() {
+  const pool = WORDS[state.level];
+  let pick;
+  do { pick = pool[Math.floor(Math.random() * pool.length)]; }
+  while (pick[0] === state.lastWord && pool.length > 1);
+
+  state.word = pick[0];
+  state.emoji = pick[1];
+  state.lastWord = pick[0];
+  state.filled = 0;
+  state.done = false;
+  nextBtn.hidden = true;
+
+  pictureEl.textContent = state.emoji;
+  pictureEl.classList.remove('happy');
+  promptEl.textContent = `Can you spell ${state.word.toUpperCase()}?`;
+
+  // slots
+  slotsEl.innerHTML = '';
+  for (let i = 0; i < state.word.length; i++) {
+    const s = document.createElement('div');
+    s.className = 'slot' + (i === 0 ? ' next' : '');
+    slotsEl.appendChild(s);
+  }
+
+  // tiles: the word's letters + a few different distractors
+  const letters = state.word.split('');
+  const wrongPool = 'abcdefghijklmnopqrstuvwxyz'.split('').filter(c => !letters.includes(c));
+  const tiles = shuffle([...letters, ...shuffle(wrongPool).slice(0, DISTRACTORS)]);
+
+  tilesEl.innerHTML = '';
+  tiles.forEach(ch => {
+    const t = document.createElement('button');
+    t.className = 'tile';
+    t.textContent = ch;
+    t.setAttribute('aria-label', `letter ${ch.toUpperCase()}`);
+    t.addEventListener('click', () => onTile(t, ch));
+    tilesEl.appendChild(t);
+  });
+
+  say(`Can you spell, ${state.word}? ${state.word}!`);
+}
+
+document.getElementById('hearBtn').addEventListener('click', () => {
+  if (state.word && !state.done) say(`Spell ${state.word}! ${state.word}!`);
+});
+
+/* ==================================================================
+   Tile taps — guided: only the next correct letter goes in
+   ================================================================== */
+function onTile(tile, ch) {
+  if (state.done || tile.classList.contains('used')) return;
+
+  const expected = state.word[state.filled];
+
+  if (ch === expected) {
+    tile.classList.add('used');
+    const slot = slotsEl.children[state.filled];
+    slot.textContent = ch;
+    slot.classList.add('filled');
+    slot.classList.remove('next');
+    sndPlace(state.filled);
+    say(PHONICS[ch]);
+    state.filled++;
+
+    if (state.filled < state.word.length) {
+      slotsEl.children[state.filled].classList.add('next');
+    } else {
+      wordComplete();
+    }
+  } else {
+    tile.classList.remove('wrong');
+    void tile.offsetWidth;
+    tile.classList.add('wrong');
+    sndNo();
+    say(`${PHONICS[ch] || ch}... that is ${ch.toUpperCase()}. We need ${expected.toUpperCase()}!`);
+  }
+}
+
+function wordComplete() {
+  state.done = true;
+  const w = state.word;
+
+  // blend the sounds, then say the word — the heart of the lesson
+  const blend = w.split('').map(c => PHONICS[c]).join('... ');
+  setTimeout(() => {
+    pictureEl.classList.add('happy');
+    promptEl.textContent = `${blend.replaceAll('...', ' ·')} … ${w.toUpperCase()}!`;
+    say(`${blend}... ${w}! You spelled ${w}! Hooray!`, () => {
+      promptEl.textContent = `🎉 You spelled ${w.toUpperCase()}!`;
+    });
+    sndWin();
+    celebrate();
+    starsEl.textContent = String(parseInt(starsEl.textContent, 10) + 1);
+    nextBtn.hidden = false;
+  }, 350);
+}
+
+nextBtn.addEventListener('click', newWord);
+
+/* ==================================================================
+   Menu + confetti
+   ================================================================== */
+document.querySelectorAll('.mode-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    state.level = parseInt(b.dataset.level, 10);
+    menuOverlay.hidden = true;
+    newWord();
+    startMusic();
+  });
+});
+document.getElementById('menuBtn').addEventListener('click', () => {
+  try { window.speechSynthesis.cancel(); } catch (e) {}
+  stopMusic();
+  menuOverlay.hidden = false;
+});
+
+function celebrate() {
+  const emojis = ['🎉', '⭐', '✨', '🎊', state.emoji];
+  for (let i = 0; i < 24; i++) {
+    const c = document.createElement('span');
+    c.className = 'confetti';
+    c.textContent = emojis[i % emojis.length];
+    c.style.left = Math.random() * 95 + '%';
+    c.style.animationDuration = (1.4 + Math.random() * 1.4) + 's';
+    c.style.animationDelay = (Math.random() * 0.4) + 's';
+    gameWrap.appendChild(c);
+    setTimeout(() => c.remove(), 3200);
+  }
+}
+</script>
+</body>
+</html>

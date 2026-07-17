@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Trace &amp; Write — Learn to Write Letters &amp; Numbers | GameSpace</title>
+<meta name="description" content="Learn handwriting the fun way! Kids paint over big letters A–Z and numbers 0–9 with a magic rainbow brush that only sticks inside the lines. Free tracing game, ages 3–6.">
+<style>
+  /* ============================================================
+     TRACE & WRITE — learn to write letters and numbers! (ages 3–6)
+     A big ghost letter appears; the child paints over it with a
+     rainbow finger-brush. Paint only sticks INSIDE the letter, so
+     little hands can scribble freely and still succeed. When most
+     of the letter is filled in, it celebrates and speaks.
+
+     Works with mouse, finger or stylus. WebAudio music + sounds.
+     ============================================================ */
+
+  :root {
+    --paper:    #EAF4FB;
+    --card:     #FFFFFF;
+    --ink:      #2E5A78;
+    --sky:      #3FA7D6;
+    --sky-dk:   #2E86AC;
+    --gold:     #FFC93C;
+    --good:     #58B368;
+    --good-dk:  #3F9450;
+    --font-kids: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+
+  body {
+    font-family: var(--font-kids);
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 15% 12%, #F5FBFF 0%, transparent 45%),
+      radial-gradient(circle at 85% 88%, #DDEFFA 0%, transparent 45%),
+      var(--paper);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 10px 24px;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  h1 {
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    margin: 4px 0 8px;
+    color: var(--sky-dk);
+    text-shadow: 0 2px 0 #FFF;
+    letter-spacing: 1px;
+  }
+
+  .game-wrap {
+    position: relative;
+    width: min(100%, 680px);
+    border-radius: 26px;
+    background: var(--card);
+    border: 5px solid #C9E2F2;
+    box-shadow: 0 12px 30px rgba(40, 90, 130, 0.22);
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    overflow: hidden;
+  }
+
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    background: #FFF;
+    border: 3px solid var(--gold);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-weight: bold;
+    font-size: clamp(0.9rem, 2.6vw, 1.15rem);
+  }
+  .toggles { display: flex; gap: 6px; }
+  .icon-btn {
+    font-size: 1.1rem;
+    background: #FFF;
+    border: 3px solid #C9E2F2;
+    border-radius: 999px;
+    width: 44px; height: 44px;
+    cursor: pointer;
+  }
+  .icon-btn.off { opacity: 0.45; }
+  .icon-btn:focus-visible { outline: 4px solid var(--gold); }
+
+  /* --- Tabs + glyph strip -------------------------------------------- */
+  .tabs { display: flex; gap: 8px; justify-content: center; padding: 8px 0 4px; }
+  .tab {
+    font-family: var(--font-kids);
+    font-size: clamp(0.95rem, 2.8vw, 1.15rem);
+    font-weight: bold;
+    border: 3px solid #C9E2F2;
+    background: #FFF;
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 8px 22px;
+    cursor: pointer;
+  }
+  .tab.active { background: var(--sky); border-color: var(--sky); color: #FFF; }
+  .tab:focus-visible { outline: 4px solid var(--gold); }
+
+  .glyph-strip {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 8px 4px;
+    scrollbar-width: thin;
+  }
+  .mini {
+    font-family: var(--font-kids);
+    font-size: 1.15rem;
+    font-weight: bold;
+    min-width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    border: 3px solid #C9E2F2;
+    background: #FFF;
+    color: var(--sky-dk);
+    cursor: pointer;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .mini.current { border-color: var(--sky); background: var(--sky); color: #FFF; }
+  .mini.done::after {
+    content: '⭐';
+    position: absolute;
+    top: -10px; right: -6px;
+    font-size: 0.75rem;
+  }
+  .mini:focus-visible { outline: 3px solid var(--gold); }
+
+  /* --- Prompt + canvas -------------------------------------------------- */
+  .prompt {
+    text-align: center;
+    font-size: clamp(1.05rem, 3.2vw, 1.4rem);
+    font-weight: bold;
+    min-height: 1.6em;
+    margin: 2px 8px;
+    text-wrap: balance;
+  }
+
+  .canvas-holder {
+    position: relative;
+    align-self: center;
+    width: min(100%, 480px);
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 20px;
+    border: 4px dashed #C9E2F2;
+    background: #FBFDFF;
+    touch-action: none;
+    cursor: crosshair;
+  }
+
+  /* progress bar */
+  .bar {
+    height: 16px;
+    border-radius: 999px;
+    background: #E4F0F9;
+    margin: 10px auto 4px;
+    width: min(100%, 480px);
+    overflow: hidden;
+  }
+  .bar .fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #FF6B8A, #FFC93C, #58B368);
+    transition: width 0.25s ease;
+  }
+
+  /* --- Bottom buttons ------------------------------------------------------ */
+  .actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 0 6px;
+    flex-wrap: wrap;
+  }
+  .act-btn {
+    font-family: var(--font-kids);
+    font-size: clamp(1rem, 3vw, 1.2rem);
+    font-weight: bold;
+    color: var(--ink);
+    background: #FFF;
+    border: 3px solid #C9E2F2;
+    border-radius: 999px;
+    padding: 11px 22px;
+    cursor: pointer;
+  }
+  .act-btn:focus-visible { outline: 4px solid var(--gold); }
+  .act-btn.primary {
+    color: #FFF;
+    background: var(--good);
+    border-color: var(--good);
+    box-shadow: 0 5px 0 var(--good-dk);
+  }
+  .act-btn.primary:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--good-dk); }
+  .act-btn[hidden] { display: none; }
+
+  .confetti {
+    position: absolute; top: -20px;
+    font-size: 1.4rem;
+    animation: confettiFall linear forwards;
+    pointer-events: none;
+    z-index: 12;
+  }
+  @keyframes confettiFall { to { transform: translateY(720px) rotate(720deg); opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bar .fill { transition: none; }
+    .confetti { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<h1>✏️ Trace &amp; Write!</h1>
+
+<div class="game-wrap">
+  <div class="topbar">
+    <div class="chips">
+      <div class="chip">⭐ <span id="stars">0</span></div>
+    </div>
+    <div class="toggles">
+      <button class="icon-btn" id="musicBtn" aria-label="Turn music on or off">🎵</button>
+      <button class="icon-btn" id="voiceBtn" aria-label="Turn the talking voice on or off">🗣️</button>
+      <button class="icon-btn" id="soundBtn" aria-label="Turn sounds on or off">🔊</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tabAbc">🔤 Letters</button>
+    <button class="tab" id="tab123">🔢 Numbers</button>
+  </div>
+  <div class="glyph-strip" id="glyphStrip"></div>
+
+  <div class="prompt" id="prompt">Trace the letter A with your finger!</div>
+
+  <div class="canvas-holder">
+    <canvas id="pad" width="480" height="480" aria-label="Tracing area"></canvas>
+  </div>
+  <div class="bar"><div class="fill" id="barFill"></div></div>
+
+  <div class="actions">
+    <button class="act-btn" id="prevBtn" aria-label="Previous">◀ Back</button>
+    <button class="act-btn" id="clearBtn">🧽 Start over</button>
+    <button class="act-btn" id="hearBtn">🔁 Hear it</button>
+    <button class="act-btn primary" id="nextBtn">Next ▶</button>
+  </div>
+</div>
+
+<script>
+/* ==================================================================
+   CONFIG
+   ================================================================== */
+const CONFIG = {
+  size: 480,            // logical canvas size
+  fontSize: 400,        // ghost glyph size
+  brush: 26,            // brush radius — chunky for little fingers
+  doneAt: 0.82,         // fraction of the glyph to fill before celebration
+  sampleStep: 11        // coverage sampling grid (smaller = stricter)
+};
+
+const LETTER_WORDS = {  // spoken after finishing a letter
+  A:'Apple', B:'Ball', C:'Cat', D:'Dog', E:'Elephant', F:'Fish', G:'Grapes',
+  H:'Hat', I:'Ice cream', J:'Juice', K:'Kite', L:'Lion', M:'Monkey', N:'Nest',
+  O:'Orange', P:'Penguin', Q:'Queen', R:'Rainbow', S:'Sun', T:'Tiger',
+  U:'Umbrella', V:'Violin', W:'Whale', X:'X-ray', Y:'Yo-yo', Z:'Zebra'
+};
+const NUMBER_NAMES = ['Zero','One','Two','Three','Four','Five','Six','Seven','Eight','Nine'];
+
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const NUMBERS = '0123456789'.split('');
+
+/* ==================================================================
+   Audio + voice
+   ================================================================== */
+let audioCtx = null, soundOn = true, voiceOn = true;
+function ensureCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+function tone(freq, dur, type = 'triangle', vol = 0.12, when = 0) {
+  if (!soundOn) return;
+  try {
+    ensureCtx();
+    const t0 = audioCtx.currentTime + when;
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(vol, t0);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(t0); o.stop(t0 + dur);
+  } catch (e) {}
+}
+let lastSparkle = 0;
+function sndSparkle() {                       // soft twinkle while painting
+  const now = performance.now();
+  if (now - lastSparkle < 110) return;
+  lastSparkle = now;
+  tone(900 + Math.random() * 600, 0.08, 'sine', 0.03);
+}
+const sndWin = () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.25, 'triangle', 0.14, i * 0.14));
+
+function say(text) {
+  if (!voiceOn) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.85; u.pitch = 1.1;
+    window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+/* --- Background music — a calm handwriting-practice tune --- */
+let musicOn = true, musicTimer = null, musicStep = 0, musicNext = 0;
+const NOTE = (() => {
+  const s = { C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11 };
+  return (n) => {
+    const m = n.match(/^([A-G]#?)(\d)$/);
+    return 440 * Math.pow(2, (s[m[1]] + (parseInt(m[2], 10) - 4) * 12 - 9) / 12);
+  };
+})();
+const MELODY = ['F5','A5','G5','F5','C5',null,'D5','E5','F5','A5','C6','A5','G5',null,'F5',null];
+const BASS   = ['F3',null,'C3',null,'A#2',null,'C3',null,'D3',null,'A#2',null,'C3',null,'F3',null];
+const STEP_LEN = 60 / 90 / 2;   // 8th notes at a calm 90 BPM
+
+function playMusicNote(freq, t, dur, type, vol) {
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(t); o.stop(t + dur);
+}
+function startMusic() {
+  if (!musicOn || musicTimer) return;
+  try {
+    ensureCtx();
+    musicStep = 0;
+    musicNext = audioCtx.currentTime + 0.05;
+    musicTimer = setInterval(() => {
+      while (musicNext < audioCtx.currentTime + 0.15) {
+        const m = MELODY[musicStep % MELODY.length];
+        const b = BASS[musicStep % BASS.length];
+        if (m) playMusicNote(NOTE(m), musicNext, STEP_LEN * 0.9, 'triangle', 0.022);
+        if (b) playMusicNote(NOTE(b), musicNext, STEP_LEN * 1.8, 'triangle', 0.032);
+        musicNext += STEP_LEN;
+        musicStep++;
+      }
+    }, 50);
+  } catch (e) {}
+}
+function stopMusic() { clearInterval(musicTimer); musicTimer = null; }
+
+document.getElementById('soundBtn').addEventListener('click', (e) => {
+  soundOn = !soundOn;
+  e.currentTarget.textContent = soundOn ? '🔊' : '🔇';
+  e.currentTarget.classList.toggle('off', !soundOn);
+});
+document.getElementById('voiceBtn').addEventListener('click', (e) => {
+  voiceOn = !voiceOn;
+  e.currentTarget.classList.toggle('off', !voiceOn);
+  if (!voiceOn) try { window.speechSynthesis.cancel(); } catch (err) {}
+});
+document.getElementById('musicBtn').addEventListener('click', (e) => {
+  musicOn = !musicOn;
+  e.currentTarget.classList.toggle('off', !musicOn);
+  if (!musicOn) stopMusic();
+  else startMusic();
+});
+
+/* ==================================================================
+   Canvas setup — mask (where the glyph is) + paint layer
+   ================================================================== */
+const pad = document.getElementById('pad');
+const ctx = pad.getContext('2d');
+const SZ = CONFIG.size;
+
+const maskCanvas = document.createElement('canvas');
+maskCanvas.width = SZ; maskCanvas.height = SZ;
+const maskCtx = maskCanvas.getContext('2d');
+
+const paintCanvas = document.createElement('canvas');
+paintCanvas.width = SZ; paintCanvas.height = SZ;
+const paintCtx = paintCanvas.getContext('2d');
+
+const state = {
+  set: 'abc',            // 'abc' | '123'
+  glyph: 'A',
+  maskData: null,        // ImageData of the glyph mask
+  samples: [],           // [{x, y, hit}] coverage points inside the glyph
+  covered: 0,
+  done: false,
+  drawing: false,
+  lastX: 0, lastY: 0,
+  hue: 0,
+  starsWon: new Set()    // "A", "7", ... glyphs finished this session
+};
+
+const promptEl = document.getElementById('prompt');
+const barFill  = document.getElementById('barFill');
+const starsEl  = document.getElementById('stars');
+const gameWrap = document.querySelector('.game-wrap');
+
+/* ==================================================================
+   Glyph loading
+   ================================================================== */
+function glyphList() { return state.set === 'abc' ? LETTERS : NUMBERS; }
+
+function loadGlyph(ch) {
+  state.glyph = ch;
+  state.done = false;
+  state.covered = 0;
+  state.hue = Math.random() * 360;
+  barFill.style.width = '0%';
+
+  // draw the glyph into the mask
+  maskCtx.clearRect(0, 0, SZ, SZ);
+  maskCtx.fillStyle = '#000';
+  maskCtx.font = `bold ${CONFIG.fontSize}px "Comic Sans MS", "Chalkboard SE", sans-serif`;
+  maskCtx.textAlign = 'center';
+  maskCtx.textBaseline = 'middle';
+  maskCtx.fillText(ch, SZ / 2, SZ / 2 + 14);
+  state.maskData = maskCtx.getImageData(0, 0, SZ, SZ);
+
+  // sample points inside the glyph, used to measure coverage
+  state.samples = [];
+  const d = state.maskData.data;
+  for (let y = 0; y < SZ; y += CONFIG.sampleStep) {
+    for (let x = 0; x < SZ; x += CONFIG.sampleStep) {
+      if (d[(y * SZ + x) * 4 + 3] > 128) state.samples.push({ x, y, hit: false });
+    }
+  }
+
+  paintCtx.clearRect(0, 0, SZ, SZ);
+  render();
+  updateStrip();
+
+  const isLetter = state.set === 'abc';
+  promptEl.textContent = isLetter
+    ? `Trace the letter ${ch} with your finger!`
+    : `Trace the number ${ch} with your finger!`;
+  say(isLetter ? `Trace the letter ${ch}!` : `Trace the number ${NUMBER_NAMES[+ch]}!`);
+}
+
+function insideGlyph(x, y) {
+  const xi = Math.max(0, Math.min(SZ - 1, Math.round(x)));
+  const yi = Math.max(0, Math.min(SZ - 1, Math.round(y)));
+  return state.maskData.data[(yi * SZ + xi) * 4 + 3] > 128;
+}
+
+/* ==================================================================
+   Painting — rainbow brush that only sticks inside the glyph
+   ================================================================== */
+function stamp(x, y) {
+  if (!insideGlyph(x, y)) return;
+
+  state.hue = (state.hue + 2.5) % 360;
+  paintCtx.fillStyle = `hsl(${state.hue}, 85%, 60%)`;
+  paintCtx.beginPath();
+  paintCtx.arc(x, y, CONFIG.brush, 0, Math.PI * 2);
+  paintCtx.fill();
+  sndSparkle();
+
+  // mark coverage samples under the brush
+  const r2 = CONFIG.brush * CONFIG.brush;
+  let newHits = 0;
+  for (const s of state.samples) {
+    if (!s.hit) {
+      const dx = s.x - x, dy = s.y - y;
+      if (dx * dx + dy * dy <= r2) { s.hit = true; newHits++; }
+    }
+  }
+  if (newHits) {
+    state.covered += newHits;
+    const frac = state.covered / state.samples.length;
+    barFill.style.width = Math.min(100, Math.round(frac * 100)) + '%';
+    if (!state.done && frac >= CONFIG.doneAt) finished();
+  }
+}
+
+function strokeTo(x, y) {
+  // interpolate so fast finger swipes leave a solid line
+  const dx = x - state.lastX, dy = y - state.lastY;
+  const dist = Math.hypot(dx, dy);
+  const steps = Math.max(1, Math.ceil(dist / (CONFIG.brush * 0.45)));
+  for (let i = 1; i <= steps; i++) {
+    stamp(state.lastX + (dx * i) / steps, state.lastY + (dy * i) / steps);
+  }
+  state.lastX = x; state.lastY = y;
+  render();
+}
+
+function toCanvasXY(e) {
+  const r = pad.getBoundingClientRect();
+  return {
+    x: (e.clientX - r.left) * (SZ / r.width),
+    y: (e.clientY - r.top) * (SZ / r.height)
+  };
+}
+
+pad.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  startMusic();                       // first touch is our audio gesture
+  if (state.done) return;
+  const { x, y } = toCanvasXY(e);
+  state.drawing = true;
+  state.lastX = x; state.lastY = y;
+  stamp(x, y);
+  render();
+  pad.setPointerCapture(e.pointerId);
+});
+pad.addEventListener('pointermove', (e) => {
+  if (!state.drawing || state.done) return;
+  const { x, y } = toCanvasXY(e);
+  strokeTo(x, y);
+});
+pad.addEventListener('pointerup',   () => { state.drawing = false; });
+pad.addEventListener('pointercancel', () => { state.drawing = false; });
+
+/* ==================================================================
+   Rendering
+   ================================================================== */
+function render() {
+  ctx.clearRect(0, 0, SZ, SZ);
+
+  // ghost glyph to trace over
+  ctx.fillStyle = '#E4EEF7';
+  ctx.font = `bold ${CONFIG.fontSize}px "Comic Sans MS", "Chalkboard SE", sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(state.glyph, SZ / 2, SZ / 2 + 14);
+  ctx.strokeStyle = '#B7D2E8';
+  ctx.lineWidth = 3;
+  ctx.strokeText(state.glyph, SZ / 2, SZ / 2 + 14);
+
+  // the child's rainbow paint
+  ctx.drawImage(paintCanvas, 0, 0);
+}
+
+/* ==================================================================
+   Finishing a glyph
+   ================================================================== */
+function finished() {
+  state.done = true;
+  sndWin();
+  celebrate();
+
+  if (!state.starsWon.has(state.glyph)) {
+    state.starsWon.add(state.glyph);
+    starsEl.textContent = String(parseInt(starsEl.textContent, 10) + 1);
+  }
+  updateStrip();
+
+  if (state.set === 'abc') {
+    const word = LETTER_WORDS[state.glyph];
+    promptEl.textContent = `🎉 Beautiful! ${state.glyph} is for ${word}!`;
+    say(`Wow! You wrote the letter ${state.glyph}! ${state.glyph} is for ${word}! Beautiful writing!`);
+  } else {
+    promptEl.textContent = `🎉 Beautiful! You wrote ${NUMBER_NAMES[+state.glyph]}!`;
+    say(`Wow! You wrote the number ${NUMBER_NAMES[+state.glyph]}! Beautiful writing!`);
+  }
+}
+
+/* ==================================================================
+   Navigation: tabs, strip, buttons
+   ================================================================== */
+const strip = document.getElementById('glyphStrip');
+
+function buildStrip() {
+  strip.innerHTML = '';
+  glyphList().forEach(ch => {
+    const b = document.createElement('button');
+    b.className = 'mini';
+    b.textContent = ch;
+    b.setAttribute('aria-label', `Trace ${ch}`);
+    b.addEventListener('click', () => { startMusic(); loadGlyph(ch); });
+    strip.appendChild(b);
+  });
+}
+function updateStrip() {
+  [...strip.children].forEach((b) => {
+    b.classList.toggle('current', b.textContent === state.glyph);
+    b.classList.toggle('done', state.starsWon.has(b.textContent));
+  });
+}
+
+document.getElementById('tabAbc').addEventListener('click', (e) => setTab('abc', e.currentTarget));
+document.getElementById('tab123').addEventListener('click', (e) => setTab('123', e.currentTarget));
+function setTab(set, btn) {
+  state.set = set;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === btn));
+  buildStrip();
+  loadGlyph(glyphList()[0]);
+}
+
+document.getElementById('prevBtn').addEventListener('click', () => step(-1));
+document.getElementById('nextBtn').addEventListener('click', () => step(1));
+function step(dir) {
+  const list = glyphList();
+  const i = (list.indexOf(state.glyph) + dir + list.length) % list.length;
+  startMusic();
+  loadGlyph(list[i]);
+}
+
+document.getElementById('clearBtn').addEventListener('click', () => loadGlyph(state.glyph));
+document.getElementById('hearBtn').addEventListener('click', () => {
+  say(state.set === 'abc'
+    ? `Trace the letter ${state.glyph}!`
+    : `Trace the number ${NUMBER_NAMES[+state.glyph]}!`);
+});
+
+/* ==================================================================
+   Confetti + go!
+   ================================================================== */
+function celebrate() {
+  const emojis = ['🎉', '⭐', '✨', '🖍️', '💙'];
+  for (let i = 0; i < 22; i++) {
+    const c = document.createElement('span');
+    c.className = 'confetti';
+    c.textContent = emojis[i % emojis.length];
+    c.style.left = Math.random() * 95 + '%';
+    c.style.animationDuration = (1.4 + Math.random() * 1.4) + 's';
+    c.style.animationDelay = (Math.random() * 0.4) + 's';
+    gameWrap.appendChild(c);
+    setTimeout(() => c.remove(), 3200);
+  }
+}
+
+buildStrip();
+loadGlyph('A');
+</script>
+</body>
+</html>

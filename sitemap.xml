@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- GameSpace sitemap — https://sonatrix.github.io/gamespace/ -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://sonatrix.github.io/gamespace/</loc><priority>1.0</priority></url>
+  <url><loc>https://sonatrix.github.io/gamespace/bunny-hop.html</loc><priority>0.8</priority></url>
+  <url><loc>https://sonatrix.github.io/gamespace/balloon-pop-math.html</loc><priority>0.8</priority></url>
+  <url><loc>https://sonatrix.github.io/gamespace/matchstick-math.html</loc><priority>0.8</priority></url>
+  <url><loc>https://sonatrix.github.io/gamespace/abc-talking-friends.html</loc><priority>0.8</priority></url>
+  <url><loc>https://sonatrix.github.io/gamespace/maze-explorer.html</loc><priority>0.8</priority></url>
+  <url><loc>https://sonatrix.github.io/gamespace/memory-match.html</loc><priority>0.8</priority></url>
+  <url><loc>https://sonatrix.github.io/gamespace/pattern-party.html</loc><priority>0.8</priority></url>
+  <url><loc>https://sonatrix.github.io/gamespace/word-builder.html</loc><priority>0.8</priority></url>
+  <url><loc>https://sonatrix.github.io/gamespace/music-maker.html</loc><priority>0.8</priority></url>
+  <url><loc>https://sonatrix.github.io/gamespace/trace-and-write.html</loc><priority>0.8</priority></url>
+  <url><loc>https://sonatrix.github.io/gamespace/shape-sorter.html</loc><priority>0.8</priority></url>
+  <url><loc>https://sonatrix.github.io/gamespace/little-shop.html</loc><priority>0.8</priority></url>
+  <url><loc>https://sonatrix.github.io/gamespace/dot-to-dot.html</loc><priority>0.8</priority></url>
+  <url><loc>https://sonatrix.github.io/gamespace/simon-owl.html</loc><priority>0.8</priority></url>
+  <url><loc>https://sonatrix.github.io/gamespace/coloring-book.html</loc><priority>0.8</priority></url>
+  <url><loc>https://sonatrix.github.io/gamespace/clock-time.html</loc><priority>0.8</priority></url>
+  <url><loc>https://sonatrix.github.io/gamespace/odd-one-out.html</loc><priority>0.8</priority></url>
+</urlset>

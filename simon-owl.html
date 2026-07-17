@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Simon the Owl — Free Listening Memory Game for Kids | GameSpace</title>
+<meta name="description" content="Simon the owl sings a tune on four animal pads — can you play it back? A free musical memory game for kids ages 3–7 where the song grows one note each round. No game over!">
+<style>
+  /* ============================================================
+     SIMON THE SINGING OWL — listening memory (ages 3–7)
+     The owl sings a little tune on the animal pads; the child
+     repeats it. Each round adds one note. Getting it wrong just
+     means "let's listen again!" — the same tune replays, no fail.
+
+     Background "music" is a soft C-drone pad that harmonizes
+     with the four pad notes (C, E, G, high C).
+     ============================================================ */
+
+  :root {
+    --night:    #35315E;
+    --night-dp: #262247;
+    --cream:    #FFF9EF;
+    --ink:      #35315E;
+    --gold:     #FFC93C;
+    --font-kids: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body {
+    font-family: var(--font-kids);
+    color: var(--cream);
+    background:
+      radial-gradient(circle at 50% 0%, #4A4580 0%, var(--night) 55%, var(--night-dp) 100%);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 10px 10px 24px;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  h1 {
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    margin: 4px 0 8px;
+    color: #FFF;
+    text-shadow: 0 3px 0 rgba(20, 15, 45, 0.5);
+    letter-spacing: 1px;
+  }
+  .game-wrap {
+    position: relative;
+    width: min(100%, 640px);
+    min-height: 560px;
+    border-radius: 26px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 4px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 12px 30px rgba(10, 5, 30, 0.5);
+    display: flex; flex-direction: column;
+    padding: 12px;
+    overflow: hidden;
+  }
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    background: var(--cream); color: var(--ink);
+    border: 3px solid var(--gold); border-radius: 999px;
+    padding: 4px 14px; font-weight: bold;
+    font-size: clamp(0.9rem, 2.6vw, 1.15rem);
+  }
+  .toggles { display: flex; gap: 6px; }
+  .icon-btn {
+    font-size: 1.1rem; background: var(--cream);
+    border: 3px solid rgba(255,255,255,0.4); border-radius: 999px;
+    width: 44px; height: 44px; cursor: pointer;
+  }
+  .icon-btn.off { opacity: 0.45; }
+  .icon-btn:focus-visible { outline: 4px solid var(--gold); }
+
+  /* --- the owl --------------------------------------------------------- */
+  .owl-zone { text-align: center; padding: 6px 0 0; }
+  .owl {
+    font-size: clamp(3.4rem, 12vw, 5rem);
+    display: inline-block;
+  }
+  .owl.sing { animation: owlBop 0.4s ease; }
+  @keyframes owlBop {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    40%      { transform: translateY(-14px) rotate(-8deg) scale(1.1); }
+  }
+  .speech {
+    font-size: clamp(1.05rem, 3.2vw, 1.4rem);
+    font-weight: bold;
+    min-height: 2em;
+    margin: 4px 12px;
+    text-wrap: balance;
+    text-align: center;
+  }
+
+  /* --- the four pads ------------------------------------------------------ */
+  .pads {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(120px, 220px));
+    gap: clamp(10px, 3vw, 20px);
+    justify-content: center;
+    align-content: center;
+    padding: 10px 0 16px;
+  }
+  .padbtn {
+    font-family: var(--font-kids);
+    height: clamp(110px, 26vw, 170px);
+    border: none;
+    border-radius: 26px;
+    background: var(--p);
+    cursor: pointer;
+    font-size: clamp(2.4rem, 9vw, 3.8rem);
+    box-shadow: 0 7px 0 rgba(10, 5, 30, 0.45), inset 0 -8px 0 rgba(0,0,0,0.18);
+    transition: filter 0.1s ease, transform 0.06s ease;
+    filter: brightness(0.72);
+  }
+  .padbtn:active { transform: translateY(5px); box-shadow: 0 1px 0 rgba(10,5,30,0.45); }
+  .padbtn.lit { filter: brightness(1.35); transform: scale(1.04); }
+  .padbtn:focus-visible { outline: 5px solid var(--gold); }
+  .padbtn[disabled] { cursor: default; }
+
+  .actions { display: flex; justify-content: center; gap: 10px; padding-bottom: 8px; flex-wrap: wrap; }
+  .act-btn {
+    font-family: var(--font-kids);
+    font-size: clamp(1.05rem, 3.2vw, 1.35rem);
+    font-weight: bold;
+    color: #FFF; background: #FF7A59;
+    border: none; border-radius: 999px;
+    padding: 14px 34px; cursor: pointer;
+    box-shadow: 0 6px 0 #E85C3A;
+    letter-spacing: 0.5px;
+  }
+  .act-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #E85C3A; }
+  .act-btn:focus-visible { outline: 5px solid var(--gold); outline-offset: 3px; }
+  .act-btn.ghost { background: rgba(255,255,255,0.15); box-shadow: 0 6px 0 rgba(10,5,30,0.4); }
+  .act-btn[hidden] { display: none; }
+
+  .confetti {
+    position: absolute; top: -20px; font-size: 1.4rem;
+    animation: confettiFall linear forwards;
+    pointer-events: none; z-index: 12;
+  }
+  @keyframes confettiFall { to { transform: translateY(640px) rotate(720deg); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .owl.sing { animation: none; }
+    .confetti { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🦉 Simon the Owl!</h1>
+
+<div class="game-wrap">
+  <div class="topbar">
+    <div class="chips">
+      <div class="chip">🎵 Notes: <span id="length">0</span></div>
+      <div class="chip">🏆 Best: <span id="best">0</span></div>
+    </div>
+    <div class="toggles">
+      <button class="icon-btn" id="musicBtn" aria-label="Turn the background pad on or off">🎵</button>
+      <button class="icon-btn" id="voiceBtn" aria-label="Turn the talking voice on or off">🗣️</button>
+    </div>
+  </div>
+
+  <div class="owl-zone"><span class="owl" id="owl">🦉</span></div>
+  <div class="speech" id="speech">Hoo-hoo! Listen to my song, then play it back!</div>
+
+  <div class="pads" id="pads"></div>
+
+  <div class="actions">
+    <button class="act-btn" id="startBtn">▶ Start the song!</button>
+    <button class="act-btn ghost" id="replayBtn" hidden>🔁 Hear it again</button>
+  </div>
+</div>
+
+<script>
+/* ==================================================================
+   The four singing pads
+   ================================================================== */
+const PADS = [
+  { color: '#E85C4A', note: 'C4', animal: '🐞', name: 'ladybug' },
+  { color: '#F0C030', note: 'E4', animal: '🐤', name: 'chick' },
+  { color: '#58B368', note: 'G4', animal: '🐸', name: 'frog' },
+  { color: '#4EA8DE', note: 'C5', animal: '🐦', name: 'bird' }
+];
+const PLAY_GAP = 620;      // ms between notes when the owl sings
+const NOTE_LEN = 0.45;
+
+/* ==================================================================
+   Audio: pad notes + harmonizing drone + voice
+   ================================================================== */
+let audioCtx = null, voiceOn = true;
+function ensureCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+const NOTE = (() => {
+  const s = { C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11 };
+  return (n) => { const m = n.match(/^([A-G]#?)(\d)$/);
+    return 440 * Math.pow(2, (s[m[1]] + (parseInt(m[2],10) - 4) * 12 - 9) / 12); };
+})();
+
+function playPadNote(noteName, vol = 0.2) {
+  try {
+    ensureCtx();
+    const f = NOTE(noteName), t0 = audioCtx.currentTime;
+    [[f, vol, 'triangle'], [f * 2, vol * 0.25, 'sine']].forEach(([freq, v, type]) => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = type; o.frequency.setValueAtTime(freq, t0);
+      g.gain.setValueAtTime(v, t0);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + NOTE_LEN);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(t0); o.stop(t0 + NOTE_LEN);
+    });
+  } catch (e) {}
+}
+const sndOops = () => { try { ensureCtx();
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = 'sine'; o.frequency.setValueAtTime(300, audioCtx.currentTime);
+  o.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.35);
+  g.gain.setValueAtTime(0.08, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(); o.stop(audioCtx.currentTime + 0.4);
+} catch (e) {} };
+const sndFanfare = () => ['C5','E5','G5','C6'].forEach((n, i) => setTimeout(() => playPadNote(n, 0.18), i * 130));
+
+/* soft harmonizing drone (background music) */
+let musicOn = true, padNodes = null;
+function startMusic() {
+  if (!musicOn || padNodes) return;
+  try {
+    ensureCtx();
+    const master = audioCtx.createGain();
+    master.gain.value = 0.028;
+    master.connect(audioCtx.destination);
+    const oscs = ['C3', 'G3'].map(n => {
+      const o = audioCtx.createOscillator();
+      o.type = 'sine'; o.frequency.value = NOTE(n);
+      o.connect(master); o.start();
+      return o;
+    });
+    padNodes = { oscs, master };
+  } catch (e) {}
+}
+function stopMusic() {
+  if (!padNodes) return;
+  try { padNodes.oscs.forEach(o => o.stop()); padNodes.master.disconnect(); } catch (e) {}
+  padNodes = null;
+}
+
+function say(text) {
+  if (!voiceOn) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.9; u.pitch = 1.1;
+    window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+document.getElementById('musicBtn').addEventListener('click', (e) => {
+  musicOn = !musicOn;
+  e.currentTarget.classList.toggle('off', !musicOn);
+  if (!musicOn) stopMusic();
+  else if (state.running) startMusic();
+});
+document.getElementById('voiceBtn').addEventListener('click', (e) => {
+  voiceOn = !voiceOn;
+  e.currentTarget.classList.toggle('off', !voiceOn);
+  if (!voiceOn) try { window.speechSynthesis.cancel(); } catch (err) {}
+});
+
+/* ==================================================================
+   Game
+   ================================================================== */
+const padsEl   = document.getElementById('pads');
+const owlEl    = document.getElementById('owl');
+const speechEl = document.getElementById('speech');
+const lengthEl = document.getElementById('length');
+const bestEl   = document.getElementById('best');
+const startBtn = document.getElementById('startBtn');
+const replayBtn = document.getElementById('replayBtn');
+const gameWrap  = document.querySelector('.game-wrap');
+
+const state = {
+  running: false,
+  seq: [],           // the owl's song (pad indices)
+  pos: 0,            // where the child is in repeating it
+  phase: 'idle',     // 'idle' | 'watch' | 'repeat'
+  best: 0
+};
+
+PADS.forEach((p, i) => {
+  const b = document.createElement('button');
+  b.className = 'padbtn';
+  b.style.setProperty('--p', p.color);
+  b.textContent = p.animal;
+  b.setAttribute('aria-label', `${p.name} pad`);
+  b.addEventListener('pointerdown', (e) => { e.preventDefault(); onPad(i); });
+  padsEl.appendChild(b);
+});
+
+function lightPad(i, ms = 420) {
+  const b = padsEl.children[i];
+  b.classList.add('lit');
+  setTimeout(() => b.classList.remove('lit'), ms);
+}
+
+function owlSings() {
+  owlEl.classList.remove('sing');
+  void owlEl.offsetWidth;
+  owlEl.classList.add('sing');
+}
+
+/* --- the owl plays the sequence --- */
+function playSequence() {
+  state.phase = 'watch';
+  speechEl.textContent = '🦉 Listen carefully…';
+  setPadsEnabled(false);
+  state.seq.forEach((padIdx, step) => {
+    setTimeout(() => {
+      owlSings();
+      lightPad(padIdx);
+      playPadNote(PADS[padIdx].note);
+      if (step === state.seq.length - 1) {
+        setTimeout(() => {
+          state.phase = 'repeat';
+          state.pos = 0;
+          setPadsEnabled(true);
+          speechEl.textContent = '✨ Your turn! Play it back!';
+          say('Your turn!');
+        }, PLAY_GAP);
+      }
+    }, 600 + step * PLAY_GAP);
+  });
+}
+
+function setPadsEnabled(on) {
+  [...padsEl.children].forEach(b => { b.disabled = !on; });
+}
+
+/* --- the child repeats --- */
+function onPad(i) {
+  if (state.phase !== 'repeat') return;
+
+  lightPad(i, 300);
+
+  if (i === state.seq[state.pos]) {
+    playPadNote(PADS[i].note);
+    state.pos++;
+    if (state.pos >= state.seq.length) {
+      /* round complete! */
+      state.phase = 'idle';
+      setPadsEnabled(false);
+      state.best = Math.max(state.best, state.seq.length);
+      bestEl.textContent = String(state.best);
+      speechEl.textContent = `🎉 Hoo-ray! ${state.seq.length} notes! Here comes one more…`;
+      if (state.seq.length % 4 === 0) { sndFanfare(); celebrate(); }
+      say(`Hoo-ray! You remembered ${state.seq.length} notes!`);
+      setTimeout(nextRound, 1900);
+    }
+  } else {
+    /* not quite — same song again, no fail */
+    state.phase = 'idle';
+    setPadsEnabled(false);
+    sndOops();
+    speechEl.textContent = `💛 Oops! Let's listen to the song again…`;
+    say(`Oops! That was the ${PADS[i].name}. Let's listen again!`);
+    setTimeout(playSequence, 1800);
+  }
+}
+
+function nextRound() {
+  state.seq.push(Math.floor(Math.random() * 4));
+  lengthEl.textContent = String(state.seq.length);
+  playSequence();
+}
+
+startBtn.addEventListener('click', () => {
+  startMusic();
+  state.running = true;
+  state.seq = [];
+  startBtn.hidden = true;
+  replayBtn.hidden = false;
+  say(`Hoo hoo! I am Simon the owl! Listen to my song, then play it back!`);
+  setTimeout(nextRound, 1600);
+});
+
+replayBtn.addEventListener('click', () => {
+  if (state.phase === 'repeat' || state.phase === 'idle') {
+    if (state.seq.length) playSequence();
+  }
+});
+
+/* ==================================================================
+   Confetti
+   ================================================================== */
+function celebrate() {
+  const emojis = ['🎉', '⭐', '✨', '🎶', '🦉'];
+  for (let i = 0; i < 22; i++) {
+    const c = document.createElement('span');
+    c.className = 'confetti';
+    c.textContent = emojis[i % emojis.length];
+    c.style.left = Math.random() * 95 + '%';
+    c.style.animationDuration = (1.4 + Math.random() * 1.4) + 's';
+    c.style.animationDelay = (Math.random() * 0.4) + 's';
+    gameWrap.appendChild(c);
+    setTimeout(() => c.remove(), 3200);
+  }
+}
+setPadsEnabled(false);
+</script>
+</body>
+</html>

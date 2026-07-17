@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Shape Sorter — Free Shapes &amp; Colors Game for Toddlers | GameSpace</title>
+<meta name="description" content="Where does the star go? Toddlers ages 2–4 match shapes to holes and sort everyday things into color buckets, with a friendly voice naming everything. Free and no-fail.">
+<style>
+  /* ============================================================
+     SHAPE SORTER — shapes & colors for the very youngest (2–4)
+     🔷 Shapes: "Where does the star go?" — tap the matching hole.
+     🌈 Colors: "The apple is RED!" — drop it in the right bucket.
+     Voice names everything; no reading needed, no way to fail.
+     ============================================================ */
+
+  :root {
+    --peach:    #FFEFE3;
+    --peach-dp: #FFD9BC;
+    --ink:      #7A4A2A;
+    --coral:    #FF8A5C;
+    --coral-dk: #E06A3C;
+    --gold:     #FFC93C;
+    --good:     #58B368;
+    --font-kids: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body {
+    font-family: var(--font-kids);
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 20% 10%, #FFF8F0 0%, transparent 45%),
+      var(--peach);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 10px 10px 24px;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  h1 {
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    margin: 4px 0 8px;
+    color: var(--coral-dk);
+    text-shadow: 0 2px 0 #FFF;
+    letter-spacing: 1px;
+  }
+  .game-wrap {
+    position: relative;
+    width: min(100%, 680px);
+    min-height: 540px;
+    border-radius: 26px;
+    background: #FFFDF9;
+    border: 5px solid var(--peach-dp);
+    box-shadow: 0 12px 30px rgba(160, 90, 40, 0.22);
+    display: flex; flex-direction: column;
+    padding: 12px;
+    overflow: hidden;
+  }
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    background: #FFF; border: 3px solid var(--gold); border-radius: 999px;
+    padding: 4px 14px; font-weight: bold;
+    font-size: clamp(0.9rem, 2.6vw, 1.15rem);
+  }
+  .toggles { display: flex; gap: 6px; }
+  .icon-btn {
+    font-size: 1.1rem; background: #FFF;
+    border: 3px solid var(--peach-dp); border-radius: 999px;
+    width: 44px; height: 44px; cursor: pointer;
+  }
+  .icon-btn.off { opacity: 0.45; }
+  .icon-btn:focus-visible { outline: 4px solid var(--gold); }
+
+  .prompt {
+    text-align: center;
+    font-size: clamp(1.15rem, 3.6vw, 1.6rem);
+    font-weight: bold;
+    min-height: 2em;
+    margin: 12px 8px 0;
+    text-wrap: balance;
+  }
+
+  /* the thing to sort */
+  .target-zone { text-align: center; padding: 8px 0 4px; min-height: 130px; }
+  .target {
+    font-size: clamp(4rem, 15vw, 6.2rem);
+    line-height: 1.1;
+    display: inline-block;
+    animation: floaty 2.4s ease-in-out infinite;
+  }
+  @keyframes floaty {
+    0%, 100% { transform: translateY(0) rotate(-3deg); }
+    50%      { transform: translateY(-12px) rotate(4deg); }
+  }
+  .target.zoom { animation: zoomAway 0.5s ease forwards; }
+  @keyframes zoomAway {
+    to { transform: scale(0.2) translateY(120px); opacity: 0; }
+  }
+
+  /* holes / buckets */
+  .bins {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(12px, 4vw, 30px);
+    flex-wrap: wrap;
+    padding: 8px 8px 22px;
+  }
+  .bin {
+    font-family: var(--font-kids);
+    width: clamp(100px, 26vw, 160px);
+    height: clamp(110px, 28vw, 170px);
+    border-radius: 24px;
+    border: 5px dashed var(--peach-dp);
+    background: #FFF;
+    cursor: pointer;
+    font-size: clamp(3rem, 11vw, 4.8rem);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    box-shadow: 0 7px 0 rgba(160, 90, 40, 0.15);
+    transition: transform 0.08s ease;
+  }
+  .bin .hole { filter: grayscale(1) opacity(0.35); }
+  .bin .label { font-size: 0.95rem; font-weight: bold; color: #B08868; }
+  .bin:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(160,90,40,0.15); }
+  .bin:focus-visible { outline: 5px solid var(--gold); }
+  .bin.correct .hole { filter: none; animation: binPop 0.5s cubic-bezier(0.2,1.6,0.4,1); }
+  @keyframes binPop { 0% { transform: scale(0.4); } 100% { transform: scale(1); } }
+  .bin.wrong { animation: shakeNo 0.45s ease; }
+  @keyframes shakeNo {
+    0%,100% { transform: translateX(0); } 25% { transform: translateX(-9px); }
+    50% { transform: translateX(8px); } 75% { transform: translateX(-5px); }
+  }
+  /* color buckets get a colored body */
+  .bin.bucket { border-style: solid; color: #FFF; }
+  .bin.bucket .label { color: #FFF; text-shadow: 0 1px 0 rgba(0,0,0,0.25); }
+
+  .overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 16px;
+    background: rgba(255, 253, 249, 0.95);
+    text-align: center; padding: 20px; z-index: 10;
+  }
+  .overlay[hidden] { display: none; }
+  .overlay .big-msg { font-size: clamp(1.4rem, 4.5vw, 2.1rem); font-weight: bold; text-wrap: balance; }
+  .mode-buttons { display: flex; flex-direction: column; gap: 12px; width: min(100%, 340px); }
+  .mode-btn {
+    font-family: var(--font-kids);
+    font-size: clamp(1.1rem, 3.5vw, 1.45rem);
+    font-weight: bold; color: #FFF; border: none; border-radius: 999px;
+    padding: 16px 20px; cursor: pointer;
+  }
+  .mode-btn small { display: block; font-size: 0.72em; font-weight: normal; opacity: 0.95; }
+  .mode-btn:active { transform: translateY(3px); }
+  .mode-btn:focus-visible { outline: 5px solid var(--gold); outline-offset: 3px; }
+  .m-shape { background: var(--coral); box-shadow: 0 6px 0 var(--coral-dk); }
+  .m-color { background: var(--good);  box-shadow: 0 6px 0 #3F9450; }
+
+  .confetti {
+    position: absolute; top: -20px; font-size: 1.4rem;
+    animation: confettiFall linear forwards;
+    pointer-events: none; z-index: 12;
+  }
+  @keyframes confettiFall { to { transform: translateY(620px) rotate(720deg); opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .target, .bin.correct .hole, .bin.wrong, .target.zoom { animation: none; }
+    .confetti { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🔷 Shape Sorter!</h1>
+
+<div class="game-wrap">
+  <div class="topbar">
+    <div class="chip">⭐ <span id="stars">0</span></div>
+    <div class="toggles">
+      <button class="icon-btn" id="menuBtn" aria-label="Back to menu">🏠</button>
+      <button class="icon-btn" id="musicBtn" aria-label="Turn music on or off">🎵</button>
+      <button class="icon-btn" id="voiceBtn" aria-label="Turn the talking voice on or off">🗣️</button>
+      <button class="icon-btn" id="soundBtn" aria-label="Turn sounds on or off">🔊</button>
+    </div>
+  </div>
+
+  <div class="prompt" id="prompt">Where does it go?</div>
+  <div class="target-zone"><span class="target" id="target">⭐</span></div>
+  <div class="bins" id="bins"></div>
+
+  <div class="overlay" id="menuOverlay">
+    <div class="big-msg">Let's sort! What shall we play?</div>
+    <div class="mode-buttons">
+      <button class="mode-btn m-shape" data-mode="shape">🔷 Shapes
+        <small>Where does the star go? Tap the matching hole!</small></button>
+      <button class="mode-btn m-color" data-mode="color">🌈 Colors
+        <small>The apple is red! Put it in the red bucket!</small></button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==================================================================
+   DATA
+   ================================================================== */
+const SHAPES = [
+  ['⭕', 'circle'], ['🔺', 'triangle'], ['🟦', 'square'],
+  ['⭐', 'star'], ['❤️', 'heart'], ['🌙', 'moon']
+];
+/* items to color-sort: [emoji, spoken name, color key] */
+const COLOR_ITEMS = [
+  ['🍎', 'apple', 'red'], ['🍓', 'strawberry', 'red'], ['🚒', 'fire truck', 'red'],
+  ['🍌', 'banana', 'yellow'], ['🌟', 'star', 'yellow'], ['🐤', 'chick', 'yellow'],
+  ['🍏', 'green apple', 'green'], ['🐸', 'frog', 'green'], ['🌲', 'tree', 'green'],
+  ['🫐', 'blueberries', 'blue'], ['🐳', 'whale', 'blue'], ['💧', 'water drop', 'blue'],
+  ['🍊', 'orange', 'orange'], ['🥕', 'carrot', 'orange'], ['🦊', 'fox', 'orange'],
+  ['🍇', 'grapes', 'purple'], ['🍆', 'eggplant', 'purple'], ['🦋', 'butterfly', 'purple']
+];
+const BUCKETS = {
+  red:    { css: '#E85C4A', name: 'red' },
+  yellow: { css: '#F0C030', name: 'yellow' },
+  green:  { css: '#58B368', name: 'green' },
+  blue:   { css: '#4EA8DE', name: 'blue' },
+  orange: { css: '#F2913D', name: 'orange' },
+  purple: { css: '#9B6BD6', name: 'purple' }
+};
+
+/* ==================================================================
+   Audio + voice + background music
+   ================================================================== */
+let audioCtx = null, soundOn = true, voiceOn = true;
+function ensureCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+function tone(freq, dur, type = 'triangle', vol = 0.12, when = 0) {
+  if (!soundOn) return;
+  try {
+    ensureCtx();
+    const t0 = audioCtx.currentTime + when;
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(vol, t0);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(t0); o.stop(t0 + dur);
+  } catch (e) {}
+}
+const sndYes = () => { tone(660, 0.15); tone(990, 0.22, 'triangle', 0.14, 0.12); };
+const sndNo  = () => tone(300, 0.2, 'sine', 0.07);
+const sndWin = () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.25, 'triangle', 0.14, i * 0.14));
+
+function say(text) {
+  if (!voiceOn) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.85; u.pitch = 1.15;
+    window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+let musicOn = true, musicTimer = null, musicStep = 0, musicNext = 0;
+const NOTE = (() => {
+  const s = { C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11 };
+  return (n) => { const m = n.match(/^([A-G]#?)(\d)$/);
+    return 440 * Math.pow(2, (s[m[1]] + (parseInt(m[2],10) - 4) * 12 - 9) / 12); };
+})();
+const MELODY = ['C5','E5','D5','C5','G4',null,'C5','D5','E5','G5','E5','D5','C5',null,null,null];
+const BASS   = ['C3',null,'G2',null,'F3',null,'G2',null,'C3',null,'G2',null,'C3',null,null,null];
+const STEP_LEN = 60 / 86 / 2;   // slow and gentle for the youngest players
+
+function playMusicNote(freq, t, dur, type, vol) {
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(t); o.stop(t + dur);
+}
+function startMusic() {
+  if (!musicOn || musicTimer) return;
+  try {
+    ensureCtx();
+    musicStep = 0; musicNext = audioCtx.currentTime + 0.05;
+    musicTimer = setInterval(() => {
+      while (musicNext < audioCtx.currentTime + 0.15) {
+        const m = MELODY[musicStep % MELODY.length], b = BASS[musicStep % BASS.length];
+        if (m) playMusicNote(NOTE(m), musicNext, STEP_LEN * 0.9, 'triangle', 0.025);
+        if (b) playMusicNote(NOTE(b), musicNext, STEP_LEN * 1.8, 'triangle', 0.035);
+        musicNext += STEP_LEN; musicStep++;
+      }
+    }, 50);
+  } catch (e) {}
+}
+function stopMusic() { clearInterval(musicTimer); musicTimer = null; }
+
+document.getElementById('soundBtn').addEventListener('click', (e) => {
+  soundOn = !soundOn;
+  e.currentTarget.textContent = soundOn ? '🔊' : '🔇';
+  e.currentTarget.classList.toggle('off', !soundOn);
+});
+document.getElementById('voiceBtn').addEventListener('click', (e) => {
+  voiceOn = !voiceOn;
+  e.currentTarget.classList.toggle('off', !voiceOn);
+  if (!voiceOn) try { window.speechSynthesis.cancel(); } catch (err) {}
+});
+document.getElementById('musicBtn').addEventListener('click', (e) => {
+  musicOn = !musicOn;
+  e.currentTarget.classList.toggle('off', !musicOn);
+  if (!musicOn) stopMusic();
+  else if (state.mode) startMusic();
+});
+
+/* ==================================================================
+   Rounds
+   ================================================================== */
+const targetEl = document.getElementById('target');
+const binsEl   = document.getElementById('bins');
+const promptEl = document.getElementById('prompt');
+const starsEl  = document.getElementById('stars');
+const menuOverlay = document.getElementById('menuOverlay');
+const gameWrap    = document.querySelector('.game-wrap');
+
+const state = { mode: null, answer: null, locked: false };
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+const randOf = a => a[Math.floor(Math.random() * a.length)];
+
+function newRound() {
+  state.locked = false;
+  targetEl.classList.remove('zoom');
+  binsEl.innerHTML = '';
+
+  if (state.mode === 'shape') {
+    const options = shuffle([...SHAPES]).slice(0, 3);
+    const answer = randOf(options);
+    state.answer = answer[1];
+    targetEl.textContent = answer[0];
+    promptEl.textContent = `Where does the ${answer[1]} go?`;
+    say(`Where does the ${answer[1]} go? Tap the ${answer[1]} hole!`);
+
+    shuffle([...options]).forEach(([emoji, name]) => {
+      const b = document.createElement('button');
+      b.className = 'bin';
+      b.innerHTML = `<span class="hole">${emoji}</span><span class="label">?</span>`;
+      b.setAttribute('aria-label', `${name} hole`);
+      b.addEventListener('click', () => onBin(b, name, emoji));
+      binsEl.appendChild(b);
+    });
+  } else {
+    const item = randOf(COLOR_ITEMS);
+    state.answer = item[2];
+    targetEl.textContent = item[0];
+    promptEl.textContent = `The ${item[1]} is ${item[2].toUpperCase()}!`;
+    say(`Look, a ${item[1]}! The ${item[1]} is ${item[2]}. Put it in the ${item[2]} bucket!`);
+
+    const others = shuffle(Object.keys(BUCKETS).filter(k => k !== item[2])).slice(0, 2);
+    shuffle([item[2], ...others]).forEach(key => {
+      const bk = BUCKETS[key];
+      const b = document.createElement('button');
+      b.className = 'bin bucket';
+      b.style.background = bk.css;
+      b.style.borderColor = bk.css;
+      b.innerHTML = `<span class="hole" style="filter:none">🪣</span><span class="label">${bk.name}</span>`;
+      b.setAttribute('aria-label', `${bk.name} bucket`);
+      b.addEventListener('click', () => onBin(b, key, item[0]));
+      binsEl.appendChild(b);
+    });
+  }
+}
+
+function onBin(btn, key, emoji) {
+  if (state.locked) return;
+
+  if (key === state.answer) {
+    state.locked = true;
+    targetEl.classList.add('zoom');
+    btn.classList.add('correct');
+    btn.querySelector('.hole').textContent = emoji;
+    sndYes();
+    starsEl.textContent = String(parseInt(starsEl.textContent, 10) + 1);
+    const stars = parseInt(starsEl.textContent, 10);
+    promptEl.textContent = '🎉 Perfect!';
+    if (stars % 5 === 0) { sndWin(); celebrate(); }
+    say(`Yes! Perfect! ${stars % 5 === 0 ? 'You are a sorting superstar!' : 'Great job!'}`);
+    setTimeout(newRound, 1300);
+  } else {
+    btn.classList.remove('wrong');
+    void btn.offsetWidth;
+    btn.classList.add('wrong');
+    sndNo();
+    say(state.mode === 'shape'
+      ? `That hole is a different shape. Look again!`
+      : `That bucket is a different color. Look again!`);
+  }
+}
+
+/* ==================================================================
+   Menu + confetti
+   ================================================================== */
+document.querySelectorAll('.mode-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    state.mode = b.dataset.mode;
+    menuOverlay.hidden = true;
+    newRound();
+    startMusic();
+  });
+});
+document.getElementById('menuBtn').addEventListener('click', () => {
+  stopMusic();
+  try { window.speechSynthesis.cancel(); } catch (e) {}
+  menuOverlay.hidden = false;
+});
+
+function celebrate() {
+  const emojis = ['🎉', '⭐', '✨', '🎊', '🧡'];
+  for (let i = 0; i < 22; i++) {
+    const c = document.createElement('span');
+    c.className = 'confetti';
+    c.textContent = emojis[i % emojis.length];
+    c.style.left = Math.random() * 95 + '%';
+    c.style.animationDuration = (1.4 + Math.random() * 1.4) + 's';
+    c.style.animationDelay = (Math.random() * 0.4) + 's';
+    gameWrap.appendChild(c);
+    setTimeout(() => c.remove(), 3200);
+  }
+}
+</script>
+</body>
+</html>

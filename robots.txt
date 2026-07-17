@@ -1,0 +1,5 @@
+# GameSpace — allow all crawlers
+User-agent: *
+Allow: /
+
+Sitemap: https://sonatrix.github.io/gamespace/sitemap.xml

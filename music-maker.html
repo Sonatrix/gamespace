@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Music Maker — Free Kids Piano &amp; Song Game | GameSpace</title>
+<meta name="description" content="A rainbow do-re-mi piano where animals sing along! Free play for little musicians, plus follow-the-glowing-key mode to learn Twinkle Twinkle and more. Free, ages 2–7.">
+<style>
+  /* ============================================================
+     MUSIC MAKER — a rainbow do-re-mi piano for little hands
+     🎹 Free Play: bang away — every key has an animal that sings!
+     🎼 Follow a Song: keys glow to teach real tunes, note by note.
+
+     Background "music" here is a soft C-major drone pad that
+     harmonizes with every key, so it never clashes with playing.
+     All audio is WebAudio — zero sound files.
+     ============================================================ */
+
+  :root {
+    --stage:    #2E2A4A;   /* concert-hall night */
+    --stage-dp: #201C38;
+    --cream:    #FFF9EF;
+    --ink:      #3A3560;
+    --gold:     #FFC93C;
+    --accent:   #FF5D73;
+    --accent-dk:#D93E54;
+    --font-kids: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+
+  body {
+    font-family: var(--font-kids);
+    color: var(--cream);
+    background:
+      radial-gradient(circle at 50% 0%, #453E6E 0%, var(--stage) 55%, var(--stage-dp) 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 10px 24px;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  h1 {
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    margin: 4px 0 8px;
+    color: #FFF;
+    text-shadow: 0 3px 0 rgba(20, 15, 45, 0.5);
+    letter-spacing: 1px;
+  }
+
+  .game-wrap {
+    position: relative;
+    width: min(100%, 760px);
+    min-height: 560px;
+    border-radius: 26px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 4px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 12px 30px rgba(10, 5, 30, 0.5);
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    overflow: hidden;
+  }
+
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    background: var(--cream);
+    color: var(--ink);
+    border: 3px solid var(--gold);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-weight: bold;
+    font-size: clamp(0.9rem, 2.6vw, 1.15rem);
+  }
+  .toggles { display: flex; gap: 6px; }
+  .icon-btn {
+    font-size: 1.15rem;
+    background: var(--cream);
+    border: 3px solid rgba(255,255,255,0.4);
+    border-radius: 999px;
+    width: 46px; height: 46px;
+    cursor: pointer;
+  }
+  .icon-btn.off { opacity: 0.45; }
+  .icon-btn:focus-visible { outline: 4px solid var(--gold); }
+
+  /* --- The singer stage --------------------------------------------- */
+  .singer-zone {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 190px;
+    gap: 6px;
+  }
+  .singer {
+    font-size: clamp(4rem, 15vw, 6.5rem);
+    line-height: 1.1;
+    display: inline-block;
+  }
+  .singer.sing { animation: singBounce 0.4s ease; }
+  @keyframes singBounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    40%      { transform: translateY(-24px) scale(1.18) rotate(-6deg); }
+  }
+  .note-name {
+    font-size: clamp(1.4rem, 5vw, 2.2rem);
+    font-weight: bold;
+    min-height: 1.3em;
+    color: var(--note-color, #FFF);
+    text-shadow: 0 2px 0 rgba(20, 15, 45, 0.5);
+  }
+  .song-progress {
+    display: flex;
+    gap: 6px;
+    min-height: 18px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 90%;
+  }
+  .dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+  }
+  .dot.done { background: var(--gold); }
+
+  /* --- The rainbow keys ------------------------------------------------ */
+  .keys {
+    display: flex;
+    gap: clamp(4px, 1.2vw, 10px);
+    padding: 8px 4px 14px;
+  }
+  .key {
+    flex: 1;
+    height: clamp(130px, 30vw, 190px);
+    border: none;
+    border-radius: 0 0 18px 18px;
+    background: var(--k);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    padding-bottom: 12px;
+    font-family: var(--font-kids);
+    font-weight: bold;
+    color: #FFF;
+    font-size: clamp(0.85rem, 2.6vw, 1.15rem);
+    box-shadow: 0 6px 0 rgba(10, 5, 30, 0.45), inset 0 -8px 0 rgba(0,0,0,0.15);
+    transition: transform 0.06s ease, filter 0.2s ease;
+  }
+  .key .animal { font-size: clamp(1.5rem, 5vw, 2.3rem); }
+  .key:active, .key.pressed { transform: translateY(5px); box-shadow: 0 1px 0 rgba(10,5,30,0.45), inset 0 -4px 0 rgba(0,0,0,0.15); }
+  .key:focus-visible { outline: 4px solid var(--gold); }
+  .key.glow {
+    animation: glowPulse 0.9s ease infinite;
+    filter: brightness(1.25);
+  }
+  @keyframes glowPulse {
+    0%, 100% { box-shadow: 0 6px 0 rgba(10,5,30,0.45), 0 0 0 4px rgba(255, 201, 60, 0.9); }
+    50%      { box-shadow: 0 6px 0 rgba(10,5,30,0.45), 0 0 0 10px rgba(255, 201, 60, 0.35); }
+  }
+
+  /* --- Overlays ----------------------------------------------------------- */
+  .overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 14px;
+    background: rgba(32, 28, 56, 0.95);
+    text-align: center;
+    padding: 18px;
+    z-index: 10;
+  }
+  .overlay[hidden] { display: none; }
+  .overlay .big-msg { font-size: clamp(1.4rem, 4.5vw, 2rem); font-weight: bold; text-wrap: balance; }
+  .overlay .sub-msg { font-size: clamp(0.95rem, 3vw, 1.15rem); opacity: 0.85; }
+  .mode-buttons { display: flex; flex-direction: column; gap: 12px; width: min(100%, 340px); }
+  .mode-btn {
+    font-family: var(--font-kids);
+    font-size: clamp(1.1rem, 3.5vw, 1.45rem);
+    font-weight: bold;
+    color: #FFF;
+    border: none;
+    border-radius: 999px;
+    padding: 16px 20px;
+    cursor: pointer;
+  }
+  .mode-btn small { display: block; font-size: 0.72em; font-weight: normal; opacity: 0.95; }
+  .mode-btn:active { transform: translateY(3px); }
+  .mode-btn:focus-visible { outline: 5px solid var(--gold); outline-offset: 3px; }
+  .m-free { background: var(--accent); box-shadow: 0 6px 0 var(--accent-dk); }
+  .m-song { background: #58B368;      box-shadow: 0 6px 0 #3F9450; }
+
+  .song-list { display: flex; flex-direction: column; gap: 10px; width: min(100%, 340px); }
+  .song-btn {
+    font-family: var(--font-kids);
+    font-size: clamp(1rem, 3vw, 1.25rem);
+    font-weight: bold;
+    color: var(--ink);
+    background: var(--cream);
+    border: 4px solid transparent;
+    border-radius: 999px;
+    padding: 13px 18px;
+    cursor: pointer;
+  }
+  .song-btn:hover { border-color: var(--gold); }
+  .song-btn:focus-visible { outline: 4px solid var(--gold); }
+
+  .confetti {
+    position: absolute; top: -20px;
+    font-size: 1.4rem;
+    animation: confettiFall linear forwards;
+    pointer-events: none;
+    z-index: 12;
+  }
+  @keyframes confettiFall { to { transform: translateY(640px) rotate(720deg); opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .singer.sing, .key.glow { animation: none; }
+    .confetti { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🎹 Music Maker!</h1>
+
+<div class="game-wrap">
+  <div class="topbar">
+    <div class="chip">⭐ <span id="stars">0</span></div>
+    <div class="toggles">
+      <button class="icon-btn" id="menuBtn" aria-label="Back to menu">🏠</button>
+      <button class="icon-btn" id="musicBtn" aria-label="Turn the background pad on or off">🎵</button>
+      <button class="icon-btn" id="voiceBtn" aria-label="Turn the talking voice on or off">🗣️</button>
+    </div>
+  </div>
+
+  <div class="singer-zone">
+    <span class="singer" id="singer">🎼</span>
+    <div class="note-name" id="noteName">Tap a key!</div>
+    <div class="song-progress" id="songProgress"></div>
+  </div>
+
+  <div class="keys" id="keys"></div>
+
+  <!-- Menu -->
+  <div class="overlay" id="menuOverlay">
+    <div class="big-msg">Let's make music!</div>
+    <div class="mode-buttons">
+      <button class="mode-btn m-free" id="freeBtn">🎹 Free Play
+        <small>Tap any key — the animals sing along!</small></button>
+      <button class="mode-btn m-song" id="songModeBtn">🎼 Follow a Song
+        <small>The keys glow — can you play the tune?</small></button>
+    </div>
+    <div class="song-list" id="songList" hidden></div>
+  </div>
+</div>
+
+<script>
+/* ==================================================================
+   THE KEYS — 8 notes of C major, each with a color and an animal
+   ================================================================== */
+const KEYS = [
+  { note: 'C4', name: 'Do', animal: '🐶', color: '#FF5D73' },
+  { note: 'D4', name: 'Re', animal: '🐱', color: '#FF9A3C' },
+  { note: 'E4', name: 'Mi', animal: '🐸', color: '#FFC93C' },
+  { note: 'F4', name: 'Fa', animal: '🐰', color: '#58B368' },
+  { note: 'G4', name: 'So', animal: '🦁', color: '#3FA7D6' },
+  { note: 'A4', name: 'La', animal: '🐵', color: '#6C63D2' },
+  { note: 'B4', name: 'Ti', animal: '🐧', color: '#B58CF0' },
+  { note: 'C5', name: 'Do', animal: '🐘', color: '#FF6BB5' }
+];
+
+/* Songs as sequences of key indices (0–7) */
+const SONGS = [
+  { title: '✨ Twinkle Twinkle', seq: [0,0,4,4,5,5,4, 3,3,2,2,1,1,0] },
+  { title: '🐑 Mary Had a Little Lamb', seq: [2,1,0,1,2,2,2, 1,1,1, 2,4,4, 2,1,0,1,2,2,2,2,1,1,2,1,0] },
+  { title: '🥐 Hot Cross Buns', seq: [2,1,0, 2,1,0, 0,0,0,0, 1,1,1,1, 2,1,0] }
+];
+
+/* ==================================================================
+   Audio — piano voice, background drone pad, voice
+   ================================================================== */
+let audioCtx = null, voiceOn = true;
+
+function ensureCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+const NOTE = (() => {
+  const s = { C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11 };
+  return (n) => {
+    const m = n.match(/^([A-G]#?)(\d)$/);
+    return 440 * Math.pow(2, (s[m[1]] + (parseInt(m[2], 10) - 4) * 12 - 9) / 12);
+  };
+})();
+
+/** A friendly little piano voice: fundamental + soft octave sparkle */
+function playKeyNote(noteName, vol = 0.18) {
+  try {
+    ensureCtx();
+    const f = NOTE(noteName);
+    const t0 = audioCtx.currentTime;
+    [[f, vol, 'triangle', 0.7], [f * 2, vol * 0.25, 'sine', 0.4]].forEach(([freq, v, type, dur]) => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, t0);
+      g.gain.setValueAtTime(v, t0);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(t0); o.stop(t0 + dur);
+    });
+  } catch (e) {}
+}
+
+const sndWrongTap = () => playKeyNote('C4', 0.04);   // even "wrong" sounds gentle
+const sndFanfare  = () => ['C5','E5','G5','C6'].forEach((n, i) =>
+  setTimeout(() => playKeyNote(n, 0.2), i * 140));
+
+/* --- Background pad: a soft C+G drone that harmonizes with every key --- */
+let musicOn = true, padNodes = null;
+
+function startMusic() {
+  if (!musicOn || padNodes) return;
+  try {
+    ensureCtx();
+    const master = audioCtx.createGain();
+    master.gain.value = 0.035;
+    master.connect(audioCtx.destination);
+
+    const oscs = ['C3', 'G3', 'C4'].map((n, i) => {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = 'sine';
+      o.frequency.value = NOTE(n);
+      g.gain.value = i === 2 ? 0.35 : 1;      // upper octave quieter
+      o.connect(g).connect(master);
+      o.start();
+      return o;
+    });
+
+    // slow breathing tremolo so the pad feels alive
+    const lfo = audioCtx.createOscillator();
+    const lfoGain = audioCtx.createGain();
+    lfo.frequency.value = 0.18;
+    lfoGain.gain.value = 0.012;
+    lfo.connect(lfoGain).connect(master.gain);
+    lfo.start();
+
+    padNodes = { oscs, lfo, master };
+  } catch (e) {}
+}
+function stopMusic() {
+  if (!padNodes) return;
+  try {
+    padNodes.oscs.forEach(o => o.stop());
+    padNodes.lfo.stop();
+    padNodes.master.disconnect();
+  } catch (e) {}
+  padNodes = null;
+}
+
+function say(text) {
+  if (!voiceOn) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.9; u.pitch = 1.1;
+    window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+document.getElementById('musicBtn').addEventListener('click', (e) => {
+  musicOn = !musicOn;
+  e.currentTarget.classList.toggle('off', !musicOn);
+  if (!musicOn) stopMusic();
+  else if (state.mode) startMusic();
+});
+document.getElementById('voiceBtn').addEventListener('click', (e) => {
+  voiceOn = !voiceOn;
+  e.currentTarget.classList.toggle('off', !voiceOn);
+  if (!voiceOn) try { window.speechSynthesis.cancel(); } catch (err) {}
+});
+
+/* ==================================================================
+   Build the piano
+   ================================================================== */
+const keysEl     = document.getElementById('keys');
+const singerEl   = document.getElementById('singer');
+const noteNameEl = document.getElementById('noteName');
+const progressEl = document.getElementById('songProgress');
+const starsEl    = document.getElementById('stars');
+const menuOverlay = document.getElementById('menuOverlay');
+const gameWrap    = document.querySelector('.game-wrap');
+
+const state = { mode: null, song: null, songPos: 0 };
+
+KEYS.forEach((k, i) => {
+  const b = document.createElement('button');
+  b.className = 'key';
+  b.style.setProperty('--k', k.color);
+  b.innerHTML = `<span class="animal">${k.animal}</span>${k.name}`;
+  b.setAttribute('aria-label', `${k.name} key`);
+  b.addEventListener('pointerdown', (e) => { e.preventDefault(); pressKey(i); });
+  keysEl.appendChild(b);
+});
+
+// number keys 1–8 play the piano too
+document.addEventListener('keydown', (e) => {
+  const n = parseInt(e.key, 10);
+  if (n >= 1 && n <= 8 && !e.repeat) pressKey(n - 1);
+});
+
+function animateKey(i) {
+  const btn = keysEl.children[i];
+  btn.classList.add('pressed');
+  setTimeout(() => btn.classList.remove('pressed'), 130);
+
+  const k = KEYS[i];
+  singerEl.textContent = k.animal;
+  singerEl.classList.remove('sing');
+  void singerEl.offsetWidth;
+  singerEl.classList.add('sing');
+  noteNameEl.textContent = `♪ ${k.name} ♪`;
+  noteNameEl.style.setProperty('--note-color', k.color);
+}
+
+/* ==================================================================
+   Key press — free play vs follow-a-song
+   ================================================================== */
+function pressKey(i) {
+  if (!state.mode) return;
+
+  if (state.mode === 'free') {
+    playKeyNote(KEYS[i].note);
+    animateKey(i);
+    return;
+  }
+
+  // song mode: is this the glowing key?
+  const expected = state.song.seq[state.songPos];
+  if (i === expected) {
+    playKeyNote(KEYS[i].note);
+    animateKey(i);
+    progressEl.children[state.songPos].classList.add('done');
+    state.songPos++;
+    setGlow();
+    if (state.songPos >= state.song.seq.length) songComplete();
+  } else {
+    sndWrongTap();
+    const btn = keysEl.children[i];
+    btn.classList.add('pressed');
+    setTimeout(() => btn.classList.remove('pressed'), 130);
+    noteNameEl.textContent = 'Follow the glowing key! ✨';
+  }
+}
+
+function setGlow() {
+  [...keysEl.children].forEach(b => b.classList.remove('glow'));
+  if (state.mode === 'song' && state.songPos < state.song.seq.length) {
+    keysEl.children[state.song.seq[state.songPos]].classList.add('glow');
+  }
+}
+
+function songComplete() {
+  state.mode = 'free';                    // let them jam after the song!
+  starsEl.textContent = String(parseInt(starsEl.textContent, 10) + 1);
+  noteNameEl.textContent = `🎉 You played ${state.song.title}!`;
+  singerEl.textContent = '🎊';
+  sndFanfare();
+  celebrate();
+  say(`Hooray! You played the whole song! You are a real musician!`);
+  setTimeout(() => { menuOverlay.hidden = false; showSongList(false); }, 2600);
+}
+
+/* ==================================================================
+   Menu
+   ================================================================== */
+const songList = document.getElementById('songList');
+SONGS.forEach(s => {
+  const b = document.createElement('button');
+  b.className = 'song-btn';
+  b.textContent = s.title;
+  b.addEventListener('click', () => startSong(s));
+  songList.appendChild(b);
+});
+
+function showSongList(show) {
+  songList.hidden = !show;
+  document.querySelector('.mode-buttons').hidden = show;
+}
+
+document.getElementById('freeBtn').addEventListener('click', () => {
+  state.mode = 'free';
+  menuOverlay.hidden = true;
+  progressEl.innerHTML = '';
+  setGlow();
+  noteNameEl.textContent = 'Tap any key!';
+  singerEl.textContent = '🎼';
+  startMusic();
+  say('Free play! Tap the keys and make your own music!');
+});
+
+document.getElementById('songModeBtn').addEventListener('click', () => showSongList(true));
+
+function startSong(song) {
+  state.mode = 'song';
+  state.song = song;
+  state.songPos = 0;
+  menuOverlay.hidden = true;
+  showSongList(false);
+
+  progressEl.innerHTML = '';
+  song.seq.forEach(() => {
+    const d = document.createElement('span');
+    d.className = 'dot';
+    progressEl.appendChild(d);
+  });
+
+  singerEl.textContent = '🎼';
+  noteNameEl.textContent = 'Follow the glowing key! ✨';
+  setGlow();
+  startMusic();
+  say(`Let's play ${song.title.replace(/^[^ ]+ /, '')}! Tap the glowing key!`);
+}
+
+document.getElementById('menuBtn').addEventListener('click', () => {
+  state.mode = null;
+  stopMusic();
+  try { window.speechSynthesis.cancel(); } catch (e) {}
+  [...keysEl.children].forEach(b => b.classList.remove('glow'));
+  progressEl.innerHTML = '';
+  menuOverlay.hidden = false;
+  showSongList(false);
+});
+
+/* ==================================================================
+   Confetti
+   ================================================================== */
+function celebrate() {
+  const emojis = ['🎉', '🎵', '🎶', '⭐', '✨'];
+  for (let i = 0; i < 24; i++) {
+    const c = document.createElement('span');
+    c.className = 'confetti';
+    c.textContent = emojis[i % emojis.length];
+    c.style.left = Math.random() * 95 + '%';
+    c.style.animationDuration = (1.4 + Math.random() * 1.4) + 's';
+    c.style.animationDelay = (Math.random() * 0.4) + 's';
+    gameWrap.appendChild(c);
+    setTimeout(() => c.remove(), 3200);
+  }
+}
+</script>
+</body>
+</html>

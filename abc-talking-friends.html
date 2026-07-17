@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>ABC Talking Friends — Free Alphabet &amp; Phonics Game for Kids | GameSpace</title>
+<meta name="description" content="Every letter has a friend that talks! Learn the alphabet A to Z with spoken letter names, phonics sounds and words — plus a find-the-letter game. Free, for ages 2–5.">
+<style>
+  /* ============================================================
+     ABC TALKING FRIENDS — letter learning for little kids
+     Every letter has a friend (A → Apple 🍎) that SPEAKS:
+     the letter name, its sound, and its word.
+
+     Modes:
+       📖 Learn      — browse A–Z, tap the friend to hear it talk
+       ▶️ A to Z     — sit back, the friends introduce themselves
+       🎯 Find it!   — "Where is the letter B?" tap the right card
+
+     Voice = Web Speech API (built into the browser, offline OK).
+     All words/emoji live in the LETTERS list — easy to change.
+     ============================================================ */
+
+  :root {
+    --mint:      #CFEFE3;
+    --mint-deep: #A8DCC8;
+    --card:      #FFFFFF;
+    --ink:       #2F5D50;
+    --accent:    #FF8A5C;
+    --accent-dk: #E06A3C;
+    --gold:      #FFC93C;
+    --font-kids: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+
+  body {
+    font-family: var(--font-kids);
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 20% 10%, #E8FBF2 0%, transparent 45%),
+      radial-gradient(circle at 85% 85%, #E0F6EC 0%, transparent 45%),
+      var(--mint);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 10px 24px;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  h1 {
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    margin: 4px 0 8px;
+    color: var(--ink);
+    text-shadow: 0 2px 0 #FFFFFF;
+    letter-spacing: 1px;
+  }
+
+  .game-wrap {
+    position: relative;
+    width: min(100%, 820px);
+    min-height: 600px;
+    border-radius: 26px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 5px solid var(--mint-deep);
+    box-shadow: 0 12px 30px rgba(40, 90, 70, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 12px;
+  }
+
+  /* --- Top bar ---------------------------------------------------- */
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .mode-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tab {
+    font-family: var(--font-kids);
+    font-size: clamp(0.9rem, 2.6vw, 1.1rem);
+    font-weight: bold;
+    border: 3px solid var(--mint-deep);
+    background: #FFF;
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 8px 16px;
+    cursor: pointer;
+    box-shadow: 0 3px 0 rgba(40, 90, 70, 0.15);
+  }
+  .tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #FFF;
+    box-shadow: 0 3px 0 var(--accent-dk);
+  }
+  .tab:focus-visible { outline: 4px solid var(--gold); }
+
+  .right-chips { display: flex; gap: 8px; align-items: center; }
+  .chip {
+    background: #FFF;
+    border: 3px solid var(--gold);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-weight: bold;
+    font-size: clamp(0.95rem, 2.6vw, 1.15rem);
+  }
+  .icon-btn {
+    font-size: 1.15rem;
+    background: #FFF;
+    border: 3px solid var(--mint-deep);
+    border-radius: 999px;
+    width: 46px; height: 46px;
+    cursor: pointer;
+  }
+  .icon-btn.off { opacity: 0.45; }
+  .icon-btn:focus-visible { outline: 4px solid var(--gold); }
+
+  /* --- LEARN mode ---------------------------------------------------- */
+  .stage {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(4px, 2vw, 16px);
+    padding: 8px 0;
+  }
+
+  .nav-btn {
+    font-family: var(--font-kids);
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    font-weight: bold;
+    background: #FFF;
+    color: var(--ink);
+    border: 4px solid var(--mint-deep);
+    border-radius: 50%;
+    width: clamp(56px, 10vw, 76px);
+    height: clamp(56px, 10vw, 76px);
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(40, 90, 70, 0.2);
+    flex-shrink: 0;
+  }
+  .nav-btn:active { transform: translateY(3px); box-shadow: none; }
+  .nav-btn:focus-visible { outline: 4px solid var(--gold); }
+
+  .letter-card {
+    background: var(--card);
+    border-radius: 28px;
+    border: 5px solid var(--letter-color, var(--accent));
+    box-shadow: 0 10px 24px rgba(40, 90, 70, 0.18);
+    width: min(100%, 430px);
+    padding: 18px 20px 24px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+  }
+  .letter-card:focus-visible { outline: 5px solid var(--gold); }
+
+  .big-letter {
+    font-size: clamp(4rem, 14vw, 6.5rem);
+    font-weight: bold;
+    line-height: 1;
+    color: var(--letter-color, var(--accent));
+    letter-spacing: 6px;
+  }
+
+  .friend {
+    font-size: clamp(4.5rem, 16vw, 7.5rem);
+    line-height: 1.15;
+    display: inline-block;
+    margin-top: 6px;
+  }
+  .friend.talking { animation: talkBounce 0.5s ease infinite; }
+  @keyframes talkBounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    30%      { transform: translateY(-14px) scale(1.06) rotate(-3deg); }
+    60%      { transform: translateY(0) scale(0.97) rotate(2deg); }
+  }
+
+  .word {
+    font-size: clamp(1.4rem, 5vw, 2rem);
+    font-weight: bold;
+    margin-top: 4px;
+  }
+  .word b { color: var(--letter-color, var(--accent)); font-size: 1.2em; }
+
+  .tap-hint { font-size: 0.95rem; color: #7BA394; margin-top: 6px; }
+
+  /* speech bubble */
+  .bubble {
+    position: absolute;
+    top: -18px;
+    right: -10px;
+    background: #FFF;
+    border: 3px solid var(--letter-color, var(--accent));
+    border-radius: 18px;
+    padding: 8px 16px;
+    font-size: clamp(0.95rem, 3vw, 1.2rem);
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(40, 90, 70, 0.2);
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.2, 1.6, 0.4, 1);
+    pointer-events: none;
+    max-width: 240px;
+  }
+  .bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 26px;
+    border: 7px solid transparent;
+    border-top-color: var(--letter-color, var(--accent));
+  }
+  .bubble.show { opacity: 1; transform: scale(1); }
+
+  /* --- A–Z strip -------------------------------------------------------- */
+  .letter-strip {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 10px 4px 12px;
+    scrollbar-width: thin;
+  }
+  .mini {
+    font-family: var(--font-kids);
+    font-size: 1.15rem;
+    font-weight: bold;
+    min-width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 3px solid var(--mint-deep);
+    background: #FFF;
+    color: var(--ink);
+    cursor: pointer;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .mini.current { border-color: var(--accent); background: var(--accent); color: #FFF; }
+  .mini.visited::after {
+    content: '⭐';
+    position: absolute;
+    top: -10px;
+    right: -6px;
+    font-size: 0.8rem;
+  }
+  .mini:focus-visible { outline: 3px solid var(--gold); }
+
+  /* --- FIND IT mode ------------------------------------------------------ */
+  .find-stage {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 10px;
+  }
+  .find-question {
+    font-size: clamp(1.3rem, 4.5vw, 1.9rem);
+    font-weight: bold;
+    text-align: center;
+    text-wrap: balance;
+  }
+  .find-cards { display: flex; gap: clamp(10px, 3vw, 24px); flex-wrap: wrap; justify-content: center; }
+  .find-card {
+    font-family: var(--font-kids);
+    font-size: clamp(3rem, 12vw, 5rem);
+    font-weight: bold;
+    width: clamp(96px, 24vw, 150px);
+    height: clamp(110px, 26vw, 170px);
+    border-radius: 24px;
+    border: 5px solid var(--fc, var(--accent));
+    color: var(--fc, var(--accent));
+    background: #FFF;
+    cursor: pointer;
+    box-shadow: 0 8px 0 rgba(40, 90, 70, 0.15);
+    transition: transform 0.08s ease;
+  }
+  .find-card:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(40,90,70,0.15); }
+  .find-card:focus-visible { outline: 5px solid var(--gold); }
+  .find-card.wrong { animation: shakeNo 0.45s ease; }
+  @keyframes shakeNo {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-9px); }
+    50% { transform: translateX(8px); }
+    75% { transform: translateX(-5px); }
+  }
+  .find-reveal { font-size: clamp(3.5rem, 12vw, 6rem); min-height: 1.2em; }
+  .replay-btn {
+    font-family: var(--font-kids);
+    font-size: 1.1rem;
+    font-weight: bold;
+    background: #FFF;
+    color: var(--ink);
+    border: 3px solid var(--mint-deep);
+    border-radius: 999px;
+    padding: 10px 22px;
+    cursor: pointer;
+    box-shadow: 0 3px 0 rgba(40, 90, 70, 0.15);
+  }
+  .replay-btn:focus-visible { outline: 4px solid var(--gold); }
+
+  [hidden] { display: none !important; }
+
+  /* --- Confetti ------------------------------------------------------- */
+  .confetti {
+    position: absolute;
+    top: -20px;
+    font-size: 1.4rem;
+    animation: confettiFall linear forwards;
+    pointer-events: none;
+    z-index: 8;
+  }
+  @keyframes confettiFall {
+    to { transform: translateY(680px) rotate(720deg); opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .friend.talking, .find-card.wrong { animation: none; }
+    .confetti { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🍎 ABC Talking Friends!</h1>
+
+<div class="game-wrap">
+  <!-- top bar -->
+  <div class="topbar">
+    <div class="mode-tabs" role="tablist">
+      <button class="tab active" id="tabLearn" data-mode="learn">📖 Learn</button>
+      <button class="tab" id="tabAuto" data-mode="auto">▶️ A to Z</button>
+      <button class="tab" id="tabFind" data-mode="find">🎯 Find it!</button>
+    </div>
+    <div class="right-chips">
+      <div class="chip">⭐ <span id="stars">0</span></div>
+      <button class="icon-btn" id="musicBtn" aria-label="Turn music on or off">🎵</button>
+      <button class="icon-btn" id="voiceBtn" aria-label="Turn the talking voice on or off">🗣️</button>
+    </div>
+  </div>
+
+  <!-- LEARN + AUTO stage -->
+  <div class="stage" id="learnStage">
+    <button class="nav-btn" id="prevBtn" aria-label="Previous letter">◀</button>
+
+    <div class="letter-card" id="letterCard" tabindex="0" role="button"
+         aria-label="Tap to hear the letter">
+      <div class="bubble" id="bubble"></div>
+      <div class="big-letter" id="bigLetter">A a</div>
+      <div class="friend" id="friend">🍎</div>
+      <div class="word" id="word"><b>A</b>pple</div>
+      <div class="tap-hint">👆 Tap me — I can talk!</div>
+    </div>
+
+    <button class="nav-btn" id="nextBtn" aria-label="Next letter">▶</button>
+  </div>
+
+  <!-- FIND IT stage -->
+  <div class="find-stage" id="findStage" hidden>
+    <div class="find-question" id="findQuestion">Where is the letter B?</div>
+    <div class="find-cards" id="findCards"></div>
+    <div class="find-reveal" id="findReveal"></div>
+    <button class="replay-btn" id="replayBtn">🔁 Say it again</button>
+  </div>
+
+  <!-- A-Z strip -->
+  <div class="letter-strip" id="letterStrip"></div>
+</div>
+
+<script>
+/* ==================================================================
+   THE ALPHABET — change any friend or word here!
+   phonic = the sound the letter makes (spoken as written)
+   ================================================================== */
+const LETTERS = [
+  { L: 'A', word: 'Apple',     emoji: '🍎', phonic: 'ah' },
+  { L: 'B', word: 'Ball',      emoji: '⚽', phonic: 'buh' },
+  { L: 'C', word: 'Cat',       emoji: '🐱', phonic: 'kuh' },
+  { L: 'D', word: 'Dog',       emoji: '🐶', phonic: 'duh' },
+  { L: 'E', word: 'Elephant',  emoji: '🐘', phonic: 'eh' },
+  { L: 'F', word: 'Fish',      emoji: '🐟', phonic: 'fff' },
+  { L: 'G', word: 'Grapes',    emoji: '🍇', phonic: 'guh' },
+  { L: 'H', word: 'Hat',       emoji: '🎩', phonic: 'huh' },
+  { L: 'I', word: 'Ice cream', emoji: '🍦', phonic: 'ih' },
+  { L: 'J', word: 'Juice',     emoji: '🧃', phonic: 'juh' },
+  { L: 'K', word: 'Kite',      emoji: '🪁', phonic: 'kuh' },
+  { L: 'L', word: 'Lion',      emoji: '🦁', phonic: 'lll' },
+  { L: 'M', word: 'Monkey',    emoji: '🐵', phonic: 'mmm' },
+  { L: 'N', word: 'Nest',      emoji: '🪺', phonic: 'nnn' },
+  { L: 'O', word: 'Orange',    emoji: '🍊', phonic: 'oh' },
+  { L: 'P', word: 'Penguin',   emoji: '🐧', phonic: 'puh' },
+  { L: 'Q', word: 'Queen',     emoji: '👸', phonic: 'kwuh' },
+  { L: 'R', word: 'Rainbow',   emoji: '🌈', phonic: 'ruh' },
+  { L: 'S', word: 'Sun',       emoji: '☀️', phonic: 'sss' },
+  { L: 'T', word: 'Tiger',     emoji: '🐯', phonic: 'tuh' },
+  { L: 'U', word: 'Umbrella',  emoji: '☂️', phonic: 'uh' },
+  { L: 'V', word: 'Violin',    emoji: '🎻', phonic: 'vvv' },
+  { L: 'W', word: 'Whale',     emoji: '🐳', phonic: 'wuh' },
+  { L: 'X', word: 'Xylophone', emoji: '🎵', phonic: 'ks' },
+  { L: 'Y', word: 'Yo-yo',     emoji: '🪀', phonic: 'yuh' },
+  { L: 'Z', word: 'Zebra',     emoji: '🦓', phonic: 'zzz' }
+];
+
+const CONFIG = {
+  voiceRate: 0.82,          // slower & clearer for little ears
+  voicePitch: 1.15,
+  autoGapMs: 900,           // pause between letters in "A to Z" mode
+  noVoiceStepMs: 2200       // auto-mode step time if voice is off
+};
+
+/* Give every letter its own rainbow color (spread across the hue wheel) */
+const letterColor = (i) => `hsl(${(i * 13.8) % 360}, 62%, 46%)`;
+
+/* ==================================================================
+   Elements & state
+   ================================================================== */
+const bigLetterEl = document.getElementById('bigLetter');
+const friendEl    = document.getElementById('friend');
+const wordEl      = document.getElementById('word');
+const bubbleEl    = document.getElementById('bubble');
+const cardEl      = document.getElementById('letterCard');
+const stripEl     = document.getElementById('letterStrip');
+const starsEl     = document.getElementById('stars');
+const learnStage  = document.getElementById('learnStage');
+const findStage   = document.getElementById('findStage');
+const findQ       = document.getElementById('findQuestion');
+const findCards   = document.getElementById('findCards');
+const findReveal  = document.getElementById('findReveal');
+const gameWrap    = document.querySelector('.game-wrap');
+
+const state = {
+  mode: 'learn',            // 'learn' | 'auto' | 'find'
+  index: 0,                 // current letter in learn/auto
+  visited: new Set(),
+  autoTimer: null,
+  findTarget: null,
+  findLocked: false
+};
+
+let voiceOn = true;
+
+/* ==================================================================
+   Voice
+   ================================================================== */
+function say(text, onDone) {
+  if (!voiceOn) { if (onDone) setTimeout(onDone, 600); return; }
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = CONFIG.voiceRate;
+    u.pitch = CONFIG.voicePitch;
+    if (onDone) {
+      let called = false;
+      const done = () => { if (!called) { called = true; onDone(); } };
+      u.onend = done;
+      u.onerror = done;
+      // safety net in case onend never fires
+      setTimeout(done, 9000);
+    }
+    window.speechSynthesis.speak(u);
+  } catch (e) {
+    if (onDone) setTimeout(onDone, 600);
+  }
+}
+
+document.getElementById('voiceBtn').addEventListener('click', (e) => {
+  voiceOn = !voiceOn;
+  e.currentTarget.classList.toggle('off', !voiceOn);
+  if (!voiceOn) try { window.speechSynthesis.cancel(); } catch (err) {}
+});
+
+/* ==================================================================
+   Background music — a soft alphabet lullaby, kept extra quiet so
+   the talking friends always stay clear. (WebAudio, no files)
+   ================================================================== */
+let audioCtx = null;
+let musicOn = true, musicTimer = null, musicStep = 0, musicNext = 0;
+const NOTE = (() => {
+  const s = { C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11 };
+  return (n) => {
+    const m = n.match(/^([A-G]#?)(\d)$/);
+    return 440 * Math.pow(2, (s[m[1]] + (parseInt(m[2], 10) - 4) * 12 - 9) / 12);
+  };
+})();
+const MELODY = ['G5','B5','D6',null,'B5',null,'A5','G5','E5',null,'G5',null,'D5',null,null,null];
+const BASS   = ['G3',null,null,null,'C3',null,null,null,'D3',null,null,null,'G2',null,null,null];
+const STEP_LEN = 60 / 84 / 2;   // 8th notes at a sleepy 84 BPM
+
+function playMusicNote(freq, t, dur, type, vol) {
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(t); o.stop(t + dur);
+}
+function startMusic() {
+  if (!musicOn || musicTimer) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    musicStep = 0;
+    musicNext = audioCtx.currentTime + 0.05;
+    musicTimer = setInterval(() => {
+      while (musicNext < audioCtx.currentTime + 0.15) {
+        const m = MELODY[musicStep % MELODY.length];
+        const b = BASS[musicStep % BASS.length];
+        if (m) playMusicNote(NOTE(m), musicNext, STEP_LEN * 0.9, 'sine', 0.02);
+        if (b) playMusicNote(NOTE(b), musicNext, STEP_LEN * 1.8, 'triangle', 0.03);
+        musicNext += STEP_LEN;
+        musicStep++;
+      }
+    }, 50);
+  } catch (e) {}
+}
+function stopMusic() { clearInterval(musicTimer); musicTimer = null; }
+
+document.getElementById('musicBtn').addEventListener('click', (e) => {
+  musicOn = !musicOn;
+  e.currentTarget.classList.toggle('off', !musicOn);
+  if (!musicOn) stopMusic();
+  else startMusic();
+});
+
+/* ==================================================================
+   Confetti + stars
+   ================================================================== */
+function celebrate() {
+  const emojis = ['🎉', '⭐', '✨', '🎊', '💚'];
+  for (let i = 0; i < 20; i++) {
+    const c = document.createElement('span');
+    c.className = 'confetti';
+    c.textContent = emojis[i % emojis.length];
+    c.style.left = Math.random() * 95 + '%';
+    c.style.animationDuration = (1.4 + Math.random() * 1.4) + 's';
+    c.style.animationDelay = (Math.random() * 0.4) + 's';
+    gameWrap.appendChild(c);
+    setTimeout(() => c.remove(), 3200);
+  }
+}
+function addStar() { starsEl.textContent = String(parseInt(starsEl.textContent, 10) + 1); }
+
+/* ==================================================================
+   LEARN mode
+   ================================================================== */
+function showLetter(i) {
+  state.index = ((i % 26) + 26) % 26;
+  const d = LETTERS[state.index];
+  const color = letterColor(state.index);
+
+  cardEl.style.setProperty('--letter-color', color);
+  bigLetterEl.textContent = `${d.L} ${d.L.toLowerCase()}`;
+  friendEl.textContent = d.emoji;
+  wordEl.innerHTML = `<b>${d.word.charAt(0)}</b>${d.word.slice(1)}`;
+  bubbleEl.classList.remove('show');
+  updateStrip();
+}
+
+/** The friend talks: letter → sound → word, with a bouncing animation */
+function speakCurrent(onFinished) {
+  startMusic();          // first tap is our user-gesture — music may begin
+  const d = LETTERS[state.index];
+
+  if (!state.visited.has(state.index)) {
+    state.visited.add(state.index);
+    addStar();
+  }
+  updateStrip();
+
+  bubbleEl.textContent = `${d.L} is for ${d.word}!`;
+  bubbleEl.classList.add('show');
+  friendEl.classList.add('talking');
+
+  say(`${d.L}! ${d.L} says ${d.phonic}. ${d.phonic}, ${d.phonic}, ${d.word}! ${d.L} is for ${d.word}!`,
+    () => {
+      friendEl.classList.remove('talking');
+      setTimeout(() => bubbleEl.classList.remove('show'), 700);
+      if (onFinished) onFinished();
+    });
+}
+
+cardEl.addEventListener('click', () => { if (state.mode === 'learn') speakCurrent(); });
+cardEl.addEventListener('keydown', (e) => {
+  if ((e.key === 'Enter' || e.key === ' ') && state.mode === 'learn') {
+    e.preventDefault();
+    speakCurrent();
+  }
+});
+
+document.getElementById('prevBtn').addEventListener('click', () => {
+  stopAuto();
+  showLetter(state.index - 1);
+  speakCurrent();
+});
+document.getElementById('nextBtn').addEventListener('click', () => {
+  stopAuto();
+  showLetter(state.index + 1);
+  speakCurrent();
+});
+
+/* --- A-Z strip ------------------------------------------------------ */
+function buildStrip() {
+  LETTERS.forEach((d, i) => {
+    const b = document.createElement('button');
+    b.className = 'mini';
+    b.textContent = d.L;
+    b.style.color = letterColor(i);
+    b.setAttribute('aria-label', `Letter ${d.L}`);
+    b.addEventListener('click', () => {
+      stopAuto();
+      setMode('learn');
+      showLetter(i);
+      speakCurrent();
+    });
+    stripEl.appendChild(b);
+  });
+}
+function updateStrip() {
+  [...stripEl.children].forEach((b, i) => {
+    b.classList.toggle('current', i === state.index && state.mode !== 'find');
+    b.classList.toggle('visited', state.visited.has(i));
+    if (i === state.index) b.style.background = '';
+  });
+}
+
+/* ==================================================================
+   AUTO mode — the friends introduce themselves A to Z
+   ================================================================== */
+function startAuto() {
+  showLetter(state.index);
+  const step = () => {
+    if (state.mode !== 'auto') return;
+    speakCurrent(() => {
+      if (state.mode !== 'auto') return;
+      state.autoTimer = setTimeout(() => {
+        if (state.index === 25) {                 // finished Z!
+          celebrate();
+          say('You know your A B Cs! Hooray!');
+          setMode('learn');
+          return;
+        }
+        showLetter(state.index + 1);
+        step();
+      }, voiceOn ? CONFIG.autoGapMs : CONFIG.noVoiceStepMs);
+    });
+  };
+  step();
+}
+function stopAuto() {
+  clearTimeout(state.autoTimer);
+  try { window.speechSynthesis.cancel(); } catch (e) {}
+  friendEl.classList.remove('talking');
+  if (state.mode === 'auto') setMode('learn', true);
+}
+
+/* ==================================================================
+   FIND IT mode — "Where is the letter B?"
+   ================================================================== */
+function newFindRound() {
+  state.findLocked = false;
+  findReveal.textContent = '';
+
+  const targetIdx = Math.floor(Math.random() * 26);
+  state.findTarget = targetIdx;
+
+  // two different wrong choices
+  const pool = new Set([targetIdx]);
+  while (pool.size < 3) pool.add(Math.floor(Math.random() * 26));
+  const options = [...pool].sort(() => Math.random() - 0.5);
+
+  const d = LETTERS[targetIdx];
+  findQ.textContent = `Where is the letter ${d.L}?`;
+
+  findCards.innerHTML = '';
+  options.forEach(i => {
+    const b = document.createElement('button');
+    b.className = 'find-card';
+    b.textContent = LETTERS[i].L;
+    b.style.setProperty('--fc', letterColor(i));
+    b.addEventListener('click', () => onFindTap(b, i));
+    findCards.appendChild(b);
+  });
+
+  say(`Where is the letter ${d.L}? Find ${d.L}!`);
+}
+
+function onFindTap(btn, i) {
+  if (state.findLocked) return;
+  const d = LETTERS[state.findTarget];
+
+  if (i === state.findTarget) {
+    state.findLocked = true;
+    addStar();
+    celebrate();
+    findReveal.textContent = d.emoji;
+    findQ.textContent = `Yes! ${d.L} is for ${d.word}!`;
+    say(`Yes! You found ${d.L}! ${d.L} is for ${d.word}! Hooray!`, () => {
+      setTimeout(newFindRound, 900);
+    });
+  } else {
+    btn.classList.remove('wrong');
+    void btn.offsetWidth;
+    btn.classList.add('wrong');
+    say(`That is the letter ${LETTERS[i].L}. Try again! Find ${d.L}!`);
+  }
+}
+
+document.getElementById('replayBtn').addEventListener('click', () => {
+  if (state.findTarget !== null) {
+    say(`Where is the letter ${LETTERS[state.findTarget].L}?`);
+  }
+});
+
+/* ==================================================================
+   Mode switching
+   ================================================================== */
+function setMode(mode, skipAutoStart = false) {
+  clearTimeout(state.autoTimer);
+  try { window.speechSynthesis.cancel(); } catch (e) {}
+  friendEl.classList.remove('talking');
+  bubbleEl.classList.remove('show');
+
+  state.mode = mode;
+  document.querySelectorAll('.tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.mode === mode));
+
+  const isFind = (mode === 'find');
+  learnStage.hidden = isFind;
+  findStage.hidden = !isFind;
+
+  startMusic();
+  if (mode === 'find') newFindRound();
+  else if (mode === 'auto' && !skipAutoStart) startAuto();
+  updateStrip();
+}
+
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => setMode(t.dataset.mode));
+});
+
+/* ==================================================================
+   Go!
+   ================================================================== */
+buildStrip();
+showLetter(0);
+</script>
+</body>
+</html>

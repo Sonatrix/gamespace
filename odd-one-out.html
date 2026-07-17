@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Odd One Out — Free Thinking Game for Kids | GameSpace</title>
+<meta name="description" content="Which one does NOT belong? A free categorization game for kids ages 3–6 — find the sneaky visitor among animals, fruits and vehicles, and hear WHY it doesn't belong.">
+<style>
+  /* ============================================================
+     ODD ONE OUT — which one doesn't belong? (ages 3–6)
+     Four cards: three from one family, one sneaky visitor.
+     Tap the odd one! The voice explains WHY it doesn't belong,
+     which is where the real learning happens.
+     ============================================================ */
+
+  :root {
+    --berry:    #FDECEF;
+    --berry-dp: #F5C6CF;
+    --ink:      #7A2E42;
+    --crimson:  #E0566B;
+    --crimson-dk:#C23B50;
+    --gold:     #FFC93C;
+    --good:     #58B368;
+    --font-kids: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body {
+    font-family: var(--font-kids);
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 80% 10%, #FFF6F8 0%, transparent 45%),
+      var(--berry);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 10px 10px 24px;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  h1 {
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    margin: 4px 0 8px;
+    color: var(--crimson-dk);
+    text-shadow: 0 2px 0 #FFF;
+    letter-spacing: 1px;
+  }
+  .game-wrap {
+    position: relative;
+    width: min(100%, 640px);
+    min-height: 540px;
+    border-radius: 26px;
+    background: #FFFDFD;
+    border: 5px solid var(--berry-dp);
+    box-shadow: 0 12px 30px rgba(160, 50, 80, 0.2);
+    display: flex; flex-direction: column;
+    padding: 12px;
+    overflow: hidden;
+  }
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    background: #FFF; border: 3px solid var(--gold); border-radius: 999px;
+    padding: 4px 14px; font-weight: bold;
+    font-size: clamp(0.9rem, 2.6vw, 1.15rem);
+  }
+  .toggles { display: flex; gap: 6px; }
+  .icon-btn {
+    font-size: 1.1rem; background: #FFF;
+    border: 3px solid var(--berry-dp); border-radius: 999px;
+    width: 44px; height: 44px; cursor: pointer;
+  }
+  .icon-btn.off { opacity: 0.45; }
+  .icon-btn:focus-visible { outline: 4px solid var(--gold); }
+
+  .prompt {
+    text-align: center;
+    font-size: clamp(1.15rem, 3.6vw, 1.6rem);
+    font-weight: bold;
+    min-height: 2.4em;
+    margin: 14px 10px 4px;
+    text-wrap: balance;
+  }
+
+  .cards {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(120px, 210px));
+    gap: clamp(12px, 3.5vw, 24px);
+    justify-content: center;
+    align-content: center;
+    padding: 8px 0 20px;
+  }
+  .ooo-card {
+    font-size: clamp(3.4rem, 13vw, 5.4rem);
+    background: #FFF;
+    border: 5px solid var(--berry-dp);
+    border-radius: 26px;
+    height: clamp(120px, 28vw, 180px);
+    cursor: pointer;
+    box-shadow: 0 8px 0 rgba(160, 50, 80, 0.15);
+    transition: transform 0.1s ease, border-color 0.2s ease;
+  }
+  .ooo-card:hover { border-color: var(--crimson); }
+  .ooo-card:active { transform: translateY(4px); box-shadow: 0 3px 0 rgba(160,50,80,0.15); }
+  .ooo-card:focus-visible { outline: 5px solid var(--gold); }
+  .ooo-card.found {
+    border-color: var(--good);
+    animation: foundPop 0.6s cubic-bezier(0.2, 1.6, 0.4, 1);
+    box-shadow: 0 0 0 6px rgba(88, 179, 104, 0.35);
+  }
+  @keyframes foundPop {
+    0% { transform: scale(0.8); } 55% { transform: scale(1.12) rotate(-4deg); } 100% { transform: scale(1); }
+  }
+  .ooo-card.wrong { animation: shakeNo 0.45s ease; }
+  @keyframes shakeNo {
+    0%,100% { transform: translateX(0); } 25% { transform: translateX(-9px); }
+    50% { transform: translateX(8px); } 75% { transform: translateX(-5px); }
+  }
+
+  .replay-btn {
+    font-family: var(--font-kids);
+    font-size: 1rem;
+    font-weight: bold;
+    background: #FFF; color: var(--ink);
+    border: 3px solid var(--berry-dp); border-radius: 999px;
+    padding: 9px 22px; cursor: pointer;
+    margin: 0 auto 10px; display: block;
+  }
+  .replay-btn:focus-visible { outline: 4px solid var(--gold); }
+
+  .confetti {
+    position: absolute; top: -20px; font-size: 1.4rem;
+    animation: confettiFall linear forwards;
+    pointer-events: none; z-index: 12;
+  }
+  @keyframes confettiFall { to { transform: translateY(620px) rotate(720deg); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .ooo-card.found, .ooo-card.wrong { animation: none; }
+    .confetti { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<h1>👀 Odd One Out!</h1>
+
+<div class="game-wrap">
+  <div class="topbar">
+    <div class="chips">
+      <div class="chip">⭐ <span id="stars">0</span></div>
+      <div class="chip">🔥 Streak: <span id="streak">0</span></div>
+    </div>
+    <div class="toggles">
+      <button class="icon-btn" id="musicBtn" aria-label="Turn music on or off">🎵</button>
+      <button class="icon-btn" id="voiceBtn" aria-label="Turn the talking voice on or off">🗣️</button>
+      <button class="icon-btn" id="soundBtn" aria-label="Turn sounds on or off">🔊</button>
+    </div>
+  </div>
+
+  <div class="prompt" id="prompt">Which one does NOT belong?</div>
+  <div class="cards" id="cards"></div>
+  <button class="replay-btn" id="replayBtn">🔁 Ask me again</button>
+</div>
+
+<script>
+/* ==================================================================
+   CATEGORIES — [emoji, name]; `family` is the spoken group name,
+   `a`/`an` handled in the sentences below.
+   ================================================================== */
+const CATEGORIES = [
+  { family: 'animals',  things: 'an animal',  items: [['🐶','dog'],['🐱','cat'],['🐰','bunny'],['🦁','lion'],['🐸','frog'],['🐵','monkey']] },
+  { family: 'fruits',   things: 'a fruit',    items: [['🍎','apple'],['🍌','banana'],['🍇','grapes'],['🍊','orange'],['🍓','strawberry'],['🍉','watermelon']] },
+  { family: 'vehicles', things: 'a vehicle',  items: [['🚗','car'],['🚂','train'],['✈️','airplane'],['🚌','bus'],['🚒','fire truck'],['⛵','boat']] },
+  { family: 'clothes',  things: 'clothing',   items: [['👕','shirt'],['👖','pants'],['🧢','cap'],['🧦','socks'],['👟','shoe'],['🧤','gloves']] },
+  { family: 'sea friends', things: 'a sea friend', items: [['🐟','fish'],['🐳','whale'],['🦀','crab'],['🐙','octopus'],['🐬','dolphin'],['🦈','shark']] },
+  { family: 'sweet treats', things: 'a sweet treat', items: [['🍦','ice cream'],['🍪','cookie'],['🎂','cake'],['🍭','lollipop'],['🧁','cupcake'],['🍩','donut']] },
+  { family: 'things in the sky', things: 'up in the sky', items: [['☀️','sun'],['🌙','moon'],['⭐','star'],['☁️','cloud'],['🌈','rainbow'],['⚡','lightning']] }
+];
+
+/* ==================================================================
+   Audio + voice + background music
+   ================================================================== */
+let audioCtx = null, soundOn = true, voiceOn = true;
+function ensureCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+function tone(freq, dur, type = 'triangle', vol = 0.12, when = 0) {
+  if (!soundOn) return;
+  try {
+    ensureCtx();
+    const t0 = audioCtx.currentTime + when;
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(vol, t0);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(t0); o.stop(t0 + dur);
+  } catch (e) {}
+}
+const sndYes = () => { tone(660, 0.15); tone(990, 0.22, 'triangle', 0.14, 0.12); };
+const sndNo  = () => tone(300, 0.2, 'sine', 0.07);
+const sndWin = () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.25, 'triangle', 0.14, i * 0.14));
+
+function say(text) {
+  if (!voiceOn) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.88; u.pitch = 1.1;
+    window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+let musicOn = true, musicTimer = null, musicStep = 0, musicNext = 0;
+const NOTE = (() => {
+  const s = { C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11 };
+  return (n) => { const m = n.match(/^([A-G]#?)(\d)$/);
+    return 440 * Math.pow(2, (s[m[1]] + (parseInt(m[2],10) - 4) * 12 - 9) / 12); };
+})();
+/* a curious sneaky-detective tune */
+const MELODY = ['E5','G5','E5',null,'F5','A5','F5',null,'E5','G5','B5','A5','G5','F5','E5',null];
+const BASS   = ['C3',null,'E3',null,'D3',null,'F3',null,'C3',null,'E3',null,'G2',null,'C3',null];
+const STEP_LEN = 60 / 104 / 2;
+
+function playMusicNote(freq, t, dur, type, vol) {
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(t); o.stop(t + dur);
+}
+function startMusic() {
+  if (!musicOn || musicTimer) return;
+  try {
+    ensureCtx();
+    musicStep = 0; musicNext = audioCtx.currentTime + 0.05;
+    musicTimer = setInterval(() => {
+      while (musicNext < audioCtx.currentTime + 0.15) {
+        const m = MELODY[musicStep % MELODY.length], b = BASS[musicStep % BASS.length];
+        if (m) playMusicNote(NOTE(m), musicNext, STEP_LEN * 0.9, 'triangle', 0.025);
+        if (b) playMusicNote(NOTE(b), musicNext, STEP_LEN * 1.8, 'triangle', 0.035);
+        musicNext += STEP_LEN; musicStep++;
+      }
+    }, 50);
+  } catch (e) {}
+}
+function stopMusic() { clearInterval(musicTimer); musicTimer = null; }
+
+document.getElementById('soundBtn').addEventListener('click', (e) => {
+  soundOn = !soundOn;
+  e.currentTarget.textContent = soundOn ? '🔊' : '🔇';
+  e.currentTarget.classList.toggle('off', !soundOn);
+});
+document.getElementById('voiceBtn').addEventListener('click', (e) => {
+  voiceOn = !voiceOn;
+  e.currentTarget.classList.toggle('off', !voiceOn);
+  if (!voiceOn) try { window.speechSynthesis.cancel(); } catch (err) {}
+});
+document.getElementById('musicBtn').addEventListener('click', (e) => {
+  musicOn = !musicOn;
+  e.currentTarget.classList.toggle('off', !musicOn);
+  if (!musicOn) stopMusic();
+  else startMusic();
+});
+
+/* ==================================================================
+   Rounds
+   ================================================================== */
+const cardsEl  = document.getElementById('cards');
+const promptEl = document.getElementById('prompt');
+const starsEl  = document.getElementById('stars');
+const streakEl = document.getElementById('streak');
+const gameWrap = document.querySelector('.game-wrap');
+
+const state = { odd: null, mainFamily: null, oddItem: null, locked: false };
+
+const randOf = a => a[Math.floor(Math.random() * a.length)];
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function newRound() {
+  state.locked = false;
+
+  // pick two different families
+  const main = randOf(CATEGORIES);
+  let other;
+  do { other = randOf(CATEGORIES); } while (other === main);
+
+  const trio = shuffle([...main.items]).slice(0, 3);
+  const odd = randOf(other.items);
+  state.mainFamily = main;
+  state.oddItem = odd;
+
+  const four = shuffle([...trio.map(it => ({ it, odd: false })), { it: odd, odd: true }]);
+
+  cardsEl.innerHTML = '';
+  four.forEach(({ it, odd: isOdd }) => {
+    const b = document.createElement('button');
+    b.className = 'ooo-card';
+    b.textContent = it[0];
+    b.setAttribute('aria-label', it[1]);
+    b.addEventListener('click', () => onCard(b, it, isOdd));
+    cardsEl.appendChild(b);
+  });
+
+  promptEl.textContent = 'Which one does NOT belong? 🤔';
+  say(`Look! ${four.map(f => `a ${f.it[1]}`).join(', ')}. Which one does not belong?`);
+}
+
+function onCard(btn, item, isOdd) {
+  if (state.locked) return;
+
+  if (isOdd) {
+    state.locked = true;
+    btn.classList.add('found');
+    sndYes();
+    starsEl.textContent = String(parseInt(starsEl.textContent, 10) + 1);
+    const streak = parseInt(streakEl.textContent, 10) + 1;
+    streakEl.textContent = String(streak);
+
+    const why = `The ${item[1]} is not ${aOrOne(state.mainFamily.things)} — the others are all ${state.mainFamily.family}!`;
+    promptEl.textContent = `🎉 Yes! ${why}`;
+    const isParty = streak % 5 === 0;
+    if (isParty) { sndWin(); celebrate(); }
+    say(`Yes! You found it! ${why} ${isParty ? 'You are a super detective!' : 'Great thinking!'}`);
+    setTimeout(newRound, 2300);
+  } else {
+    btn.classList.remove('wrong');
+    void btn.offsetWidth;
+    btn.classList.add('wrong');
+    sndNo();
+    streakEl.textContent = '0';
+    say(`Hmm, the ${item[1]} IS one of the ${state.mainFamily.family}. Look for the sneaky one that is different!`);
+  }
+}
+
+/* tiny grammar helper: "an animal" stays, "clothing"/"up in the sky" get natural phrasing */
+function aOrOne(things) {
+  return things.startsWith('a ') || things.startsWith('an ') ? things : things;
+}
+
+document.getElementById('replayBtn').addEventListener('click', () => {
+  if (!state.locked) say('Which one does not belong? Find the sneaky one!');
+});
+
+function celebrate() {
+  const emojis = ['🎉', '⭐', '✨', '🔎', '💗'];
+  for (let i = 0; i < 22; i++) {
+    const c = document.createElement('span');
+    c.className = 'confetti';
+    c.textContent = emojis[i % emojis.length];
+    c.style.left = Math.random() * 95 + '%';
+    c.style.animationDuration = (1.4 + Math.random() * 1.4) + 's';
+    c.style.animationDelay = (Math.random() * 0.4) + 's';
+    gameWrap.appendChild(c);
+    setTimeout(() => c.remove(), 3200);
+  }
+}
+
+/* music starts on the first tap anywhere (browser gesture rule) */
+document.addEventListener('pointerdown', function once() {
+  startMusic();
+  document.removeEventListener('pointerdown', once);
+});
+
+newRound();
+</script>
+</body>
+</html>

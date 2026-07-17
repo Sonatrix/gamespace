@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Matchstick Math — Learn Counting, Adding &amp; Taking Away | GameSpace</title>
+<meta name="description" content="See HOW math works! Kids under 5 tap real matchsticks to learn counting, addition and subtraction step by step, with full voice narration for pre-readers. Free and no-fail.">
+<style>
+  /* ============================================================
+     MATCHSTICK MATH — for kids UNDER 5
+     Learn HOW counting, adding and taking-away actually work,
+     by tapping real matchsticks one at a time.
+
+     - Voice narration (Web Speech API) reads everything aloud,
+       so pre-readers can play alone. Toggle with the 🗣️ button.
+     - No lives, no timer, no wrong answers — only gentle guiding.
+     - All numbers, colors and ranges live in CONFIG (in the JS).
+     ============================================================ */
+
+  :root {
+    --paper:      #F7E8CF;   /* craft-paper table */
+    --paper-deep: #EFD9B4;
+    --board:      #FDF6E9;
+    --wood:       #E3B778;   /* matchstick wood */
+    --wood-dark:  #C89858;
+    --tip-red:    #E85C4A;
+    --tip-blue:   #4EA8DE;
+    --ink:        #5A4632;
+    --accent:     #F2913D;
+    --accent-dk:  #D4731F;
+    --good:       #58B368;
+    --good-dk:    #3F9450;
+    --font-kids: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+
+  body {
+    font-family: var(--font-kids);
+    color: var(--ink);
+    background:
+      radial-gradient(ellipse at 50% -20%, #FFF3DD 0%, transparent 60%),
+      var(--paper);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 10px 24px;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  h1 {
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    margin: 4px 0 8px;
+    color: var(--accent-dk);
+    text-shadow: 0 2px 0 #FFF3DD;
+    letter-spacing: 1px;
+  }
+
+  .game-wrap {
+    position: relative;
+    width: min(100%, 860px);
+    min-height: 560px;
+    border-radius: 26px;
+    background: var(--board);
+    border: 6px solid var(--paper-deep);
+    box-shadow: 0 12px 30px rgba(120, 80, 30, 0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* --- Top bar: stars + toggles ---------------------------------- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px 0;
+    gap: 8px;
+  }
+  .chip {
+    background: #FFF;
+    border: 3px solid var(--accent);
+    border-radius: 999px;
+    padding: 4px 16px;
+    font-size: clamp(1rem, 3vw, 1.3rem);
+    font-weight: bold;
+    box-shadow: 0 3px 0 rgba(90, 70, 50, 0.15);
+  }
+  .toggles { display: flex; gap: 8px; }
+  .icon-btn {
+    font-family: var(--font-kids);
+    font-size: 1.2rem;
+    background: #FFF;
+    border: 3px solid var(--paper-deep);
+    border-radius: 999px;
+    min-width: 48px; height: 48px;
+    padding: 0 12px;
+    cursor: pointer;
+    font-weight: bold;
+    color: var(--ink);
+    box-shadow: 0 3px 0 rgba(90, 70, 50, 0.15);
+  }
+  .icon-btn.off { opacity: 0.45; }
+  .icon-btn:focus-visible { outline: 4px solid var(--accent); }
+
+  /* --- Prompt bar: the friendly narrator -------------------------- */
+  .prompt-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 10px 16px 4px;
+    background: #FFF;
+    border: 3px dashed var(--accent);
+    border-radius: 18px;
+    padding: 10px 16px;
+    min-height: 64px;
+  }
+  .narrator { font-size: 2rem; flex-shrink: 0; }
+  .prompt-text {
+    font-size: clamp(1.05rem, 3.2vw, 1.45rem);
+    font-weight: bold;
+    text-wrap: balance;
+  }
+
+  /* --- Equation display ------------------------------------------- */
+  .equation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    min-height: 58px;
+    font-size: clamp(1.8rem, 6vw, 2.8rem);
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+  }
+  .equation span {
+    opacity: 0.25;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    display: inline-block;
+  }
+  .equation span.lit { opacity: 1; }
+  .equation span.pop-in {
+    opacity: 1;
+    transform: scale(1.25);
+    color: var(--good-dk);
+  }
+  .equation:empty { display: none; }
+
+  /* --- Stick board -------------------------------------------------- */
+  .board {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(16px, 5vw, 60px);
+    flex-wrap: wrap;
+    padding: 8px 16px 12px;
+  }
+
+  .stick-group {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: clamp(8px, 2vw, 16px);
+    flex-wrap: wrap;
+    padding: 14px 16px 10px;
+    border-radius: 20px;
+    min-height: 170px;
+    min-width: 110px;
+    transition: background 0.4s ease, border-color 0.4s ease;
+    border: 3px solid transparent;
+  }
+  .stick-group.tray-a { background: #FDECEA; border-color: #F5C4BC; }
+  .stick-group.tray-b { background: #EAF4FC; border-color: #BFDCF2; }
+  .stick-group.tray-one { background: #F1F8EC; border-color: #CBE6BC; }
+
+  .group-label {
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1rem;
+    color: #A08868;
+    order: 99;              /* label sits under the sticks */
+  }
+
+  /* --- The matchstick itself (a button, for big-tap accessibility) --- */
+  .stick {
+    position: relative;
+    background: none;
+    border: none;
+    padding: 10px 6px 6px;        /* generous invisible tap area */
+    cursor: pointer;
+    transition: transform 0.5s ease, opacity 0.5s ease;
+  }
+  .stick:focus-visible { outline: 4px dashed var(--accent); border-radius: 12px; }
+
+  .stick .body {
+    width: clamp(18px, 4.5vw, 26px);
+    height: clamp(80px, 18vw, 116px);
+    background: linear-gradient(90deg, var(--wood) 55%, var(--wood-dark));
+    border: 2.5px solid #A87C42;
+    border-radius: 7px;
+    position: relative;
+  }
+  .stick .body::before {          /* the match head */
+    content: '';
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 130%;
+    height: 30px;
+    background: radial-gradient(circle at 35% 30%, #FF9A8A, var(--tip-red) 60%, #C23B2A);
+    border: 2.5px solid #A82E1F;
+    border-radius: 50% 50% 45% 45%;
+  }
+  .stick.blue .body::before {
+    background: radial-gradient(circle at 35% 30%, #9FD4F5, var(--tip-blue) 60%, #2E7BAF);
+    border-color: #2A6B99;
+  }
+
+  /* counted badge */
+  .stick .badge {
+    position: absolute;
+    top: -34px;
+    left: 50%;
+    transform: translateX(-50%) scale(0);
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--good);
+    color: #FFF;
+    border: 3px solid #FFF;
+    font-size: 1.25rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 6px rgba(60, 100, 60, 0.35);
+    transition: transform 0.25s cubic-bezier(0.2, 1.6, 0.4, 1);
+    pointer-events: none;
+  }
+  .stick.counted .badge { transform: translateX(-50%) scale(1); }
+  .stick.counted .body { filter: brightness(1.08); }
+
+  .stick.wiggle { animation: wiggle 0.45s ease; }
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(-7deg); }
+    50% { transform: rotate(6deg); }
+    75% { transform: rotate(-4deg); }
+  }
+
+  .stick.fly-away {
+    transform: translate(60vw, -50vh) rotate(340deg) scale(0.4);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .stick.merging { transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+
+  /* --- Giant center number flash ----------------------------------- */
+  .count-flash {
+    position: absolute;
+    top: 42%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    font-size: clamp(5rem, 18vw, 9rem);
+    font-weight: bold;
+    color: var(--accent);
+    -webkit-text-stroke: 4px #FFF;
+    paint-order: stroke fill;
+    text-shadow: 0 6px 0 rgba(120, 80, 30, 0.2);
+    pointer-events: none;
+    z-index: 5;
+  }
+  .count-flash.flash { animation: flashNum 0.7s ease; }
+  @keyframes flashNum {
+    0%   { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+    30%  { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+    70%  { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(0.9); opacity: 0; }
+  }
+
+  /* --- Bottom action area ------------------------------------------ */
+  .actions {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    padding: 6px 16px 18px;
+    flex-wrap: wrap;
+  }
+  .big-btn {
+    font-family: var(--font-kids);
+    font-size: clamp(1.15rem, 4vw, 1.6rem);
+    font-weight: bold;
+    color: #FFF;
+    border: none;
+    border-radius: 999px;
+    padding: 16px 36px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    background: var(--accent);
+    box-shadow: 0 6px 0 var(--accent-dk);
+    transition: transform 0.08s ease;
+  }
+  .big-btn.green { background: var(--good); box-shadow: 0 6px 0 var(--good-dk); }
+  .big-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--accent-dk); }
+  .big-btn:focus-visible { outline: 5px solid #FFD98A; outline-offset: 3px; }
+  .big-btn[hidden] { display: none; }
+
+  /* --- Menu overlay -------------------------------------------------- */
+  .overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 16px;
+    background: rgba(253, 246, 233, 0.94);
+    text-align: center;
+    padding: 20px;
+    z-index: 10;
+  }
+  .overlay[hidden] { display: none; }
+  .overlay .big-msg {
+    font-size: clamp(1.4rem, 4.5vw, 2.1rem);
+    font-weight: bold;
+    text-wrap: balance;
+  }
+  .mode-buttons { display: flex; flex-direction: column; gap: 14px; width: min(100%, 360px); }
+  .mode-btn {
+    font-family: var(--font-kids);
+    font-size: clamp(1.15rem, 3.5vw, 1.5rem);
+    font-weight: bold;
+    color: #FFF;
+    border: none;
+    border-radius: 22px;
+    padding: 18px 20px;
+    cursor: pointer;
+    transition: transform 0.08s ease;
+  }
+  .mode-btn small { display: block; font-size: 0.7em; font-weight: normal; opacity: 0.95; margin-top: 2px; }
+  .mode-btn:active { transform: translateY(3px); }
+  .mode-btn:focus-visible { outline: 5px solid var(--accent); outline-offset: 3px; }
+  .m-count { background: var(--accent); box-shadow: 0 6px 0 var(--accent-dk); }
+  .m-add   { background: var(--good);   box-shadow: 0 6px 0 var(--good-dk); }
+  .m-sub   { background: var(--tip-blue); box-shadow: 0 6px 0 #2E7BAF; }
+
+  /* --- Confetti ------------------------------------------------------ */
+  .confetti {
+    position: absolute;
+    top: -20px;
+    font-size: 1.4rem;
+    animation: confettiFall linear forwards;
+    pointer-events: none;
+    z-index: 8;
+  }
+  @keyframes confettiFall {
+    to { transform: translateY(660px) rotate(720deg); opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stick, .stick .badge, .big-btn, .mode-btn { transition: none; animation: none; }
+    .count-flash.flash { animation: none; opacity: 1; transform: translate(-50%,-50%) scale(1); }
+    .confetti { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🔥 Matchstick Math!</h1>
+
+<div class="game-wrap">
+  <!-- top bar -->
+  <div class="topbar">
+    <div class="chip">⭐ <span id="stars">0</span></div>
+    <div class="toggles">
+      <button class="icon-btn" id="menuBtn" aria-label="Back to menu">🏠</button>
+      <button class="icon-btn" id="musicBtn" aria-label="Turn music on or off">🎵</button>
+      <button class="icon-btn" id="voiceBtn" aria-label="Turn the talking voice on or off">🗣️</button>
+      <button class="icon-btn" id="soundBtn" aria-label="Turn sounds on or off">🔊</button>
+    </div>
+  </div>
+
+  <!-- narrator prompt -->
+  <div class="prompt-bar">
+    <div class="narrator" id="narratorFace">🙂</div>
+    <div class="prompt-text" id="prompt">Hello! Let's play with matchsticks!</div>
+  </div>
+
+  <!-- equation row (fills in piece by piece) -->
+  <div class="equation" id="equation"></div>
+
+  <!-- the stick board -->
+  <div class="board" id="board"></div>
+
+  <!-- giant counting number -->
+  <div class="count-flash" id="countFlash"></div>
+
+  <!-- action buttons -->
+  <div class="actions">
+    <button class="big-btn green" id="actionBtn" hidden>✨</button>
+    <button class="big-btn" id="nextBtn" hidden>▶ Next one!</button>
+  </div>
+
+  <!-- menu -->
+  <div class="overlay" id="menuOverlay">
+    <div class="big-msg">What shall we learn today?</div>
+    <div class="mode-buttons">
+      <button class="mode-btn m-count" data-mode="count">1️⃣ Counting
+        <small>Tap every stick and count together</small></button>
+      <button class="mode-btn m-add" data-mode="add">➕ Putting Together
+        <small>Two little piles become one big pile!</small></button>
+      <button class="mode-btn m-sub" data-mode="sub">➖ Taking Away
+        <small>Some sticks fly away… how many are left?</small></button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==================================================================
+   CONFIG — all the knobs for grown-ups to tweak
+   ================================================================== */
+const CONFIG = {
+  countMin: 3,  countMax: 7,     // counting mode: how many sticks
+  addMin: 1,    addMax: 4,       // addition: each pile has 1–4 (sum ≤ 8)
+  subTotalMin: 4, subTotalMax: 7,// subtraction: starting sticks
+  subTakeMin: 1,  subTakeMax: 3, // how many to take away
+
+  voiceRate: 0.85,               // talking speed (slower = clearer for tots)
+  voicePitch: 1.1
+};
+
+/* ==================================================================
+   Elements
+   ================================================================== */
+const boardEl     = document.getElementById('board');
+const promptEl    = document.getElementById('prompt');
+const equationEl  = document.getElementById('equation');
+const countFlash  = document.getElementById('countFlash');
+const actionBtn   = document.getElementById('actionBtn');
+const nextBtn     = document.getElementById('nextBtn');
+const starsEl     = document.getElementById('stars');
+const narratorEl  = document.getElementById('narratorFace');
+const menuOverlay = document.getElementById('menuOverlay');
+const gameWrap    = document.querySelector('.game-wrap');
+
+/* ==================================================================
+   Sound + voice helpers
+   ================================================================== */
+let audioCtx = null;
+let soundOn = true;
+let voiceOn = true;
+
+function beep(freq, duration = 0.15, type = 'triangle', volume = 0.15) {
+  if (!soundOn) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  } catch (e) { /* fine without sound */ }
+}
+// counting beeps rise in pitch — 1, 2, 3 sounds like going up stairs
+const sndCount = (n) => beep(380 + n * 55, 0.18);
+const sndYay   = () => { [523, 659, 784].forEach((f, i) => setTimeout(() => beep(f, 0.2), i * 120)); };
+const sndWhoosh = () => beep(600, 0.3, 'sine', 0.1);
+
+/** Speak text out loud (Web Speech API). Falls back silently. */
+function say(text) {
+  if (!voiceOn) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = CONFIG.voiceRate;
+    u.pitch = CONFIG.voicePitch;
+    window.speechSynthesis.speak(u);
+  } catch (e) { /* fine without voice */ }
+}
+
+document.getElementById('soundBtn').addEventListener('click', (e) => {
+  soundOn = !soundOn;
+  e.currentTarget.textContent = soundOn ? '🔊' : '🔇';
+  e.currentTarget.classList.toggle('off', !soundOn);
+});
+document.getElementById('voiceBtn').addEventListener('click', (e) => {
+  voiceOn = !voiceOn;
+  e.currentTarget.classList.toggle('off', !voiceOn);
+  if (!voiceOn) try { window.speechSynthesis.cancel(); } catch (err) {}
+});
+
+/* ==================================================================
+   Background music — a cozy craft-table tune, kept very quiet so
+   the talking voice always stays clear. (WebAudio, no files)
+   ================================================================== */
+let musicOn = true, musicTimer = null, musicStep = 0, musicNext = 0;
+const NOTE = (() => {
+  const s = { C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11 };
+  return (n) => {
+    const m = n.match(/^([A-G]#?)(\d)$/);
+    return 440 * Math.pow(2, (s[m[1]] + (parseInt(m[2], 10) - 4) * 12 - 9) / 12);
+  };
+})();
+const MELODY = ['E5','G5','C5',null,'D5','F5','B4',null,'C5','E5','G5','A5','G5',null,'E5',null];
+const BASS   = ['C3',null,'G2',null,'F3',null,'G2',null,'A2',null,'F3',null,'G2',null,'C3',null];
+const STEP_LEN = 60 / 92 / 2;   // 8th notes at a cozy 92 BPM
+
+function playMusicNote(freq, t, dur, type, vol) {
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(t); o.stop(t + dur);
+}
+function startMusic() {
+  if (!musicOn || musicTimer) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    musicStep = 0;
+    musicNext = audioCtx.currentTime + 0.05;
+    musicTimer = setInterval(() => {
+      while (musicNext < audioCtx.currentTime + 0.15) {
+        const m = MELODY[musicStep % MELODY.length];
+        const b = BASS[musicStep % BASS.length];
+        if (m) playMusicNote(NOTE(m), musicNext, STEP_LEN * 0.9, 'triangle', 0.025);
+        if (b) playMusicNote(NOTE(b), musicNext, STEP_LEN * 1.8, 'triangle', 0.035);
+        musicNext += STEP_LEN;
+        musicStep++;
+      }
+    }, 50);
+  } catch (e) {}
+}
+function stopMusic() { clearInterval(musicTimer); musicTimer = null; }
+
+document.getElementById('musicBtn').addEventListener('click', (e) => {
+  musicOn = !musicOn;
+  e.currentTarget.classList.toggle('off', !musicOn);
+  if (!musicOn) stopMusic();
+  else if (state.mode) startMusic();
+});
+
+/* ==================================================================
+   Small helpers
+   ================================================================== */
+const randInt = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
+
+function setPrompt(text, face = '🙂', speakText = null) {
+  promptEl.textContent = text;
+  narratorEl.textContent = face;
+  say(speakText !== null ? speakText : text);
+}
+
+function flashNumber(n) {
+  countFlash.textContent = n;
+  countFlash.classList.remove('flash');
+  void countFlash.offsetWidth;          // restart the CSS animation
+  countFlash.classList.add('flash');
+}
+
+function celebrate() {
+  sndYay();
+  const emojis = ['🎉', '⭐', '✨', '🎊', '💛'];
+  for (let i = 0; i < 24; i++) {
+    const c = document.createElement('span');
+    c.className = 'confetti';
+    c.textContent = emojis[i % emojis.length];
+    c.style.left = Math.random() * 95 + '%';
+    c.style.animationDuration = (1.4 + Math.random() * 1.4) + 's';
+    c.style.animationDelay = (Math.random() * 0.4) + 's';
+    gameWrap.appendChild(c);
+    setTimeout(() => c.remove(), 3200);
+  }
+}
+
+function addStar() {
+  starsEl.textContent = String(parseInt(starsEl.textContent, 10) + 1);
+}
+
+function wiggle(el) {
+  el.classList.remove('wiggle');
+  void el.offsetWidth;
+  el.classList.add('wiggle');
+}
+
+/** Build one matchstick <button>. color: 'red' | 'blue' */
+function makeStick(color) {
+  const b = document.createElement('button');
+  b.className = 'stick' + (color === 'blue' ? ' blue' : '');
+  b.setAttribute('aria-label', 'matchstick');
+  b.innerHTML = '<span class="badge"></span><span class="body"></span>';
+  return b;
+}
+
+function makeGroup(cls, label) {
+  const g = document.createElement('div');
+  g.className = 'stick-group ' + cls;
+  if (label) {
+    const l = document.createElement('div');
+    l.className = 'group-label';
+    l.textContent = label;
+    g.appendChild(l);
+  }
+  return g;
+}
+
+function setEquation(tokens) {
+  // tokens: [{text, lit}] — unlit tokens are dim until revealed
+  equationEl.innerHTML = '';
+  tokens.forEach(t => {
+    const s = document.createElement('span');
+    s.textContent = t.text;
+    if (t.lit) s.classList.add('lit');
+    equationEl.appendChild(s);
+  });
+}
+function lightToken(index, pop = false) {
+  const s = equationEl.children[index];
+  if (!s) return;
+  s.classList.add('lit');
+  if (pop) s.classList.add('pop-in');
+}
+
+function clearBoard() {
+  boardEl.innerHTML = '';
+  equationEl.innerHTML = '';
+  actionBtn.hidden = true;
+  nextBtn.hidden = true;
+}
+
+/* ==================================================================
+   Game state
+   ================================================================== */
+const state = { mode: null, counted: 0, taken: 0, q: {} };
+
+/* ==================================================================
+   MODE 1 — COUNTING  🎯 tap every stick, count out loud together
+   ================================================================== */
+function startCount() {
+  clearBoard();
+  state.mode = 'count';
+  state.counted = 0;
+  const n = randInt(CONFIG.countMin, CONFIG.countMax);
+  state.q = { n };
+
+  const tray = makeGroup('tray-one', 'our matchsticks');
+  for (let i = 0; i < n; i++) {
+    const s = makeStick('red');
+    s.addEventListener('click', () => onCountTap(s));
+    tray.insertBefore(s, tray.firstChild);
+  }
+  boardEl.appendChild(tray);
+
+  setPrompt('Tap each matchstick and count with me!', '🤗',
+            'Tap each matchstick, and count with me!');
+}
+
+function onCountTap(stick) {
+  if (stick.classList.contains('counted')) { wiggle(stick); return; }
+
+  state.counted++;
+  stick.classList.add('counted');
+  stick.querySelector('.badge').textContent = state.counted;
+  wiggle(stick);
+  sndCount(state.counted);
+  flashNumber(state.counted);
+  say(String(state.counted));
+
+  if (state.counted === state.q.n) {
+    setTimeout(() => {
+      setPrompt(`There are ${state.q.n} matchsticks! You counted them ALL!`, '🥳',
+                `There are ${state.q.n} matchsticks! You counted them all! Hooray!`);
+      celebrate();
+      addStar();
+      nextBtn.hidden = false;
+    }, 700);
+  }
+}
+
+/* ==================================================================
+   MODE 2 — PUTTING TOGETHER (addition, with counting-on)
+   Phase 1: count the red pile.
+   Phase 2: KEEP counting into the blue pile (this is "counting on").
+   Phase 3: sticks slide into one big pile → the equation appears.
+   ================================================================== */
+function startAdd() {
+  clearBoard();
+  state.mode = 'add';
+  state.counted = 0;
+  const a = randInt(CONFIG.addMin, CONFIG.addMax);
+  const b = randInt(CONFIG.addMin, CONFIG.addMax);
+  state.q = { a, b, phase: 1 };
+
+  const trayA = makeGroup('tray-a', `${a} red`);
+  const trayB = makeGroup('tray-b', `${b} blue`);
+  for (let i = 0; i < a; i++) {
+    const s = makeStick('red');
+    s.dataset.group = 'a';
+    s.addEventListener('click', () => onAddTap(s));
+    trayA.insertBefore(s, trayA.firstChild);
+  }
+  for (let i = 0; i < b; i++) {
+    const s = makeStick('blue');
+    s.dataset.group = 'b';
+    s.addEventListener('click', () => onAddTap(s));
+    trayB.insertBefore(s, trayB.firstChild);
+  }
+  boardEl.append(trayA, trayB);
+
+  setEquation([
+    { text: String(a), lit: false },
+    { text: '+',       lit: false },
+    { text: String(b), lit: false },
+    { text: '=',       lit: false },
+    { text: '?',       lit: false }
+  ]);
+
+  setPrompt('First, tap the RED sticks and count them!', '🤗',
+            'First, tap the red sticks, and count them!');
+}
+
+function onAddTap(stick) {
+  const q = state.q;
+  if (stick.classList.contains('counted')) { wiggle(stick); return; }
+
+  // gently steer: in phase 1 only red counts, in phase 2 only blue
+  if (q.phase === 1 && stick.dataset.group !== 'a') {
+    wiggle(stick);
+    setPrompt('The RED ones first! 😊', '😊', 'Let’s do the red ones first!');
+    return;
+  }
+  if (q.phase === 2 && stick.dataset.group !== 'b') { wiggle(stick); return; }
+
+  state.counted++;
+  stick.classList.add('counted');
+  stick.querySelector('.badge').textContent = state.counted;
+  wiggle(stick);
+  sndCount(state.counted);
+  flashNumber(state.counted);
+  say(String(state.counted));
+
+  if (q.phase === 1 && state.counted === q.a) {
+    q.phase = 2;
+    lightToken(0, false);           // "a" lights up
+    setTimeout(() => {
+      setPrompt(`${q.a} red sticks! Now KEEP counting the blue ones — ${q.a + 1}, …`, '😃',
+        `${q.a} red sticks! Now keep counting the blue ones. What comes after ${q.a}?`);
+    }, 650);
+  } else if (q.phase === 2 && state.counted === q.a + q.b) {
+    q.phase = 3;
+    lightToken(1); lightToken(2);   // "+ b" light up
+    setTimeout(() => {
+      setPrompt('Now the magic — put both piles TOGETHER!', '🤩',
+                'Now the magic! Let’s put both piles together!');
+      actionBtn.textContent = '✨ Put them together!';
+      actionBtn.hidden = false;
+    }, 650);
+  }
+}
+
+function mergePiles() {
+  actionBtn.hidden = true;
+  sndWhoosh();
+
+  // Slide every stick toward the horizontal middle of the board
+  const boardRect = boardEl.getBoundingClientRect();
+  const centerX = boardRect.left + boardRect.width / 2;
+  document.querySelectorAll('.stick').forEach((s, i, all) => {
+    const r = s.getBoundingClientRect();
+    const stickCenter = r.left + r.width / 2;
+    // fan the sticks out around the center so they don't stack on one spot
+    const spread = (i - (all.length - 1) / 2) * (r.width + 10);
+    s.classList.add('merging');
+    s.style.transform = `translateX(${centerX - stickCenter + spread}px)`;
+  });
+
+  // then reveal the answer
+  const total = state.q.a + state.q.b;
+  setTimeout(() => {
+    equationEl.children[4].textContent = String(total);
+    lightToken(3); lightToken(4, true);
+    setPrompt(`${state.q.a} and ${state.q.b} together make ${total}!`, '🥳',
+      `${state.q.a} plus ${state.q.b} equals ${total}! ${total} sticks all together! Hooray!`);
+    celebrate();
+    addStar();
+    nextBtn.hidden = false;
+  }, 950);
+}
+
+/* ==================================================================
+   MODE 3 — TAKING AWAY (subtraction)
+   Phase 1: tap K sticks — each one flies away!
+   Phase 2: count what's left.
+   Phase 3: the equation appears.
+   ================================================================== */
+function startSub() {
+  clearBoard();
+  state.mode = 'sub';
+  state.taken = 0;
+  state.counted = 0;
+  const n = randInt(CONFIG.subTotalMin, CONFIG.subTotalMax);
+  const k = Math.min(randInt(CONFIG.subTakeMin, CONFIG.subTakeMax), n - 1);
+  state.q = { n, k, phase: 1 };
+
+  const tray = makeGroup('tray-one', `${n} matchsticks`);
+  for (let i = 0; i < n; i++) {
+    const s = makeStick('red');
+    s.addEventListener('click', () => onSubTap(s));
+    tray.insertBefore(s, tray.firstChild);
+  }
+  boardEl.appendChild(tray);
+
+  setEquation([
+    { text: String(n), lit: true },
+    { text: '−',       lit: false },
+    { text: String(k), lit: false },
+    { text: '=',       lit: false },
+    { text: '?',       lit: false }
+  ]);
+
+  setPrompt(`We have ${n} sticks. Tap ${k} of them to take them away!`, '😄',
+            `We have ${n} sticks. Tap ${k} of them, to take them away!`);
+}
+
+function onSubTap(stick) {
+  const q = state.q;
+
+  if (q.phase === 1) {
+    if (stick.classList.contains('fly-away')) return;
+    state.taken++;
+    stick.classList.add('fly-away');
+    sndWhoosh();
+    flashNumber(state.taken);
+    say(`Take away ${state.taken}!`);
+
+    if (state.taken === q.k) {
+      q.phase = 2;
+      lightToken(1); lightToken(2);
+      setTimeout(() => {
+        setPrompt('Whoosh, they flew away! Now count the sticks that are LEFT!', '😮',
+                  'Whoosh! They flew away! Now tap and count the sticks that are left!');
+      }, 700);
+    }
+  } else if (q.phase === 2) {
+    if (stick.classList.contains('fly-away') || stick.classList.contains('counted')) {
+      wiggle(stick);
+      return;
+    }
+    state.counted++;
+    stick.classList.add('counted');
+    stick.querySelector('.badge').textContent = state.counted;
+    wiggle(stick);
+    sndCount(state.counted);
+    flashNumber(state.counted);
+    say(String(state.counted));
+
+    const left = q.n - q.k;
+    if (state.counted === left) {
+      q.phase = 3;
+      setTimeout(() => {
+        equationEl.children[4].textContent = String(left);
+        lightToken(3); lightToken(4, true);
+        setPrompt(`${q.n} take away ${q.k} leaves ${left}!`, '🥳',
+          `${q.n} take away ${q.k}, equals ${left}! There are ${left} sticks left! Hooray!`);
+        celebrate();
+        addStar();
+        nextBtn.hidden = false;
+      }, 700);
+    }
+  }
+}
+
+/* ==================================================================
+   Wiring: menu, next, action
+   ================================================================== */
+const starters = { count: startCount, add: startAdd, sub: startSub };
+
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    menuOverlay.hidden = true;
+    starters[btn.dataset.mode]();
+    startMusic();
+  });
+});
+
+nextBtn.addEventListener('click', () => starters[state.mode]());
+
+actionBtn.addEventListener('click', () => {
+  if (state.mode === 'add' && state.q.phase === 3) mergePiles();
+});
+
+document.getElementById('menuBtn').addEventListener('click', () => {
+  clearBoard();
+  stopMusic();
+  menuOverlay.hidden = false;
+  setPrompt('What shall we learn today?', '🙂', '');
+});
+</script>
+</body>
+</html>

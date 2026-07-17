@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- ================= SEO =================
+     Site: https://sonatrix.github.io/gamespace/
+     TODO: add an og-image.png (1200x630) to the repo for
+     nicer link previews on social media. -->
+<title>GameSpace — 17 Free Learning Games for Kids Ages 2–8 | Play Online</title>
+<meta name="description" content="GameSpace is a free online playground of 17 learning games for kids ages 2–8: counting, phonics, spelling, telling time, mazes, memory, music and more. No ads, no downloads, works offline — every game has voice narration and gentle no-fail gameplay.">
+<meta name="keywords" content="free kids games, learning games for kids, educational games online, preschool games, kindergarten games, counting games, phonics games, ABC games, math games for kids, spelling games, telling time game, maze game for kids, memory game, coloring game, toddler games">
+<meta name="author" content="GameSpace">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#FFC93C">
+<link rel="canonical" href="https://sonatrix.github.io/gamespace/">
+
+<!-- Open Graph (Facebook, WhatsApp, LinkedIn previews) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="GameSpace">
+<meta property="og:title" content="GameSpace — 17 Free Learning Games for Kids Ages 2–8">
+<meta property="og:description" content="A free online playground for little learners: counting, phonics, spelling, mazes, music, memory and more. No ads, voice narration, no-fail gameplay.">
+<meta property="og:url" content="https://sonatrix.github.io/gamespace/">
+<meta property="og:image" content="https://sonatrix.github.io/gamespace/og-image.png">
+<meta property="og:locale" content="en_US">
+
+<!-- Twitter / X card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="GameSpace — 17 Free Learning Games for Kids Ages 2–8">
+<meta name="twitter:description" content="Counting, phonics, spelling, mazes, music, memory and more — free, no ads, voice-narrated, no-fail games for little learners.">
+<meta name="twitter:image" content="https://sonatrix.github.io/gamespace/og-image.png">
+
+<!-- Structured data: site + the full game catalog -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "name": "GameSpace",
+      "url": "https://sonatrix.github.io/gamespace/",
+      "description": "17 free learning games for kids ages 2 to 8 — counting, phonics, spelling, telling time, mazes, memory, music and creative play.",
+      "inLanguage": "en",
+      "audience": { "@type": "PeopleAudience", "suggestedMinAge": 2, "suggestedMaxAge": 8 }
+    },
+    {
+      "@type": "ItemList",
+      "name": "GameSpace learning games",
+      "numberOfItems": 17,
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1,  "name": "Bunny Hop — jumping game",            "url": "https://sonatrix.github.io/gamespace/bunny-hop.html" },
+        { "@type": "ListItem", "position": 2,  "name": "Balloon Pop Math — arithmetic game",  "url": "https://sonatrix.github.io/gamespace/balloon-pop-math.html" },
+        { "@type": "ListItem", "position": 3,  "name": "Matchstick Math — learn how counting works", "url": "https://sonatrix.github.io/gamespace/matchstick-math.html" },
+        { "@type": "ListItem", "position": 4,  "name": "ABC Talking Friends — letters and phonics", "url": "https://sonatrix.github.io/gamespace/abc-talking-friends.html" },
+        { "@type": "ListItem", "position": 5,  "name": "Maze Explorer — maze puzzles in 5 lands", "url": "https://sonatrix.github.io/gamespace/maze-explorer.html" },
+        { "@type": "ListItem", "position": 6,  "name": "Memory Match — card matching game",   "url": "https://sonatrix.github.io/gamespace/memory-match.html" },
+        { "@type": "ListItem", "position": 7,  "name": "Pattern Party — what comes next",     "url": "https://sonatrix.github.io/gamespace/pattern-party.html" },
+        { "@type": "ListItem", "position": 8,  "name": "Word Builder — spell your first words", "url": "https://sonatrix.github.io/gamespace/word-builder.html" },
+        { "@type": "ListItem", "position": 9,  "name": "Music Maker — do-re-mi piano",        "url": "https://sonatrix.github.io/gamespace/music-maker.html" },
+        { "@type": "ListItem", "position": 10, "name": "Trace and Write — letters and numbers", "url": "https://sonatrix.github.io/gamespace/trace-and-write.html" },
+        { "@type": "ListItem", "position": 11, "name": "Shape Sorter — shapes and colors",    "url": "https://sonatrix.github.io/gamespace/shape-sorter.html" },
+        { "@type": "ListItem", "position": 12, "name": "Little Shop — counting money",        "url": "https://sonatrix.github.io/gamespace/little-shop.html" },
+        { "@type": "ListItem", "position": 13, "name": "Dot to Dot — number order",           "url": "https://sonatrix.github.io/gamespace/dot-to-dot.html" },
+        { "@type": "ListItem", "position": 14, "name": "Simon the Owl — listening memory",    "url": "https://sonatrix.github.io/gamespace/simon-owl.html" },
+        { "@type": "ListItem", "position": 15, "name": "Coloring Book — tap to fill coloring", "url": "https://sonatrix.github.io/gamespace/coloring-book.html" },
+        { "@type": "ListItem", "position": 16, "name": "What Time Is It — clock reading",     "url": "https://sonatrix.github.io/gamespace/clock-time.html" },
+        { "@type": "ListItem", "position": 17, "name": "Odd One Out — thinking game",         "url": "https://sonatrix.github.io/gamespace/odd-one-out.html" }
+      ]
+    }
+  ]
+}
+</script>
+<style>
+  /* ============================================================
+     GAMESPACE — landing page for the kids' game collection
+     A bright carnival where every game card is a doorway into
+     that game's own little world.
+
+     ➜ To point the GitHub button at your repo, change the ONE
+       link marked "EDIT-ME" in the HTML below.
+     ============================================================ */
+
+  :root {
+    --sky:      #FFF6E8;
+    --ink:      #4A3B5C;
+    --ink-soft: #7A6B92;
+    --gold:     #FFC93C;
+    --pink:     #FF6B8A;
+    --blue:     #4EA8DE;
+    --green:    #58B368;
+    --orange:   #F2913D;
+    --purple:   #B58CF0;
+    --font-kids: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--font-kids);
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 12% 8%,  rgba(255, 201, 60, 0.18) 0%, transparent 30%),
+      radial-gradient(circle at 88% 15%, rgba(255, 107, 138, 0.15) 0%, transparent 30%),
+      radial-gradient(circle at 20% 90%, rgba(78, 168, 222, 0.15) 0%, transparent 35%),
+      radial-gradient(circle at 85% 80%, rgba(88, 179, 104, 0.14) 0%, transparent 32%),
+      var(--sky);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* --- Floating background friends -------------------------------- */
+  .floaty {
+    position: fixed;
+    font-size: 2rem;
+    opacity: 0.5;
+    pointer-events: none;
+    animation: floatAround 16s ease-in-out infinite;
+    z-index: 0;
+  }
+  @keyframes floatAround {
+    0%, 100% { transform: translateY(0) rotate(-6deg); }
+    50%      { transform: translateY(-34px) rotate(8deg); }
+  }
+
+  /* --- GitHub ribbon ------------------------------------------------ */
+  .gh-btn {
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    z-index: 50;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-kids);
+    font-weight: bold;
+    font-size: 0.95rem;
+    color: #fff;
+    background: var(--ink);
+    text-decoration: none;
+    border-radius: 999px;
+    padding: 10px 18px;
+    box-shadow: 0 4px 0 #2E2440;
+    transition: transform 0.1s ease;
+  }
+  .gh-btn:hover { transform: translateY(-2px); }
+  .gh-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #2E2440; }
+  .gh-btn svg { width: 20px; height: 20px; fill: #fff; }
+  .gh-btn:focus-visible { outline: 4px solid var(--gold); }
+
+  /* --- Hero ----------------------------------------------------------- */
+  .hero {
+    position: relative;
+    text-align: center;
+    padding: 64px 16px 30px;
+    z-index: 1;
+  }
+
+  .hero-characters {
+    font-size: clamp(1.8rem, 6vw, 3.2rem);
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: clamp(6px, 2vw, 18px);
+    margin-bottom: 6px;
+  }
+  .hero-characters span {
+    display: inline-block;
+    animation: bob 2.6s ease-in-out infinite;
+  }
+  .hero-characters span:nth-child(2) { animation-delay: 0.3s; }
+  .hero-characters span:nth-child(3) { animation-delay: 0.6s; }
+  .hero-characters span:nth-child(4) { animation-delay: 0.9s; }
+  .hero-characters span:nth-child(5) { animation-delay: 1.2s; }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0) rotate(-4deg); }
+    50%      { transform: translateY(-16px) rotate(5deg); }
+  }
+
+  .wordmark {
+    font-size: clamp(2.6rem, 10vw, 5rem);
+    font-weight: bold;
+    letter-spacing: 2px;
+    margin: 0;
+    line-height: 1.05;
+  }
+  /* every letter its own candy color */
+  .wordmark span { display: inline-block; transform: rotate(var(--tilt, 0deg)); }
+  .wordmark span:nth-child(1) { color: var(--pink);   --tilt: -4deg; }
+  .wordmark span:nth-child(2) { color: var(--orange); --tilt: 3deg; }
+  .wordmark span:nth-child(3) { color: var(--gold);   --tilt: -2deg; }
+  .wordmark span:nth-child(4) { color: var(--green);  --tilt: 4deg; }
+  .wordmark span:nth-child(5) { color: var(--blue);   --tilt: -3deg; }
+  .wordmark span:nth-child(6) { color: var(--purple); --tilt: 2deg; }
+  .wordmark span:nth-child(7) { color: var(--pink);   --tilt: -4deg; }
+  .wordmark span:nth-child(8) { color: var(--orange); --tilt: 3deg; }
+  .wordmark span:nth-child(9) { color: var(--blue);   --tilt: -2deg; }
+
+  .tagline {
+    font-size: clamp(1.05rem, 3.4vw, 1.4rem);
+    color: var(--ink-soft);
+    margin: 10px auto 0;
+    max-width: 34ch;
+    text-wrap: balance;
+  }
+
+  .rainbow-rule {
+    height: 10px;
+    max-width: 420px;
+    margin: 26px auto 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--pink), var(--orange), var(--gold), var(--green), var(--blue), var(--purple));
+  }
+
+  /* --- Game cards ------------------------------------------------------ */
+  .games {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+    gap: 22px;
+    padding: 34px clamp(14px, 4vw, 48px) 20px;
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  .card {
+    --c: var(--green);
+    --c-dark: #3F9450;
+    background: #FFFFFF;
+    border-radius: 26px;
+    border: 4px solid var(--c);
+    box-shadow: 0 8px 0 rgba(74, 59, 92, 0.12);
+    padding: 0 0 22px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    overflow: hidden;
+  }
+  .card:hover {
+    transform: translateY(-8px) rotate(-0.5deg);
+    box-shadow: 0 16px 0 rgba(74, 59, 92, 0.10);
+  }
+
+  .card .scene {
+    background: var(--scene, #EAF7EC);
+    font-size: clamp(3.4rem, 9vw, 4.6rem);
+    padding: 26px 10px 18px;
+    line-height: 1.1;
+  }
+  .card .scene .big {
+    display: inline-block;
+    transition: transform 0.2s ease;
+  }
+  .card:hover .scene .big { transform: scale(1.18) rotate(-6deg); }
+
+  .card h2 {
+    font-size: clamp(1.25rem, 3.6vw, 1.55rem);
+    margin: 14px 12px 4px;
+    color: var(--c-dark);
+  }
+  .card p {
+    font-size: 1rem;
+    color: var(--ink-soft);
+    margin: 0 20px 12px;
+    min-height: 3em;
+  }
+
+  .meta {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .tag {
+    font-size: 0.82rem;
+    font-weight: bold;
+    background: #F6F1FB;
+    color: var(--ink-soft);
+    border-radius: 999px;
+    padding: 4px 12px;
+  }
+
+  .play-btn {
+    font-family: var(--font-kids);
+    font-size: 1.25rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    color: #fff;
+    background: var(--c);
+    border: none;
+    border-radius: 999px;
+    padding: 14px 46px;
+    margin: 0 auto;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    box-shadow: 0 6px 0 var(--c-dark);
+    transition: transform 0.08s ease;
+  }
+  .play-btn:hover { filter: brightness(1.06); }
+  .play-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--c-dark); }
+  .play-btn:focus-visible { outline: 5px solid var(--gold); outline-offset: 3px; }
+
+  /* per-game colorways (matching each game's own world) */
+  .card.bunny   { --c: #58B368; --c-dark: #3F9450; --scene: linear-gradient(180deg, #C4E9F8, #CDEBB4); }
+  .card.balloon { --c: #B58CF0; --c-dark: #9468D0; --scene: linear-gradient(180deg, #DACFF5, #FBD9E4); }
+  .card.match   { --c: #F2913D; --c-dark: #D4731F; --scene: linear-gradient(180deg, #FBEED3, #F7E0B8); }
+  .card.abc     { --c: #FF6B8A; --c-dark: #E04A6B; --scene: linear-gradient(180deg, #D8F2E4, #C0EAD2); }
+  .card.maze    { --c: #4EA8DE; --c-dark: #3A87B8; --scene: linear-gradient(180deg, #C9E6F7, #B3D9F0); }
+  .card.memory  { --c: #20A39E; --c-dark: #178783; --scene: linear-gradient(180deg, #C8EFEC, #A9E2DD); }
+  .card.pattern { --c: #F0A500; --c-dark: #C98700; --scene: linear-gradient(180deg, #FFF0C8, #FFE3A0); }
+  .card.word    { --c: #6C63D2; --c-dark: #5350AD; --scene: linear-gradient(180deg, #E3E1F9, #D0CDF2); }
+  .card.piano   { --c: #FF5D73; --c-dark: #D93E54; --scene: linear-gradient(180deg, #453E6E, #2E2A4A); }
+  .card.trace   { --c: #3FA7D6; --c-dark: #2E86AC; --scene: linear-gradient(180deg, #EAF6FE, #D3EAF8); }
+  .card.sorter  { --c: #FF8A5C; --c-dark: #E06A3C; --scene: linear-gradient(180deg, #FFEFE3, #FFDFC8); }
+  .card.shop    { --c: #E8923A; --c-dark: #C9731F; --scene: linear-gradient(180deg, #FBE3C0, #F5D3A0); }
+  .card.dots    { --c: #6FB043; --c-dark: #57923A; --scene: linear-gradient(180deg, #EAF7E4, #D5EEC8); }
+  .card.simon   { --c: #A45CE0; --c-dark: #8440BC; --scene: linear-gradient(180deg, #4A4580, #35315E); }
+  .card.coloring{ --c: #FF6BB5; --c-dark: #E04A9E; --scene: linear-gradient(180deg, #FBEFF5, #F7DCEA); }
+  .card.clock   { --c: #4A6FE0; --c-dark: #3A57B8; --scene: linear-gradient(180deg, #E8ECFB, #D4DBF5); }
+  .card.oddone  { --c: #E0566B; --c-dark: #C23B50; --scene: linear-gradient(180deg, #FDECEF, #F8D6DD); }
+
+  /* --- Footer ------------------------------------------------------------ */
+  footer {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 26px 16px 40px;
+    color: var(--ink-soft);
+    font-size: 0.98rem;
+  }
+  footer a {
+    color: var(--blue);
+    font-weight: bold;
+    text-decoration: none;
+  }
+  footer a:hover { text-decoration: underline; }
+  footer .heart { color: var(--pink); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .floaty, .hero-characters span { animation: none; }
+    .card, .card:hover, .play-btn, .gh-btn { transition: none; transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- drifting background friends -->
+<span class="floaty" style="left:4%;  top:22%; animation-delay:0s;">☁️</span>
+<span class="floaty" style="left:90%; top:34%; animation-delay:3s;">🎈</span>
+<span class="floaty" style="left:8%;  top:70%; animation-delay:6s;">⭐</span>
+<span class="floaty" style="left:86%; top:74%; animation-delay:2s;">🦋</span>
+<span class="floaty" style="left:46%; top:88%; animation-delay:5s;">🌈</span>
+
+<a class="gh-btn" href="https://github.com/sonatrix/gamespace" target="_blank" rel="noopener">
+  <svg viewBox="0 0 16 16" aria-hidden="true">
+    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+  </svg>
+  View on GitHub
+</a>
+
+<!-- hero -->
+<header class="hero">
+  <div class="hero-characters" aria-hidden="true">
+    <span>🐰</span><span>🎈</span><span>🔥</span><span>🍎</span><span>🗺️</span><span>🃏</span><span>🎉</span><span>🧱</span><span>🎹</span><span>✏️</span><span>🔷</span><span>🏪</span><span>🔢</span><span>🦉</span><span>🎨</span><span>🕐</span><span>👀</span>
+  </div>
+  <h1 class="wordmark" aria-label="GameSpace">
+    <span>G</span><span>a</span><span>m</span><span>e</span><span>S</span><span>p</span><span>a</span><span>c</span><span>e</span>
+  </h1>
+  <p class="tagline">Seventeen happy little games for little explorers — a whole playground of jumping, counting, spelling, singing, sorting and exploring!</p>
+  <div class="rainbow-rule" aria-hidden="true"></div>
+</header>
+
+<!-- game cards -->
+<main class="games">
+
+  <article class="card bunny">
+    <div class="scene" aria-hidden="true">🌻<span class="big">🐰</span>🍄</div>
+    <h2>Bunny Hop!</h2>
+    <p>Help Bunny jump over friendly mushrooms and rolling beach balls — with happy music!</p>
+    <div class="meta">
+      <span class="tag">Ages 4–7</span><span class="tag">🕹️ Jumping</span><span class="tag">🎵 Music</span>
+    </div>
+    <a class="play-btn" href="bunny-hop.html">▶ PLAY</a>
+  </article>
+
+  <article class="card balloon">
+    <div class="scene" aria-hidden="true">☁️<span class="big">🎈</span>🎈</div>
+    <h2>Balloon Pop Math!</h2>
+    <p>Pop the balloon carrying the right answer! Adding, taking away and times tables.</p>
+    <div class="meta">
+      <span class="tag">Ages 5–8</span><span class="tag">➕ Arithmetic</span><span class="tag">3 levels</span>
+    </div>
+    <a class="play-btn" href="balloon-pop-math.html">▶ PLAY</a>
+  </article>
+
+  <article class="card match">
+    <div class="scene" aria-hidden="true">🧮<span class="big">🔥</span>🪵</div>
+    <h2>Matchstick Math!</h2>
+    <p>Tap real matchsticks to SEE how counting, adding and taking away actually work.</p>
+    <div class="meta">
+      <span class="tag">Ages 3–5</span><span class="tag">🗣️ Talks to you</span><span class="tag">Learn</span>
+    </div>
+    <a class="play-btn" href="matchstick-math.html">▶ PLAY</a>
+  </article>
+
+  <article class="card abc">
+    <div class="scene" aria-hidden="true">🐱<span class="big">🍎</span>🦓</div>
+    <h2>ABC Talking Friends!</h2>
+    <p>Every letter has a friend that speaks! "A says ah — A is for Apple!" From A to Z.</p>
+    <div class="meta">
+      <span class="tag">Ages 2–5</span><span class="tag">🔤 Letters</span><span class="tag">🗣️ Talks to you</span>
+    </div>
+    <a class="play-btn" href="abc-talking-friends.html">▶ PLAY</a>
+  </article>
+
+  <article class="card maze">
+    <div class="scene" aria-hidden="true">🌲<span class="big">🗺️</span>🚀</div>
+    <h2>Maze Explorer!</h2>
+    <p>Find your way through five magical lands — forest, desert, snow, ocean and space!</p>
+    <div class="meta">
+      <span class="tag">Ages 4–8</span><span class="tag">🧭 Puzzles</span><span class="tag">⏱️ Timer</span>
+    </div>
+    <a class="play-btn" href="maze-explorer.html">▶ PLAY</a>
+  </article>
+
+  <article class="card memory">
+    <div class="scene" aria-hidden="true">🐶<span class="big">🃏</span>🍓</div>
+    <h2>Memory Match!</h2>
+    <p>Flip the cards and find the pairs! Animals, fruits, vehicles — even letters and their pictures.</p>
+    <div class="meta">
+      <span class="tag">Ages 2–6</span><span class="tag">🧠 Memory</span><span class="tag">🗣️ Talks to you</span>
+    </div>
+    <a class="play-btn" href="memory-match.html">▶ PLAY</a>
+  </article>
+
+  <article class="card pattern">
+    <div class="scene" aria-hidden="true">🔴<span class="big">🎉</span>🔵</div>
+    <h2>Pattern Party!</h2>
+    <p>Red, blue, red, blue… what comes next? Guess the pattern with colors, shapes and animals!</p>
+    <div class="meta">
+      <span class="tag">Ages 3–6</span><span class="tag">🧩 Logic</span><span class="tag">🗣️ Talks to you</span>
+    </div>
+    <a class="play-btn" href="pattern-party.html">▶ PLAY</a>
+  </article>
+
+  <article class="card word">
+    <div class="scene" aria-hidden="true">🅲<span class="big">🧱</span>🐱</div>
+    <h2>Word Builder!</h2>
+    <p>Spell your first words! Tap letter tiles to build CAT, DOG and SUN — every letter speaks its sound.</p>
+    <div class="meta">
+      <span class="tag">Ages 4–6</span><span class="tag">🔤 Spelling</span><span class="tag">🗣️ Talks to you</span>
+    </div>
+    <a class="play-btn" href="word-builder.html">▶ PLAY</a>
+  </article>
+
+  <article class="card piano">
+    <div class="scene" aria-hidden="true">🎵<span class="big">🎹</span>🎶</div>
+    <h2>Music Maker!</h2>
+    <p>A rainbow do-re-mi piano where animals sing along! Free play, or follow the glowing keys to learn real songs.</p>
+    <div class="meta">
+      <span class="tag">Ages 2–7</span><span class="tag">🎨 Free play</span><span class="tag">🎵 Music</span>
+    </div>
+    <a class="play-btn" href="music-maker.html">▶ PLAY</a>
+  </article>
+
+  <article class="card trace">
+    <div class="scene" aria-hidden="true">🅰️<span class="big">✏️</span>3️⃣</div>
+    <h2>Trace &amp; Write!</h2>
+    <p>Learn to write! Paint over big letters and numbers with a magic rainbow brush that only sticks inside the lines.</p>
+    <div class="meta">
+      <span class="tag">Ages 3–6</span><span class="tag">✍️ Writing</span><span class="tag">🗣️ Talks to you</span>
+    </div>
+    <a class="play-btn" href="trace-and-write.html">▶ PLAY</a>
+  </article>
+
+  <article class="card sorter">
+    <div class="scene" aria-hidden="true">⭕<span class="big">🔷</span>🌈</div>
+    <h2>Shape Sorter!</h2>
+    <p>Where does the star go? Match shapes to their holes and sort things into color buckets — perfect for tiny hands.</p>
+    <div class="meta">
+      <span class="tag">Ages 2–4</span><span class="tag">🔷 Shapes</span><span class="tag">🗣️ Talks to you</span>
+    </div>
+    <a class="play-btn" href="shape-sorter.html">▶ PLAY</a>
+  </article>
+
+  <article class="card shop">
+    <div class="scene" aria-hidden="true">🧸<span class="big">🏪</span>🪙</div>
+    <h2>Little Shop!</h2>
+    <p>The teddy bear costs 8 coins! Count out the exact coins to buy toys and treats. Cha-ching!</p>
+    <div class="meta">
+      <span class="tag">Ages 5–8</span><span class="tag">🪙 Money</span><span class="tag">🗣️ Talks to you</span>
+    </div>
+    <a class="play-btn" href="little-shop.html">▶ PLAY</a>
+  </article>
+
+  <article class="card dots">
+    <div class="scene" aria-hidden="true">1️⃣<span class="big">🔢</span>⭐</div>
+    <h2>Dot to Dot!</h2>
+    <p>Tap the dots in order — 1, 2, 3… — and a mystery picture appears! Learn number order the fun way.</p>
+    <div class="meta">
+      <span class="tag">Ages 3–6</span><span class="tag">🔢 Numbers</span><span class="tag">🗣️ Counts along</span>
+    </div>
+    <a class="play-btn" href="dot-to-dot.html">▶ PLAY</a>
+  </article>
+
+  <article class="card simon">
+    <div class="scene" aria-hidden="true">🐸<span class="big">🦉</span>🐤</div>
+    <h2>Simon the Owl!</h2>
+    <p>The owl sings a tune on the animal pads — can you play it back? Each round adds one more note!</p>
+    <div class="meta">
+      <span class="tag">Ages 3–7</span><span class="tag">👂 Listening</span><span class="tag">🎵 Music</span>
+    </div>
+    <a class="play-btn" href="simon-owl.html">▶ PLAY</a>
+  </article>
+
+  <article class="card coloring">
+    <div class="scene" aria-hidden="true">🖍️<span class="big">🎨</span>🌸</div>
+    <h2>Coloring Book!</h2>
+    <p>Pick a color, tap the picture, and watch it fill in! Color the bunny, the rocket, the fish and more.</p>
+    <div class="meta">
+      <span class="tag">Ages 2+</span><span class="tag">🎨 Free play</span><span class="tag">✨ Ta-da!</span>
+    </div>
+    <a class="play-btn" href="coloring-book.html">▶ PLAY</a>
+  </article>
+
+  <article class="card clock">
+    <div class="scene" aria-hidden="true">⏰<span class="big">🕐</span>🕒</div>
+    <h2>What Time Is It?</h2>
+    <p>Tick tock! Learn the clock hands, then quiz yourself — o'clock, half past, and quarter times.</p>
+    <div class="meta">
+      <span class="tag">Ages 5–8</span><span class="tag">🕐 Time</span><span class="tag">🗣️ Talks to you</span>
+    </div>
+    <a class="play-btn" href="clock-time.html">▶ PLAY</a>
+  </article>
+
+  <article class="card oddone">
+    <div class="scene" aria-hidden="true">🐶<span class="big">👀</span>🚗</div>
+    <h2>Odd One Out!</h2>
+    <p>Three friends belong together — one is a sneaky visitor! Find it, and learn WHY it doesn't belong.</p>
+    <div class="meta">
+      <span class="tag">Ages 3–6</span><span class="tag">🧠 Thinking</span><span class="tag">🗣️ Talks to you</span>
+    </div>
+    <a class="play-btn" href="odd-one-out.html">▶ PLAY</a>
+  </article>
+
+</main>
+
+<footer>
+  Made with <span class="heart">❤</span> for little learners ·
+  No ads, no tracking, works offline ·
+  <a href="https://github.com/sonatrix/gamespace" target="_blank" rel="noopener">Get the code on GitHub</a>
+</footer>
+
+</body>
+</html>

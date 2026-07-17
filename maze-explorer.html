@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Maze Explorer — Free Maze Puzzle Game for Kids | GameSpace</title>
+<meta name="description" content="Find your way through mazes in five magical lands — forest, desert, snow, ocean and space! Free kids' maze game ages 4–8 with growing difficulty, hints, timer and themed music.">
+<style>
+  /* ============================================================
+     MAZE EXPLORER — a gentle maze game for kids
+     Five landscapes, each with its own hero, goal, colors,
+     looping music AND ambient background sounds — everything
+     generated live with WebAudio (zero audio files).
+
+     Controls: big D-pad buttons, arrow keys, or swipe the maze.
+     Mazes start 5×5 and grow one size with every win (max 10×10).
+     All knobs live in CONFIG / THEMES below.
+     ============================================================ */
+
+  :root {
+    --ink:      #3A4A5A;
+    --cream:    #FFF9EF;
+    --gold:     #FFC93C;
+    --accent:   #FF7A59;
+    --accent-dk:#E85C3A;
+    --font-kids: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+
+  body {
+    font-family: var(--font-kids);
+    color: var(--ink);
+    background: linear-gradient(180deg, #B9E4F5, #E4F5E0);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 10px 24px;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  h1 {
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    margin: 4px 0 8px;
+    color: #fff;
+    text-shadow: 0 3px 0 rgba(58, 74, 90, 0.25);
+    letter-spacing: 1px;
+  }
+
+  .game-wrap {
+    position: relative;
+    width: min(100%, 640px);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 12px 32px rgba(40, 80, 120, 0.28);
+    background: #9CC8E8;
+  }
+  canvas { display: block; width: 100%; height: auto; touch-action: none; }
+
+  /* --- HUD --------------------------------------------------------- */
+  .hud-left {
+    position: absolute; top: 10px; left: 10px;
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .chip {
+    background: var(--cream);
+    border: 3px solid var(--gold);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-weight: bold;
+    font-size: clamp(0.9rem, 2.6vw, 1.15rem);
+    box-shadow: 0 3px 0 rgba(58, 74, 90, 0.15);
+  }
+  .hud-right { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; }
+  .icon-btn {
+    font-size: 1.15rem;
+    background: var(--cream);
+    border: 3px solid #B9DFF5;
+    border-radius: 999px;
+    width: 46px; height: 46px;
+    cursor: pointer;
+    box-shadow: 0 3px 0 rgba(58, 74, 90, 0.15);
+  }
+  .icon-btn.off { opacity: 0.45; }
+  .icon-btn:focus-visible { outline: 4px solid var(--gold); }
+
+  /* --- Overlays ------------------------------------------------------ */
+  .overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 14px;
+    background: rgba(255, 249, 239, 0.9);
+    backdrop-filter: blur(2px);
+    text-align: center;
+    padding: 18px;
+    z-index: 10;
+  }
+  .overlay[hidden] { display: none; }
+  .overlay .big-msg { font-size: clamp(1.4rem, 4.5vw, 2.1rem); font-weight: bold; text-wrap: balance; }
+  .overlay .sub-msg { font-size: clamp(0.95rem, 3vw, 1.2rem); color: #5A6B7A; max-width: 34ch; }
+
+  .land-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    width: min(100%, 440px);
+  }
+  .land-btn {
+    font-family: var(--font-kids);
+    font-size: clamp(1rem, 3vw, 1.2rem);
+    font-weight: bold;
+    color: #fff;
+    border: none;
+    border-radius: 18px;
+    padding: 14px 10px;
+    cursor: pointer;
+    transition: transform 0.08s ease;
+  }
+  .land-btn small { display: block; font-size: 0.75em; font-weight: normal; opacity: 0.95; }
+  .land-btn:active { transform: translateY(3px); }
+  .land-btn:focus-visible { outline: 5px solid var(--gold); outline-offset: 2px; }
+
+  .btn-primary {
+    font-family: var(--font-kids);
+    font-size: clamp(1.2rem, 4vw, 1.7rem);
+    font-weight: bold;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 16px 44px;
+    cursor: pointer;
+    background: var(--accent);
+    box-shadow: 0 6px 0 var(--accent-dk);
+    letter-spacing: 1px;
+  }
+  .btn-primary:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--accent-dk); }
+  .btn-primary:focus-visible { outline: 5px solid var(--gold); outline-offset: 3px; }
+  .btn-ghost {
+    font-family: var(--font-kids);
+    font-size: 1.05rem;
+    font-weight: bold;
+    color: var(--ink);
+    background: #fff;
+    border: 3px solid #B9DFF5;
+    border-radius: 999px;
+    padding: 10px 24px;
+    cursor: pointer;
+  }
+  .btn-ghost:focus-visible { outline: 4px solid var(--gold); }
+
+  /* --- D-pad ----------------------------------------------------------- */
+  .dpad {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: repeat(3, clamp(64px, 16vw, 88px));
+    grid-template-rows: repeat(2, clamp(58px, 14vw, 76px));
+    gap: 8px;
+  }
+  .dpad button {
+    font-size: clamp(1.5rem, 5vw, 2rem);
+    font-weight: bold;
+    color: #fff;
+    background: var(--accent);
+    border: none;
+    border-radius: 18px;
+    cursor: pointer;
+    box-shadow: 0 5px 0 var(--accent-dk);
+    transition: transform 0.06s ease;
+  }
+  .dpad button:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--accent-dk); }
+  .dpad button:focus-visible { outline: 4px solid var(--gold); }
+  .dpad .up    { grid-column: 2; grid-row: 1; }
+  .dpad .left  { grid-column: 1; grid-row: 2; }
+  .dpad .down  { grid-column: 2; grid-row: 2; }
+  .dpad .right { grid-column: 3; grid-row: 2; }
+
+  .hint-text { margin-top: 10px; font-size: 0.9rem; color: #4A6B85; }
+
+  /* --- Confetti ---------------------------------------------------------- */
+  .confetti {
+    position: absolute;
+    top: -20px;
+    font-size: 1.4rem;
+    animation: confettiFall linear forwards;
+    pointer-events: none;
+    z-index: 12;
+  }
+  @keyframes confettiFall {
+    to { transform: translateY(700px) rotate(720deg); opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .confetti { display: none; }
+    .dpad button, .land-btn, .btn-primary { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🗺️ Maze Explorer!</h1>
+
+<div class="game-wrap">
+  <canvas id="game" width="720" height="720" aria-label="Maze Explorer game"></canvas>
+
+  <div class="hud-left">
+    <div class="chip">⭐ <span id="stars">0</span></div>
+    <div class="chip" id="levelChip">Maze 1</div>
+    <div class="chip">⏱️ <span id="timeChip">0:00</span></div>
+  </div>
+  <div class="hud-right">
+    <button class="icon-btn" id="menuBtn" aria-label="Choose a different land">🏠</button>
+    <button class="icon-btn" id="hintBtn" aria-label="Show me the way">💡</button>
+    <button class="icon-btn" id="musicBtn" aria-label="Turn music on or off">🎵</button>
+    <button class="icon-btn" id="soundBtn" aria-label="Turn sounds on or off">🔊</button>
+  </div>
+
+  <!-- Land picker -->
+  <div class="overlay" id="menuOverlay">
+    <div class="big-msg">Where shall we explore today?</div>
+    <div class="land-buttons" id="landButtons"></div>
+    <div class="sub-msg">Walk to the goal! Use the arrows, your keyboard, or swipe the maze.</div>
+  </div>
+
+  <!-- Win screen -->
+  <div class="overlay" id="winOverlay" hidden>
+    <div class="big-msg" id="winMsg">🎉 You did it!</div>
+    <div class="sub-msg" id="winSub"></div>
+    <button class="btn-primary" id="nextBtn">▶ Next maze!</button>
+    <button class="btn-ghost" id="changeLandBtn">🌍 Pick another land</button>
+  </div>
+</div>
+
+<!-- D-pad -->
+<div class="dpad" aria-label="Move controls">
+  <button class="up"    data-dir="up"    aria-label="Move up">▲</button>
+  <button class="left"  data-dir="left"  aria-label="Move left">◀</button>
+  <button class="down"  data-dir="down"  aria-label="Move down">▼</button>
+  <button class="right" data-dir="right" aria-label="Move right">▶</button>
+</div>
+<div class="hint-text">Keyboard: arrow keys · Touch: swipe the maze or use the buttons</div>
+
+<script>
+/* ==================================================================
+   CONFIG + THEMES — tweak everything here
+   ================================================================== */
+const CONFIG = {
+  canvas: 720,
+  margin: 44,              // space around the maze (deco zone)
+  startSize: 5,            // first maze is 5×5
+  maxSize: 10,             // never bigger than 10×10
+  moveSpeed: 9,            // cells per second the hero glides
+  hintSeconds: 4           // how long the 💡 path stays visible
+};
+
+/* Each land: colors, hero & goal, decorations, music and ambience. */
+const THEMES = {
+  forest: {
+    name: '🌲 Forest', hero: '🐇', goal: '🥕',
+    deco: ['🌲', '🌳', '🍄', '🌼', '🦋', '🌷'],
+    skyTop: '#C8EBA4', skyBottom: '#8CCB74',
+    path: '#F9F5E3', wall: '#4E7A3A', trail: '#CDE3B4', hint: '#F2913D',
+    darkText: false,
+    music: {
+      bpm: 116, wave: 'triangle', vol: 0.045, bassVol: 0.06,
+      melody: ['C5','D5','E5','G5','A5','G5','E5','D5','C5',null,'E5','G5','A5','C6','G5',null],
+      bass:   ['C3',null,'G3',null,'A3',null,'G3',null,'F3',null,'C3',null,'G3',null,'C3',null]
+    },
+    ambient: 'birds'
+  },
+  desert: {
+    name: '🏜️ Desert', hero: '🐫', goal: '🌴',
+    deco: ['🌵', '☀️', '🦂', '🌵', '🏜️', '🐍'],
+    skyTop: '#FFE3A8', skyBottom: '#F0B468',
+    path: '#FFF6E0', wall: '#B4703A', trail: '#F2DCAE', hint: '#D4731F',
+    darkText: false,
+    music: {
+      bpm: 96, wave: 'sine', vol: 0.06, bassVol: 0.055,
+      melody: ['D5','F5','E5','D5','A4','D5','F5','G5','F5','E5','D5',null,'C5','D5',null,null],
+      bass:   ['D3',null,'A2',null,'D3',null,'C3',null,'D3',null,'A2',null,'D3',null,'D3',null]
+    },
+    ambient: 'wind'
+  },
+  snow: {
+    name: '❄️ Snowland', hero: '🐧', goal: '🐟',
+    deco: ['⛄', '❄️', '🌨️', '❄️', '⛄', '🧊'],
+    skyTop: '#DCEFFA', skyBottom: '#A8CFEA',
+    path: '#FFFFFF', wall: '#6FA8D0', trail: '#D9EAF7', hint: '#3A87B8',
+    darkText: false,
+    music: {
+      bpm: 88, wave: 'triangle', vol: 0.05, bassVol: 0.045,
+      melody: ['F5','A5','C6',null,'A5','C6','F6',null,'E6','C6','A5',null,'G5','A5','C6',null],
+      bass:   ['F3',null,null,null,'C3',null,null,null,'A#2',null,null,null,'C3',null,null,null]
+    },
+    ambient: 'chime'
+  },
+  ocean: {
+    name: '🌊 Ocean', hero: '🐠', goal: '🐚',
+    deco: ['🐙', '🪸', '🐬', '🫧', '⭐', '🦀'],
+    skyTop: '#A8E4E0', skyBottom: '#4EA8DE',
+    path: '#EAFBFF', wall: '#2E6FA3', trail: '#C4EAF2', hint: '#1F8AA8',
+    darkText: false,
+    music: {
+      bpm: 84, wave: 'sine', vol: 0.06, bassVol: 0.05,
+      melody: ['G4','A4','B4','D5','E5','D5','B4','A4','G4',null,'B4','D5','E5','G5','D5',null],
+      bass:   ['G2',null,'D3',null,'E3',null,'D3',null,'C3',null,'G2',null,'D3',null,'G2',null]
+    },
+    ambient: 'bubbles'
+  },
+  space: {
+    name: '🚀 Space', hero: '🚀', goal: '🪐',
+    deco: ['⭐', '🌟', '☄️', '🌙', '👽', '✨'],
+    skyTop: '#2A2A4E', skyBottom: '#0E0E24',
+    path: '#3E3E66', wall: '#8A7BF0', trail: '#54548A', hint: '#FFC93C',
+    darkText: true,
+    music: {
+      bpm: 104, wave: 'square', vol: 0.03, bassVol: 0.045,
+      melody: ['C5','D5','E5','F#5','G#5','F#5','E5','D5','C5',null,'F#5',null,'A#5',null,'G#5',null],
+      bass:   ['C3',null,null,null,'F#2',null,null,null,'G#2',null,null,null,'A#2',null,null,null]
+    },
+    ambient: 'twinkle'
+  }
+};
+
+/* ==================================================================
+   Elements
+   ================================================================== */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const SZ = CONFIG.canvas;
+
+const starsEl      = document.getElementById('stars');
+const levelChip    = document.getElementById('levelChip');
+const menuOverlay  = document.getElementById('menuOverlay');
+const winOverlay   = document.getElementById('winOverlay');
+const winSub       = document.getElementById('winSub');
+const gameWrap     = document.querySelector('.game-wrap');
+
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ==================================================================
+   Audio: effects, music, ambience — all synthesized
+   ================================================================== */
+let audioCtx = null;
+let soundOn = true, musicOn = true;
+
+function ensureCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function tone(freq, dur, type = 'sine', vol = 0.12, when = 0, slideTo = null) {
+  if (!soundOn) return;
+  try {
+    ensureCtx();
+    const t0 = audioCtx.currentTime + when;
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t0);
+    if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
+    g.gain.setValueAtTime(vol, t0);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    osc.connect(g).connect(audioCtx.destination);
+    osc.start(t0);
+    osc.stop(t0 + dur);
+  } catch (e) { /* silent is fine */ }
+}
+const sndStep = () => tone(500, 0.07, 'triangle', 0.07, 0, 620);
+const sndBump = () => tone(160, 0.15, 'sine', 0.1);
+const sndWin  = () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.25, 'triangle', 0.14, i * 0.14));
+const sndHint = () => tone(880, 0.12, 'sine', 0.08, 0, 1320);
+
+/* --- note name → frequency --- */
+const NOTE = (() => {
+  const s = { C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11 };
+  return (n) => {
+    const m = n.match(/^([A-G]#?)(\d)$/);
+    return 440 * Math.pow(2, (s[m[1]] + (parseInt(m[2], 10) - 4) * 12 - 9) / 12);
+  };
+})();
+
+/* --- looping music (lookahead scheduler) --- */
+let musicTimer = null, musicStep = 0, musicNext = 0;
+
+function playMusicNote(freq, t, dur, type, vol) {
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t);
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  osc.connect(g).connect(audioCtx.destination);
+  osc.start(t);
+  osc.stop(t + dur);
+}
+
+function startMusic() {
+  if (!musicOn || musicTimer || !state.theme) return;
+  try {
+    ensureCtx();
+    const m = state.theme.music;
+    const stepLen = 60 / m.bpm / 2;
+    musicStep = 0;
+    musicNext = audioCtx.currentTime + 0.05;
+    musicTimer = setInterval(() => {
+      while (musicNext < audioCtx.currentTime + 0.15) {
+        const mel = m.melody[musicStep % m.melody.length];
+        const bas = m.bass[musicStep % m.bass.length];
+        if (mel) playMusicNote(NOTE(mel), musicNext, stepLen * 0.9, m.wave, m.vol);
+        if (bas) playMusicNote(NOTE(bas), musicNext, stepLen * 1.8, 'triangle', m.bassVol);
+        musicNext += stepLen;
+        musicStep++;
+      }
+    }, 50);
+  } catch (e) {}
+}
+function stopMusic() { clearInterval(musicTimer); musicTimer = null; }
+
+/* --- ambient background sounds, one flavor per land --- */
+let ambientTimer = null;
+let noiseBuffer = null;
+
+function getNoise() {
+  if (!noiseBuffer) {
+    noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate, audioCtx.sampleRate);
+    const d = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  return noiseBuffer;
+}
+
+function playAmbient(kind) {
+  if (!soundOn) return;
+  try {
+    ensureCtx();
+    if (kind === 'birds') {
+      // two quick cheerful chirps
+      tone(2300, 0.09, 'sine', 0.05, 0, 2900);
+      tone(2600, 0.11, 'sine', 0.05, 0.16, 2100);
+    } else if (kind === 'wind' || kind === 'chime') {
+      // a soft whoosh of filtered noise
+      const src = audioCtx.createBufferSource();
+      src.buffer = getNoise();
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = kind === 'wind' ? 500 : 1200;
+      filter.Q.value = 1.2;
+      const g = audioCtx.createGain();
+      const t0 = audioCtx.currentTime;
+      g.gain.setValueAtTime(0.001, t0);
+      g.gain.exponentialRampToValueAtTime(kind === 'wind' ? 0.05 : 0.03, t0 + 0.6);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + 1.6);
+      src.connect(filter).connect(g).connect(audioCtx.destination);
+      src.start(t0);
+      src.stop(t0 + 1.7);
+      if (kind === 'chime') tone(1568, 0.7, 'triangle', 0.03, 0.4);   // icy sparkle
+    } else if (kind === 'bubbles') {
+      // three rising bloops
+      for (let i = 0; i < 3; i++) tone(300 + i * 60, 0.16, 'sine', 0.05, i * 0.22, 800 + i * 120);
+    } else if (kind === 'twinkle') {
+      tone(1800, 0.12, 'square', 0.02);
+      tone(2400, 0.16, 'square', 0.02, 0.2);
+    }
+  } catch (e) {}
+}
+
+function startAmbient() {
+  stopAmbient();
+  const loop = () => {
+    if (!state.theme) return;
+    playAmbient(state.theme.ambient);
+    ambientTimer = setTimeout(loop, 2800 + Math.random() * 4200);
+  };
+  ambientTimer = setTimeout(loop, 1200);
+}
+function stopAmbient() { clearTimeout(ambientTimer); ambientTimer = null; }
+
+/* --- toggles --- */
+document.getElementById('soundBtn').addEventListener('click', (e) => {
+  soundOn = !soundOn;
+  e.currentTarget.textContent = soundOn ? '🔊' : '🔇';
+  e.currentTarget.classList.toggle('off', !soundOn);
+});
+document.getElementById('musicBtn').addEventListener('click', (e) => {
+  musicOn = !musicOn;
+  e.currentTarget.classList.toggle('off', !musicOn);
+  if (!musicOn) stopMusic();
+  else if (state.playing) startMusic();
+});
+
+/* ==================================================================
+   Maze generation (recursive backtracker) + BFS solver for hints
+   ================================================================== */
+function generateMaze(n) {
+  // each cell: walls [top, right, bottom, left]
+  const cells = Array.from({ length: n * n }, () => [true, true, true, true]);
+  const visited = new Array(n * n).fill(false);
+  const stack = [0];
+  visited[0] = true;
+  const DIRS = [
+    { dx: 0, dy: -1, w: 0, o: 2 },   // up
+    { dx: 1, dy: 0,  w: 1, o: 3 },   // right
+    { dx: 0, dy: 1,  w: 2, o: 0 },   // down
+    { dx: -1, dy: 0, w: 3, o: 1 }    // left
+  ];
+  while (stack.length) {
+    const cur = stack[stack.length - 1];
+    const cx = cur % n, cy = Math.floor(cur / n);
+    const options = DIRS
+      .map(d => ({ d, nx: cx + d.dx, ny: cy + d.dy }))
+      .filter(o => o.nx >= 0 && o.nx < n && o.ny >= 0 && o.ny < n && !visited[o.ny * n + o.nx]);
+    if (!options.length) { stack.pop(); continue; }
+    const pick = options[Math.floor(Math.random() * options.length)];
+    const next = pick.ny * n + pick.nx;
+    cells[cur][pick.d.w] = false;         // knock down the wall between them
+    cells[next][pick.d.o] = false;
+    visited[next] = true;
+    stack.push(next);
+  }
+  return cells;
+}
+
+function solveMaze(cells, n, fromX, fromY) {
+  // BFS from (fromX, fromY) to bottom-right corner
+  const target = n * n - 1;
+  const start = fromY * n + fromX;
+  const prev = new Array(n * n).fill(-1);
+  const seen = new Array(n * n).fill(false);
+  const queue = [start];
+  seen[start] = true;
+  const D = [ [0, -1, 0], [1, 0, 1], [0, 1, 2], [-1, 0, 3] ];
+  while (queue.length) {
+    const cur = queue.shift();
+    if (cur === target) break;
+    const cx = cur % n, cy = Math.floor(cur / n);
+    for (const [dx, dy, w] of D) {
+      if (cells[cur][w]) continue;                    // wall in the way
+      const nx = cx + dx, ny = cy + dy;
+      const nxt = ny * n + nx;
+      if (nx < 0 || nx >= n || ny < 0 || ny >= n || seen[nxt]) continue;
+      seen[nxt] = true;
+      prev[nxt] = cur;
+      queue.push(nxt);
+    }
+  }
+  const path = [];
+  for (let c = target; c !== -1; c = prev[c]) path.unshift({ x: c % n, y: Math.floor(c / n) });
+  return path;
+}
+
+/* ==================================================================
+   Game state
+   ================================================================== */
+const state = {
+  theme: null,
+  themeKey: null,
+  playing: false,
+  level: 1,
+  n: CONFIG.startSize,
+  cells: null,
+  px: 0, py: 0,             // hero grid position
+  rx: 0, ry: 0,             // hero rendered (gliding) position
+  trail: new Set(),
+  hintPath: null,
+  hintUntil: 0,
+  decoSpots: [],
+  bump: 0,                  // little shake when walking into a wall
+  time: 0,
+  mazeTime: 0,              // count-up timer for the current maze
+  bestTimes: {}             // best time per maze size, e.g. {5: 32.1}
+};
+
+const timeChip = document.getElementById('timeChip');
+
+function formatTime(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function newMaze() {
+  state.cells = generateMaze(state.n);
+  state.px = 0; state.py = 0;
+  state.rx = 0; state.ry = 0;
+  state.trail = new Set(['0,0']);
+  state.hintPath = null;
+  state.playing = true;
+  state.mazeTime = 0;
+  timeChip.textContent = '0:00';
+  levelChip.textContent = `Maze ${state.level}`;
+
+  // scatter decorations around the border zone
+  state.decoSpots = [];
+  const m = CONFIG.margin;
+  for (let i = 0; i < 10; i++) {
+    const side = i % 4;
+    const along = (0.08 + 0.84 * ((i * 0.37) % 1)) * SZ;
+    const off = m * (0.28 + 0.4 * ((i * 0.61) % 1));
+    let x, y;
+    if (side === 0) { x = along; y = off; }
+    else if (side === 1) { x = SZ - off; y = along; }
+    else if (side === 2) { x = along; y = SZ - off; }
+    else { x = off; y = along; }
+    state.decoSpots.push({ x, y, e: state.theme.deco[i % state.theme.deco.length], s: 0.75 + ((i * 0.29) % 0.5) });
+  }
+}
+
+function startLand(key) {
+  state.themeKey = key;
+  state.theme = THEMES[key];
+  menuOverlay.hidden = true;
+  winOverlay.hidden = true;
+  newMaze();
+  stopMusic();
+  startMusic();
+  startAmbient();
+}
+
+/* ==================================================================
+   Movement
+   ================================================================== */
+const DIR = {
+  up:    { dx: 0, dy: -1, w: 0 },
+  right: { dx: 1, dy: 0,  w: 1 },
+  down:  { dx: 0, dy: 1,  w: 2 },
+  left:  { dx: -1, dy: 0, w: 3 }
+};
+
+function tryMove(dirName) {
+  if (!state.playing) return;
+  // wait until the glide is nearly done — keeps movement calm
+  if (Math.abs(state.rx - state.px) > 0.35 || Math.abs(state.ry - state.py) > 0.35) return;
+
+  const d = DIR[dirName];
+  const idx = state.py * state.n + state.px;
+  if (state.cells[idx][d.w]) {          // a wall! gentle bump
+    sndBump();
+    state.bump = 0.25;
+    return;
+  }
+  state.px += d.dx;
+  state.py += d.dy;
+  state.trail.add(`${state.px},${state.py}`);
+  sndStep();
+
+  // reached the goal (bottom-right corner)?
+  if (state.px === state.n - 1 && state.py === state.n - 1) {
+    state.playing = false;
+    setTimeout(win, 350);
+  }
+}
+
+function win() {
+  sndWin();
+  stopMusic();
+  starsEl.textContent = String(parseInt(starsEl.textContent, 10) + 1);
+  celebrate();
+
+  // timer results — count-up only, praise not pressure
+  const took = state.mazeTime;
+  const prevBest = state.bestTimes[state.n];
+  const isBest = prevBest === undefined || took < prevBest;
+  if (isBest) state.bestTimes[state.n] = took;
+  const timeMsg = isBest && prevBest !== undefined
+    ? ` ⏱️ ${formatTime(took)} — 🏆 your new best time!`
+    : ` ⏱️ You did it in ${formatTime(took)}!`;
+
+  const grew = state.n < CONFIG.maxSize;
+  winSub.textContent = (grew
+    ? `You found the ${state.theme.goal}!`
+    : `You found the ${state.theme.goal}! You are a maze master!`) + timeMsg;
+  winOverlay.hidden = false;
+}
+
+document.getElementById('nextBtn').addEventListener('click', () => {
+  winOverlay.hidden = true;
+  state.level++;
+  if (state.n < CONFIG.maxSize) state.n++;
+  newMaze();
+  startMusic();
+});
+document.getElementById('changeLandBtn').addEventListener('click', showMenu);
+document.getElementById('menuBtn').addEventListener('click', showMenu);
+
+function showMenu() {
+  state.playing = false;
+  stopMusic();
+  stopAmbient();
+  winOverlay.hidden = true;
+  menuOverlay.hidden = false;
+}
+
+/* --- hint: briefly draw the way to the goal --- */
+document.getElementById('hintBtn').addEventListener('click', () => {
+  if (!state.playing) return;
+  state.hintPath = solveMaze(state.cells, state.n, state.px, state.py);
+  state.hintUntil = performance.now() + CONFIG.hintSeconds * 1000;
+  sndHint();
+});
+
+/* --- keyboard --- */
+document.addEventListener('keydown', (e) => {
+  const map = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+  if (map[e.code]) {
+    e.preventDefault();
+    tryMove(map[e.code]);
+  }
+});
+
+/* --- D-pad --- */
+document.querySelectorAll('.dpad button').forEach(b => {
+  b.addEventListener('pointerdown', (e) => { e.preventDefault(); tryMove(b.dataset.dir); });
+});
+
+/* --- swipe on the maze --- */
+let swipeStart = null;
+canvas.addEventListener('pointerdown', (e) => { swipeStart = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener('pointerup', (e) => {
+  if (!swipeStart) return;
+  const dx = e.clientX - swipeStart.x;
+  const dy = e.clientY - swipeStart.y;
+  swipeStart = null;
+  if (Math.abs(dx) < 24 && Math.abs(dy) < 24) return;      // just a tap
+  if (Math.abs(dx) > Math.abs(dy)) tryMove(dx > 0 ? 'right' : 'left');
+  else tryMove(dy > 0 ? 'down' : 'up');
+});
+
+/* ==================================================================
+   Confetti
+   ================================================================== */
+function celebrate() {
+  const emojis = ['🎉', '⭐', '✨', '🎊', state.theme.goal];
+  for (let i = 0; i < 26; i++) {
+    const c = document.createElement('span');
+    c.className = 'confetti';
+    c.textContent = emojis[i % emojis.length];
+    c.style.left = Math.random() * 95 + '%';
+    c.style.animationDuration = (1.4 + Math.random() * 1.5) + 's';
+    c.style.animationDelay = (Math.random() * 0.4) + 's';
+    gameWrap.appendChild(c);
+    setTimeout(() => c.remove(), 3400);
+  }
+}
+
+/* ==================================================================
+   Drawing
+   ================================================================== */
+function draw(now) {
+  const t = state.theme;
+  if (!t) {           // menu with no land picked yet — soft placeholder
+    ctx.fillStyle = '#9CC8E8';
+    ctx.fillRect(0, 0, SZ, SZ);
+    return;
+  }
+
+  // background
+  const bg = ctx.createLinearGradient(0, 0, 0, SZ);
+  bg.addColorStop(0, t.skyTop);
+  bg.addColorStop(1, t.skyBottom);
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, SZ, SZ);
+
+  // space gets twinkling stars in the background
+  if (state.themeKey === 'space') {
+    for (let i = 0; i < 40; i++) {
+      const sx = (i * 197.3) % SZ;
+      const sy = (i * 89.7) % SZ;
+      const tw = 0.4 + 0.6 * Math.abs(Math.sin(state.time * 1.5 + i));
+      ctx.globalAlpha = tw * 0.8;
+      ctx.fillStyle = '#FFF';
+      ctx.fillRect(sx, sy, 2.5, 2.5);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // border decorations
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const d of state.decoSpots) {
+    ctx.font = `${Math.round(26 * d.s)}px serif`;
+    ctx.fillText(d.e, d.x, d.y);
+  }
+
+  const n = state.n;
+  const m = CONFIG.margin;
+  const area = SZ - m * 2;
+  const cs = area / n;                       // cell size
+
+  // maze floor
+  ctx.fillStyle = t.path;
+  roundRectPath(m - 6, m - 6, area + 12, area + 12, 18);
+  ctx.fill();
+
+  // visited trail
+  ctx.fillStyle = t.trail;
+  for (const key of state.trail) {
+    const [x, y] = key.split(',').map(Number);
+    ctx.beginPath();
+    ctx.arc(m + x * cs + cs / 2, m + y * cs + cs / 2, cs * 0.14, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // hint path (dashed, fades near the end)
+  if (state.hintPath && now < state.hintUntil) {
+    const alpha = Math.min(1, (state.hintUntil - now) / 800);
+    ctx.save();
+    ctx.globalAlpha = alpha * 0.85;
+    ctx.strokeStyle = t.hint;
+    ctx.lineWidth = cs * 0.16;
+    ctx.lineCap = 'round';
+    ctx.setLineDash([cs * 0.25, cs * 0.28]);
+    ctx.beginPath();
+    state.hintPath.forEach((p, i) => {
+      const hx = m + p.x * cs + cs / 2;
+      const hy = m + p.y * cs + cs / 2;
+      i === 0 ? ctx.moveTo(hx, hy) : ctx.lineTo(hx, hy);
+    });
+    ctx.stroke();
+    ctx.restore();
+  } else {
+    state.hintPath = null;
+  }
+
+  // walls
+  ctx.strokeStyle = t.wall;
+  ctx.lineWidth = Math.max(5, cs * 0.12);
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const c = state.cells[y * n + x];
+      const x0 = m + x * cs, y0 = m + y * cs;
+      if (c[0]) { ctx.moveTo(x0, y0);           ctx.lineTo(x0 + cs, y0); }
+      if (c[1]) { ctx.moveTo(x0 + cs, y0);      ctx.lineTo(x0 + cs, y0 + cs); }
+      if (c[2]) { ctx.moveTo(x0, y0 + cs);      ctx.lineTo(x0 + cs, y0 + cs); }
+      if (c[3]) { ctx.moveTo(x0, y0);           ctx.lineTo(x0, y0 + cs); }
+    }
+  }
+  ctx.stroke();
+
+  // goal (bottom-right) with a soft pulsing glow
+  const gx = m + (n - 1) * cs + cs / 2;
+  const gy = m + (n - 1) * cs + cs / 2;
+  const pulse = 1 + (reducedMotion ? 0 : Math.sin(state.time * 3) * 0.08);
+  ctx.save();
+  ctx.globalAlpha = 0.25;
+  ctx.fillStyle = t.hint;
+  ctx.beginPath();
+  ctx.arc(gx, gy, cs * 0.42 * pulse, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  ctx.font = `${Math.round(cs * 0.58)}px serif`;
+  ctx.fillText(t.goal, gx, gy + cs * 0.03);
+
+  // hero — glides toward its grid cell
+  const glide = Math.min(1, CONFIG.moveSpeed * 0.016);
+  state.rx += (state.px - state.rx) * glide * 4;
+  state.ry += (state.py - state.ry) * glide * 4;
+  if (state.bump > 0) state.bump -= 0.016;
+  const shake = state.bump > 0 && !reducedMotion ? Math.sin(state.time * 60) * 3 : 0;
+  const hx = m + state.rx * cs + cs / 2 + shake;
+  const hopY = reducedMotion ? 0 : Math.abs(Math.sin(state.time * 6)) * -cs * 0.04;
+  const hy = m + state.ry * cs + cs / 2 + hopY;
+  ctx.font = `${Math.round(cs * 0.6)}px serif`;
+  ctx.fillText(t.hero, hx, hy);
+}
+
+function roundRectPath(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+/* ==================================================================
+   Menu buttons + main loop
+   ================================================================== */
+const landButtonsEl = document.getElementById('landButtons');
+const landColors = { forest: '#58B368', desert: '#E8923A', snow: '#4EA8DE', ocean: '#1F8AA8', space: '#8A7BF0' };
+Object.entries(THEMES).forEach(([key, t]) => {
+  const b = document.createElement('button');
+  b.className = 'land-btn';
+  b.style.background = landColors[key];
+  b.style.boxShadow = `0 5px 0 rgba(0,0,0,0.25)`;
+  b.innerHTML = `${t.name}<small>${t.hero} find the ${t.goal}!</small>`;
+  b.addEventListener('click', () => startLand(key));
+  landButtonsEl.appendChild(b);
+});
+
+let lastT = performance.now();
+function frame(now) {
+  const dt = Math.min(0.033, (now - lastT) / 1000);
+  lastT = now;
+  state.time += dt;
+  if (state.playing) {
+    state.mazeTime += dt;
+    timeChip.textContent = formatTime(state.mazeTime);
+  }
+  draw(now);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
