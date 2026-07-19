@@ -1,8 +1,8 @@
 # 🎪 GameSpace — Learning Games for Kids
 
-**17 free, kid-friendly learning games for ages 2–8.** No ads, no tracking, no downloads — every game is a single self-contained HTML file that works offline in any modern browser.
+**18 free, kid-friendly learning games for ages 2–8.** No ads, no tracking, no downloads — every game is a single self-contained HTML file that works offline in any modern browser.
 
-**▶ Play now:** https://sonatrix.github.io/gamespace/
+**▶ Play now:** https://pyratrix.com/
 
 ![Ages 2-8](https://img.shields.io/badge/ages-2%E2%80%938-ff6b8a) ![No dependencies](https://img.shields.io/badge/dependencies-none-58b368) ![Works offline](https://img.shields.io/badge/works-offline-4ea8de) ![License](https://img.shields.io/badge/license-MIT-b58cf0)
 
@@ -27,6 +27,7 @@
 | 🎈 [Balloon Pop Math](balloon-pop-math.html) | 5–8 | Arithmetic — addition, subtraction, times tables |
 | 🏪 [Little Shop](little-shop.html) | 5–8 | Money — pay exact amounts with coins |
 | 🕐 [What Time Is It?](clock-time.html) | 5–8 | Telling time — o'clock, half past, quarters |
+| 🏎️ [Alphabet Racer](alphabet-racer.html) | 3–7 | Racing & letter learning — collect stars and correct letters A to Z |
 
 Together they cover the full early-learning arc: **motor skills → shapes & colors → counting → letters → spelling → writing → arithmetic → money & time**, plus memory, logic, music and creative free play.
 
