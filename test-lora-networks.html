@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Universal LoRa Mesh Transceiver Simulator</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+    }
+
+    body {
+      overflow: hidden;
+      background-color: #f1f5f9;
+      color: #0f172a;
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* 75% Screen Layout for 3D Visuals */
+    #canvas-container {
+      width: 75vw;
+      height: 100vh;
+      position: relative;
+      background-color: #dcebf7;
+    }
+
+    /* 25% Side Dashboard Panel */
+    #dashboard {
+      width: 25vw;
+      height: 100vh;
+      background: #ffffff;
+      border-left: 1px solid #cbd5e1;
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.05);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+      z-index: 20;
+    }
+
+    #dashboard::-webkit-scrollbar {
+      width: 5px;
+    }
+    #dashboard::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    /* Header & Branding */
+    .app-title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .credit-tag {
+      font-size: 0.78rem;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .credit-tag a {
+      color: #0284c7;
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .credit-tag a:hover {
+      text-decoration: underline;
+    }
+
+    .section-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #0284c7;
+      font-weight: 800;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 4px;
+      margin-top: 4px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: #334155;
+      font-weight: 600;
+    }
+
+    .value-badge {
+      color: #0284c7;
+      font-weight: 700;
+      font-size: 0.78rem;
+      background: rgba(2, 132, 199, 0.1);
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(2, 132, 199, 0.2);
+    }
+
+    select, button {
+      width: 100%;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      color: #0f172a;
+      padding: 8px 12px;
+      border-radius: 8px;
+      outline: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    select:hover {
+      border-color: #0284c7;
+    }
+
+    button {
+      background: #0284c7;
+      color: #ffffff;
+      border: none;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+    }
+
+    button:hover {
+      background: #0369a1;
+    }
+
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #334155;
+      box-shadow: none;
+    }
+
+    .btn-secondary:hover {
+      background: #cbd5e1;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      background: #cbd5e1;
+      border-radius: 3px;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #0284c7;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4);
+    }
+
+    /* Telemetry Display */
+    .metric-card {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .metric-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 8px 10px;
+      border-radius: 8px;
+    }
+
+    .metric-lbl {
+      font-size: 0.68rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+    }
+
+    .metric-val {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    /* Status Badges */
+    .status-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .status-connected { 
+      background: rgba(16, 185, 129, 0.12); 
+      color: #047857; 
+      border: 1px solid rgba(16, 185, 129, 0.3); 
+    }
+    .status-connected .status-dot { background: #10b981; box-shadow: 0 0 8px #10b981; }
+
+    .status-degraded { 
+      background: rgba(245, 158, 11, 0.12); 
+      color: #b45309; 
+      border: 1px solid rgba(245, 158, 11, 0.3); 
+    }
+    .status-degraded .status-dot { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+
+    .status-lost { 
+      background: rgba(239, 68, 68, 0.12); 
+      color: #b91c1c; 
+      border: 1px solid rgba(239, 68, 68, 0.3); 
+    }
+    .status-lost .status-dot { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+
+    .status-tx {
+      background: rgba(2, 132, 199, 0.12); 
+      color: #0284c7; 
+      border: 1px solid rgba(2, 132, 199, 0.3);
+    }
+    .status-tx .status-dot { background: #0284c7; box-shadow: 0 0 8px #0284c7; }
+
+    .legend {
+      display: flex;
+      justify-content: space-between;
+      padding-top: 6px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 0.7rem;
+      color: #475569;
+      font-weight: 600;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    #instructions {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #334155;
+      pointer-events: none;
+      background: rgba(255, 255, 255, 0.85);
+      padding: 8px 14px;
+      border-radius: 20px;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      z-index: 10;
+    }
+  </style>
+
+  <!-- Three.js and OrbitControls via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+  <!-- 75% Screen 3D Viewport -->
+  <div id="canvas-container">
+    <div id="instructions">
+      🖱️ Drag any Transceiver Node in 3D | Click Node to Select Active Transmitter
+    </div>
+  </div>
+
+  <!-- 25% Side Dashboard Controls & Telemetry -->
+  <div id="dashboard">
+    <div>
+      <div class="app-title">📡 Full LoRa Transceiver Mesh</div>
+      <div class="credit-tag">
+        Created by <strong>Praveen Kumar Verma</strong> 
+        (<a href="https://x.com/Alacritic_Super" target="_blank">@Alacritic_Super</a>)
+      </div>
+    </div>
+
+    <div class="section-title">Mesh Transmission & Audio</div>
+
+    <div class="control-group">
+      <label for="activeTxSelect">Active Broadcasting Node</label>
+      <select id="activeTxSelect"></select>
+    </div>
+
+    <button id="txBtn">📡 Transmit Packet From Selected Node</button>
+    <button id="audioBtn" class="btn-secondary">🔊 Audio FX: ON</button>
+
+    <div class="section-title">Environment Controls</div>
+    
+    <div class="control-group">
+      <label for="envSelect">Environment Preset</label>
+      <select id="envSelect">
+        <option value="flat">Open Field (Minimal Loss)</option>
+        <option value="hills">Hilly / Mountainous Terrain</option>
+        <option value="forest">Dense Forest (Vegetation Loss)</option>
+        <option value="village">Rural Village (Low Obstacles)</option>
+        <option value="city">Urban City (High Concrete Loss)</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label>Total Transceiver Nodes <span id="rxNumVal" class="value-badge">5</span></label>
+      <input type="range" id="rxNumSlider" min="2" max="10" step="1" value="5">
+    </div>
+
+    <div class="section-title">Inspect Node Telemetry</div>
+
+    <div class="control-group">
+      <label>Inspect Node <span id="selectedRxVal" class="value-badge">Node 1</span></label>
+      <select id="inspectSelect"></select>
+    </div>
+
+    <div class="section-title">Radio Parameters</div>
+
+    <div class="control-group">
+      <label>Spreading Factor (SF) <span id="sfVal" class="value-badge">SF7</span></label>
+      <input type="range" id="sfSlider" min="7" max="12" step="1" value="7">
+    </div>
+
+    <div class="control-group">
+      <label>TX Power <span id="txVal" class="value-badge">14 dBm</span></label>
+      <input type="range" id="txSlider" min="2" max="20" step="1" value="14">
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="dot" style="background:#0284c7;"></div> Active TX</div>
+      <div class="legend-item"><div class="dot" style="background:#10b981;"></div> Optimal RX</div>
+      <div class="legend-item"><div class="dot" style="background:#f59e0b;"></div> Degraded</div>
+      <div class="legend-item"><div class="dot" style="background:#ef4444;"></div> Loss</div>
+    </div>
+
+    <div class="section-title" id="rxTelemetryTitle">Node 1 Metrics</div>
+
+    <div class="metric-card">
+      <div class="metric-box">
+        <div class="metric-lbl">Dist to Active TX</div>
+        <div id="distKm" class="metric-val">0.00 km</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-lbl">Dist (Meters)</div>
+        <div id="distM" class="metric-val">0 m</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-lbl">Path Loss</div>
+        <div id="pathLoss" class="metric-val">0 dB</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-lbl">RSSI</div>
+        <div id="rssi" class="metric-val">-0 dBm</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-lbl">SNR</div>
+        <div id="snr" class="metric-val">0 dB</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-lbl">Airtime</div>
+        <div id="airtime" class="metric-val">0 ms</div>
+      </div>
+    </div>
+
+    <div id="linkStatus" class="status-badge status-connected">
+      <div class="status-dot"></div>
+      <span id="statusText">MESSAGE RECEIVED</span>
+    </div>
+  </div>
+
+  <script>
+    // --- 1. Audio Synthesizer (Web Audio API) ---
+    let audioCtx = null;
+    let audioEnabled = true;
+
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playTxChirpSound() {
+      if (!audioEnabled) return;
+      initAudio();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'sawtooth';
+      const now = audioCtx.currentTime;
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.exponentialRampToValueAtTime(1200, now + 0.15);
+
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.15);
+    }
+
+    function playRxBeepSound(status) {
+      if (!audioEnabled) return;
+      initAudio();
+      const now = audioCtx.currentTime;
+
+      if (status === 'optimal') {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.setValueAtTime(1200, now + 0.06);
+
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } else if (status === 'degraded') {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(440, now);
+
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      } else if (status === 'lost') {
+        const bufferSize = audioCtx.sampleRate * 0.1;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+        noise.connect(gain);
+        gain.connect(audioCtx.destination);
+        noise.start(now);
+      }
+    }
+
+    // --- 2. Scene Setup ---
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    
+    const bgColor = 0xdcebf7;
+    scene.background = new THREE.Color(bgColor);
+    scene.fog = new THREE.FogExp2(bgColor, 0.001);
+
+    const camera = new THREE.PerspectiveCamera(60, (window.innerWidth * 0.75) / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 110, 200);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth * 0.75, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    dirLight.position.set(100, 160, 60);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.camera.near = 0.5;
+    dirLight.shadow.camera.far = 500;
+    const d = 180;
+    dirLight.shadow.camera.left = -d;
+    dirLight.shadow.camera.right = d;
+    dirLight.shadow.camera.top = d;
+    dirLight.shadow.camera.bottom = -d;
+    scene.add(dirLight);
+
+    // --- 3. Scene Groups & Transceiver State ---
+    const groundGroup = new THREE.Group();
+    scene.add(groundGroup);
+
+    const environmentObjects = new THREE.Group();
+    scene.add(environmentObjects);
+
+    let currentEnvType = 'flat';
+    let nodes = [];
+    let beams = [];
+    let signalWaves = [];
+    let activeTxIndex = 0; // The node currently transmitting
+    let inspectNodeIndex = 0; // The node being inspected in Telemetry
+    let pulseScale = -1;
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    let isDragging = false;
+    let draggedObject = null;
+
+    const nodePresetPositions = [
+      { x: -100, z: 0 },
+      { x: 30, z: -20 },
+      { x: 80, z: 50 },
+      { x: 140, z: -40 },
+      { x: 190, z: 30 },
+      { x: 60, z: -90 },
+      { x: 120, z: 100 },
+      { x: 220, z: -80 },
+      { x: 250, z: 60 },
+      { x: 270, z: -110 }
+    ];
+
+    // --- 4. Elevation Generator ---
+    function getElevationAt(x, z) {
+      if (currentEnvType !== 'hills') return 0;
+      const h1 = Math.sin(x * 0.02) * Math.cos(z * 0.02) * 18;
+      const h2 = Math.sin(x * 0.05 + z * 0.03) * 8;
+      const h3 = Math.cos(x * 0.08 - z * 0.05) * 4;
+      return Math.max(0, h1 + h2 + h3);
+    }
+
+    // --- 5. Billboard Label Canvas Helper ---
+    function createTextLabel(text) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.beginPath();
+      ctx.roundRect(0, 0, 256, 64, 12);
+      ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#0284c7';
+      ctx.stroke();
+      ctx.font = 'Bold 24px Inter, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 128, 32);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const spriteMat = new THREE.SpriteMaterial({ map: texture, depthTest: false, depthWrite: false });
+      const sprite = new THREE.Sprite(spriteMat);
+      sprite.scale.set(16, 4, 1);
+      return sprite;
+    }
+
+    // --- 6. Build Transceiver Mesh ---
+    function buildTransceivers(count) {
+      nodes.forEach(n => scene.remove(n.group));
+      beams.forEach(b => scene.remove(b));
+      signalWaves.forEach(w => scene.remove(w));
+
+      nodes = [];
+      beams = [];
+      signalWaves = [];
+
+      for (let i = 0; i < count; i++) {
+        const nodeGroup = new THREE.Group();
+        const pos = nodePresetPositions[i];
+
+        // Main Box
+        const boxGeo = new THREE.BoxGeometry(4, 4, 4);
+        const boxMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.2 });
+        const boxMesh = new THREE.Mesh(boxGeo, boxMat);
+        boxMesh.position.y = 2;
+        boxMesh.castShadow = true;
+        nodeGroup.add(boxMesh);
+
+        // Antenna
+        const antGeo = new THREE.CylinderGeometry(0.15, 0.15, 6);
+        const antMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+        const ant = new THREE.Mesh(antGeo, antMat);
+        ant.position.set(1.5, 5, 0);
+        nodeGroup.add(ant);
+
+        // Beacon Sphere Light
+        const statusGeo = new THREE.SphereGeometry(1.4, 16, 16);
+        const statusMat = new THREE.MeshBasicMaterial({ color: 0x0284c7 });
+        const statusLight = new THREE.Mesh(statusGeo, statusMat);
+        statusLight.position.y = 8;
+        nodeGroup.add(statusLight);
+
+        // Label
+        const label = createTextLabel(`Node ${i + 1}`);
+        label.position.set(0, 13, 0);
+        nodeGroup.add(label);
+
+        const initialY = getElevationAt(pos.x, pos.z);
+        nodeGroup.position.set(pos.x, initialY, pos.z);
+        nodeGroup.userData = { id: i, isNode: true, labelSprite: label, statusState: 'lost' };
+        scene.add(nodeGroup);
+
+        nodes.push({
+          group: nodeGroup,
+          boxMesh: boxMesh,
+          statusLight: statusLight,
+          labelSprite: label,
+          pos: pos
+        });
+      }
+
+      // Connecting Beams from Active TX to all RX nodes
+      for (let i = 0; i < count; i++) {
+        const beamGeo = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(0, 0, 0),
+          new THREE.Vector3(0, 0, 0)
+        ]);
+        const beamMat = new THREE.LineDashedMaterial({ color: 0x0284c7, dashSize: 2, gapSize: 2, linewidth: 2 });
+        const beam = new THREE.Line(beamGeo, beamMat);
+        beam.visible = false;
+        scene.add(beam);
+        beams.push(beam);
+      }
+
+      // Radio Signal Pulse Ring
+      const waveGeo = new THREE.RingGeometry(0.5, 1.2, 32);
+      const waveMat = new THREE.MeshBasicMaterial({ color: 0x0284c7, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+      const waveMesh = new THREE.Mesh(waveGeo, waveMat);
+      waveMesh.rotation.x = Math.PI / 2;
+      waveMesh.visible = false;
+      scene.add(waveMesh);
+      signalWaves.push(waveMesh);
+
+      updateDropdowns(count);
+      if (activeTxIndex >= count) activeTxIndex = 0;
+      if (inspectNodeIndex >= count) inspectNodeIndex = 0;
+    }
+
+    function updateDropdowns(count) {
+      const activeSelect = document.getElementById('activeTxSelect');
+      const inspectSelect = document.getElementById('inspectSelect');
+
+      activeSelect.innerHTML = '';
+      inspectSelect.innerHTML = '';
+
+      for (let i = 0; i < count; i++) {
+        const opt1 = document.createElement('option');
+        opt1.value = i;
+        opt1.innerText = `Node ${i + 1} Transceiver`;
+        if (i === activeTxIndex) opt1.selected = true;
+        activeSelect.appendChild(opt1);
+
+        const opt2 = document.createElement('option');
+        opt2.value = i;
+        opt2.innerText = `Node ${i + 1}`;
+        if (i === inspectNodeIndex) opt2.selected = true;
+        inspectSelect.appendChild(opt2);
+      }
+    }
+
+    // --- 7. Environment Generators ---
+    function buildGround(color = 0x86efac, isHilly = false) {
+      while(groundGroup.children.length > 0) groundGroup.remove(groundGroup.children[0]);
+
+      const gridGeo = new THREE.PlaneGeometry(500, 500, 100, 100);
+      if (isHilly) {
+        const posAttr = gridGeo.attributes.position;
+        for (let i = 0; i < posAttr.count; i++) {
+          const x = posAttr.getX(i);
+          const z = posAttr.getY(i);
+          posAttr.setZ(i, getElevationAt(x, -z));
+        }
+        gridGeo.computeVertexNormals();
+      }
+
+      const gridMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.8, metalness: 0.1, flatShading: isHilly });
+      const ground = new THREE.Mesh(gridGeo, gridMat);
+      ground.rotation.x = -Math.PI / 2;
+      ground.receiveShadow = true;
+      groundGroup.add(ground);
+
+      const gridHelper = new THREE.GridHelper(500, 50, 0x0284c7, 0x94a3b8);
+      gridHelper.position.y = 0.01;
+      groundGroup.add(gridHelper);
+    }
+
+    function clearEnvironment() {
+      while(environmentObjects.children.length > 0) environmentObjects.remove(environmentObjects.children[0]);
+    }
+
+    function generateEnvironment(type) {
+      currentEnvType = type;
+      clearEnvironment();
+
+      if (type === 'flat') buildGround(0x86efac, false);
+      else if (type === 'hills') buildGround(0x65a30d, true);
+      else if (type === 'forest') buildGround(0x4ade80, false);
+      else if (type === 'village') buildGround(0xfde047, false);
+      else if (type === 'city') buildGround(0xcbd5e1, false);
+
+      nodes.forEach(n => {
+        const y = getElevationAt(n.group.position.x, n.group.position.z);
+        n.group.position.y = y;
+      });
+    }
+
+    // --- 8. LoRa RF Propagation Physics ---
+    const envParams = {
+      flat: { n: 2.0, obstacleLoss: 0 },
+      hills: { n: 3.4, obstacleLoss: 18 },
+      forest: { n: 2.7, obstacleLoss: 8 },
+      village: { n: 3.0, obstacleLoss: 12 },
+      city: { n: 3.8, obstacleLoss: 25 }
+    };
+
+    const sfSensitivities = { 7: -123, 8: -126, 9: -129, 10: -132, 11: -134.5, 12: -137 };
+
+    function calculateAirtime(sf) {
+      const bw = 125000;
+      const symbolRate = bw / Math.pow(2, sf);
+      const tSymbol = 1 / symbolRate;
+      const nPayload = 8 + Math.max(Math.ceil((8 * 20 - 4 * sf + 28) / (4 * sf)), 0) * 5;
+      return (((8 + 4.25 + nPayload) * tSymbol) * 1000).toFixed(1);
+    }
+
+    function updateSimulation() {
+      const env = document.getElementById('envSelect').value;
+      const sf = parseInt(document.getElementById('sfSlider').value);
+      const txPower = parseFloat(document.getElementById('txSlider').value);
+
+      document.getElementById('sfVal').innerText = `SF${sf}`;
+      document.getElementById('txVal').innerText = `${txPower} dBm`;
+
+      const sensitivity = sfSensitivities[sf];
+      const airtime = calculateAirtime(sf);
+
+      const txNode = nodes[activeTxIndex];
+
+      nodes.forEach((targetNode, idx) => {
+        const beam = beams[idx];
+
+        if (idx === activeTxIndex) {
+          // Broadcasting Transmitter
+          targetNode.statusLight.material.color.setHex(0x0284c7);
+          targetNode.boxMesh.material.color.setHex(0x0f172a);
+          targetNode.group.userData.statusState = 'tx';
+          beam.visible = false;
+
+          if (idx === inspectNodeIndex) {
+            document.getElementById('rxTelemetryTitle').innerText = `Node ${idx + 1} (Broadcasting TX)`;
+            document.getElementById('distKm').innerText = `0.00 km`;
+            document.getElementById('distM').innerText = `0 m`;
+            document.getElementById('pathLoss').innerText = `0 dB`;
+            document.getElementById('rssi').innerText = `${txPower} dBm`;
+            document.getElementById('snr').innerText = `+30 dB`;
+            document.getElementById('airtime').innerText = `${airtime} ms`;
+
+            const statusBadge = document.getElementById('linkStatus');
+            const statusText = document.getElementById('statusText');
+            statusBadge.className = 'status-badge status-tx';
+            statusText.innerText = 'BROADCASTING TRANSMITTER';
+          }
+          return;
+        }
+
+        // Receiving Nodes Calculations
+        const dist3D = txNode.group.position.distanceTo(targetNode.group.position);
+        const distanceMeters = Math.round(dist3D * 10);
+        const distanceKm = (distanceMeters / 1000).toFixed(2);
+
+        const freqMHz = 868;
+        const d0 = 10;
+        const PL0 = 20 * Math.log10(d0) + 20 * Math.log10(freqMHz) - 27.55;
+        const envData = envParams[env];
+        
+        const pathLoss = PL0 + 10 * envData.n * Math.log10(Math.max(distanceMeters, d0) / d0) + envData.obstacleLoss;
+        const rssi = txPower - pathLoss;
+        const snr = rssi - (-114);
+        const margin = rssi - sensitivity;
+
+        // Beam Visualization
+        beam.visible = true;
+        const pos = beam.geometry.attributes.position.array;
+        pos[0] = txNode.group.position.x;
+        pos[1] = 8 + txNode.group.position.y;
+        pos[2] = txNode.group.position.z;
+        pos[3] = targetNode.group.position.x;
+        pos[4] = 8 + targetNode.group.position.y;
+        pos[5] = targetNode.group.position.z;
+        beam.geometry.attributes.position.needsUpdate = true;
+        beam.computeLineDistances();
+
+        if (margin > 8) {
+          targetNode.statusLight.material.color.setHex(0x10b981); // Green
+          targetNode.boxMesh.material.color.setHex(0x065f46);
+          targetNode.group.userData.statusState = 'optimal';
+        } else if (margin >= 0) {
+          targetNode.statusLight.material.color.setHex(0xf59e0b); // Yellow
+          targetNode.boxMesh.material.color.setHex(0x92400e);
+          targetNode.group.userData.statusState = 'degraded';
+        } else {
+          targetNode.statusLight.material.color.setHex(0xef4444); // Red
+          targetNode.boxMesh.material.color.setHex(0x991b1b);
+          targetNode.group.userData.statusState = 'lost';
+        }
+
+        if (idx === inspectNodeIndex) {
+          document.getElementById('rxTelemetryTitle').innerText = `Node ${idx + 1} Metrics`;
+          document.getElementById('distKm').innerText = `${distanceKm} km`;
+          document.getElementById('distM').innerText = `${distanceMeters} m`;
+          document.getElementById('pathLoss').innerText = `${pathLoss.toFixed(1)} dB`;
+          document.getElementById('rssi').innerText = `${rssi.toFixed(1)} dBm`;
+          document.getElementById('snr').innerText = `${snr.toFixed(1)} dB`;
+          document.getElementById('airtime').innerText = `${airtime} ms`;
+
+          const statusBadge = document.getElementById('linkStatus');
+          const statusText = document.getElementById('statusText');
+          if (margin > 8) {
+            statusBadge.className = 'status-badge status-connected';
+            statusText.innerText = 'MESSAGE RECEIVED (OPTIMAL)';
+          } else if (margin >= 0) {
+            statusBadge.className = 'status-badge status-degraded';
+            statusText.innerText = 'LINK DEGRADED (INCREASE SF)';
+          } else {
+            statusBadge.className = 'status-badge status-lost';
+            statusText.innerText = 'PACKET LOST (OUT OF RANGE)';
+          }
+        }
+      });
+    }
+
+    // --- 9. Drag & Drop Handlers ---
+    function onPointerDown(event) {
+      if (event.clientX > window.innerWidth * 0.75) return;
+
+      mouse.x = (event.clientX / (window.innerWidth * 0.75)) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(nodes.map(n => n.group), true);
+
+      if (intersects.length > 0) {
+        let obj = intersects[0].object;
+        while (obj.parent && obj.parent.type === "Group" && !obj.parent.userData.isNode) {
+          obj = obj.parent;
+        }
+        if (obj.parent && obj.parent.userData.isNode) {
+          isDragging = true;
+          draggedObject = obj.parent;
+          controls.enabled = false;
+
+          inspectNodeIndex = draggedObject.userData.id;
+          document.getElementById('inspectSelect').value = inspectNodeIndex;
+          document.getElementById('selectedRxVal').innerText = `Node ${inspectNodeIndex + 1}`;
+          updateSimulation();
+        }
+      }
+    }
+
+    function onPointerMove(event) {
+      if (!isDragging || !draggedObject) return;
+
+      mouse.x = (event.clientX / (window.innerWidth * 0.75)) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const targetPoint = new THREE.Vector3();
+      if (raycaster.ray.intersectPlane(dragPlane, targetPoint)) {
+        draggedObject.position.x = targetPoint.x;
+        draggedObject.position.z = targetPoint.z;
+        draggedObject.position.y = getElevationAt(targetPoint.x, targetPoint.z);
+        updateSimulation();
+      }
+    }
+
+    function onPointerUp() {
+      isDragging = false;
+      draggedObject = null;
+      controls.enabled = true;
+    }
+
+    window.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+
+    // --- 10. UI Control Listeners ---
+    document.getElementById('envSelect').addEventListener('change', (e) => {
+      generateEnvironment(e.target.value);
+      updateSimulation();
+    });
+
+    document.getElementById('rxNumSlider').addEventListener('input', (e) => {
+      buildTransceivers(parseInt(e.target.value));
+      updateSimulation();
+    });
+
+    document.getElementById('activeTxSelect').addEventListener('change', (e) => {
+      activeTxIndex = parseInt(e.target.value);
+      updateSimulation();
+    });
+
+    document.getElementById('inspectSelect').addEventListener('change', (e) => {
+      inspectNodeIndex = parseInt(e.target.value);
+      document.getElementById('selectedRxVal').innerText = `Node ${inspectNodeIndex + 1}`;
+      updateSimulation();
+    });
+
+    document.getElementById('txBtn').addEventListener('click', () => {
+      pulseScale = 0;
+      playTxChirpSound();
+      const currentStatus = nodes[inspectNodeIndex].group.userData.statusState;
+      setTimeout(() => playRxBeepSound(currentStatus), 200);
+    });
+
+    document.getElementById('audioBtn').addEventListener('click', (e) => {
+      audioEnabled = !audioEnabled;
+      e.target.innerText = audioEnabled ? "🔊 Audio FX: ON" : "🔇 Audio FX: OFF";
+    });
+
+    document.getElementById('sfSlider').addEventListener('input', updateSimulation);
+    document.getElementById('txSlider').addEventListener('input', updateSimulation);
+
+    window.addEventListener('resize', () => {
+      camera.aspect = (window.innerWidth * 0.75) / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth * 0.75, window.innerHeight);
+    });
+
+    // --- 11. Init & Animation Loop ---
+    buildTransceivers(5);
+    generateEnvironment('flat');
+    updateSimulation();
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Pulse Animation for Active Transmission
+      if (pulseScale >= 0) {
+        const txPos = nodes[activeTxIndex].group.position;
+        const wave = signalWaves[0];
+        wave.visible = true;
+        wave.position.set(txPos.x, 8 + txPos.y, txPos.z);
+        pulseScale += 1.5;
+        wave.scale.set(pulseScale, pulseScale, 1);
+        wave.material.opacity = Math.max(0, 1 - (pulseScale / 250));
+        if (pulseScale > 250) pulseScale = -1;
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
