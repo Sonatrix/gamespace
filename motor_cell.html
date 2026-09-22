@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Photorealistic Electric Motor Engineering Visualizer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- GSAP for Smooth Separation & Animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <!-- Chart.js for Live Performance Plots -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            color: #0f172a;
+            overflow: hidden;
+            margin: 0;
+            user-select: none;
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+        }
+        .glass-btn {
+            background: rgba(248, 250, 252, 0.95);
+            border: 1px solid rgba(203, 213, 225, 0.85);
+            color: #1e293b;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-btn:hover {
+            background: rgba(241, 245, 249, 1);
+            border-color: #0284c7;
+            color: #0284c7;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);
+        }
+        .glass-btn.active {
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: #ffffff !important;
+            border-color: #0284c7;
+            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+        }
+        .mode-toggle-btn.active-mode {
+            background-color: #0284c7;
+            color: #ffffff;
+            border-color: #0284c7;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+        }
+        #hoverTooltip { pointer-events: none; transition: opacity 0.15s ease, transform 0.15s ease; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: rgba(241, 245, 249, 0.6); }
+        ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.8); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #0284c7; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between bg-white overflow-hidden">
+
+    <header class="w-full h-16 glass-panel px-4 md:px-6 flex items-center justify-between z-20 border-b border-slate-200">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center shadow-md shadow-sky-500/20">
+                <i class="fa-solid fa-bolt text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-base font-extrabold tracking-tight text-slate-900 flex items-center space-x-2">
+                    <span>3D MOTOR ENGINEERING SUITE</span>
+                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-sky-100 text-sky-700 border border-sky-200">PRO V3.0</span>
+                </h1>
+                <p class="text-xs text-slate-500">Physics Simulator, CAD Breakdown, Assembly Game & Fault Diagnostics</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2 md:space-x-3">
+            <div class="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200">
+                <button id="btnModeOrbit" class="mode-toggle-btn active-mode px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5">
+                    <i class="fa-solid fa-arrows-spin"></i>
+                    <span>Orbit View</span>
+                </button>
+                <button id="btnModeDrag" class="mode-toggle-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-sky-600 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-hand-back-fist"></i>
+                    <span>Drag Explode</span>
+                </button>
+            </div>
+
+            <div class="h-6 w-[1px] bg-slate-200"></div>
+
+            <button id="btnOneClickExplode" class="glass-btn px-3 py-1.5 rounded-xl font-semibold text-xs text-sky-700 flex items-center space-x-1.5">
+                <i class="fa-solid fa-arrows-split-up-and-left text-sky-600"></i>
+                <span class="hidden sm:inline">Disassemble</span>
+            </button>
+            <button id="btnOneClickAssemble" class="glass-btn px-3 py-1.5 rounded-xl font-semibold text-xs text-emerald-700 flex items-center space-x-1.5">
+                <i class="fa-solid fa-object-group text-emerald-600"></i>
+                <span class="hidden sm:inline">Assemble</span>
+            </button>
+
+            <div class="h-6 w-[1px] bg-slate-200"></div>
+
+            <button id="btnToggleRun" class="glass-btn px-3.5 py-1.5 rounded-xl font-semibold text-xs text-amber-700 flex items-center space-x-1.5 border-amber-300">
+                <i id="iconRun" class="fa-solid fa-play text-amber-600"></i>
+                <span id="textRun">Run Motor</span>
+            </button>
+
+            <button id="btnAudioToggle" class="glass-btn p-2 rounded-xl text-xs text-slate-700 hover:text-sky-600" title="Audio Sound Synth">
+                <i id="audioIcon" class="fa-solid fa-volume-xmark text-slate-400"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="relative flex-1 w-full h-[calc(100vh-4rem)] overflow-hidden bg-white">
+        <div id="canvas-container" class="absolute inset-0 w-full h-full cursor-grab"></div>
+
+        <!-- Mouse Controls Instructions HUD -->
+        <div class="absolute top-4 left-4 z-10 flex flex-col space-y-2 pointer-events-none">
+            <div id="hudInstructionCard" class="glass-panel px-3.5 py-2 rounded-xl text-xs text-slate-700 flex items-center space-x-2.5 border border-slate-200 shadow-sm">
+                <span class="w-2.5 h-2.5 rounded-full bg-sky-500 animate-pulse"></span>
+                <span id="hudInstructionText" class="font-medium">
+                    <b>Orbit Mode:</b> Left Drag to Rotate | Right Drag to Pan | Scroll to Zoom
+                </span>
+            </div>
+            
+            <!-- Assembly Challenge Game HUD -->
+            <div id="assemblyGameHud" class="glass-panel px-4 py-2.5 rounded-xl text-xs border border-amber-300 shadow-md hidden pointer-events-auto">
+                <div class="flex items-center justify-between font-bold text-amber-900 border-b pb-1 mb-1.5 border-amber-200">
+                    <span class="flex items-center space-x-1.5"><i class="fa-solid fa-puzzle-piece text-amber-600"></i><span>BUILD-A-MOTOR GAME</span></span>
+                    <span id="gameTimer" class="mono text-amber-700 font-extrabold">00:00</span>
+                </div>
+                <div class="text-[11px] text-slate-600 font-medium mb-1">Target Part: <b id="targetPartText" class="text-sky-700">Shaft Assembly</b></div>
+                <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                    <div id="gameProgressBar" class="bg-amber-500 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Drag Disassembly Dynamic HUD Indicator -->
+        <div id="dragIndicatorHud" class="absolute top-16 left-1/2 -translate-x-1/2 z-10 glass-panel px-5 py-2.5 rounded-2xl border-2 border-sky-400 shadow-xl opacity-0 pointer-events-none transition-all duration-200 flex items-center space-x-3">
+            <i class="fa-solid fa-left-right text-sky-600 text-lg animate-bounce"></i>
+            <div>
+                <div class="text-xs font-bold text-slate-900 flex items-center space-x-2">
+                    <span>CURSOR DRAG EXPLODE MODE</span>
+                    <span id="dragPercentBadge" class="mono text-sky-700 font-extrabold text-sm">0%</span>
+                </div>
+                <div class="text-[11px] text-slate-500 font-medium">Click and drag horizontally across model to disassemble/assemble</div>
+            </div>
+        </div>
+
+        <!-- Hover Object Tooltip -->
+        <div id="hoverTooltip" class="absolute z-20 glass-panel px-3 py-2 rounded-xl text-xs border border-sky-200 shadow-lg opacity-0 pointer-events-none">
+            <div id="hoverTooltipTitle" class="font-bold text-slate-900">Part Name</div>
+            <div id="hoverTooltipDesc" class="text-[11px] text-sky-700 font-medium">Click to focus & inspect</div>
+        </div>
+
+        <!-- Left Tool Selector Menu Bar -->
+        <div class="absolute top-4 left-4 bottom-24 z-10 hidden lg:flex flex-col space-y-2 pointer-events-auto">
+            <div class="glass-panel p-2 rounded-2xl flex flex-col space-y-2 border border-slate-200 shadow-md">
+                <button id="btnToolPhysics" class="glass-btn p-2.5 rounded-xl text-xs font-semibold flex flex-col items-center justify-center w-12 h-12 active" title="Physics Dashboard">
+                    <i class="fa-solid fa-chart-line text-lg"></i>
+                </button>
+                <button id="btnToolCutaway" class="glass-btn p-2.5 rounded-xl text-xs font-semibold flex flex-col items-center justify-center w-12 h-12" title="Sectional Cutaway">
+                    <i class="fa-solid fa-scissors text-lg"></i>
+                </button>
+                <button id="btnToolXRay" class="glass-btn p-2.5 rounded-xl text-xs font-semibold flex flex-col items-center justify-center w-12 h-12" title="X-Ray Ghosting">
+                    <i class="fa-solid fa-eye text-lg"></i>
+                </button>
+                <button id="btnToolThermal" class="glass-btn p-2.5 rounded-xl text-xs font-semibold flex flex-col items-center justify-center w-12 h-12" title="Thermal Heatmap">
+                    <i class="fa-solid fa-temperature-high text-lg"></i>
+                </button>
+                <button id="btnToolFaults" class="glass-btn p-2.5 rounded-xl text-xs font-semibold flex flex-col items-center justify-center w-12 h-12" title="Fault Diagnostics">
+                    <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                </button>
+                <button id="btnToolAssembly" class="glass-btn p-2.5 rounded-xl text-xs font-semibold flex flex-col items-center justify-center w-12 h-12" title="Build-A-Motor Challenge">
+                    <i class="fa-solid fa-puzzle-piece text-lg"></i>
+                </button>
+                <button id="btnToolMeasure" class="glass-btn p-2.5 rounded-xl text-xs font-semibold flex flex-col items-center justify-center w-12 h-12" title="Caliper Measurement Tool">
+                    <i class="fa-solid fa-ruler-combined text-lg"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="physicsDashboardPanel" class="absolute top-4 left-20 z-10 w-80 md:w-96 glass-panel rounded-2xl p-4 border border-slate-200 shadow-xl overflow-y-auto max-h-[82vh] transition-all duration-300">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-200 mb-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-chart-line text-sky-600 text-sm"></i>
+                    <h3 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Motor Performance & Physics</h3>
+                </div>
+                <button id="btnClosePhysics" class="text-slate-400 hover:text-slate-700 text-xs"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Controls Sliders -->
+            <div class="space-y-3 mb-4 text-xs">
+                <div>
+                    <div class="flex justify-between text-slate-600 font-semibold mb-1">
+                        <span>Supply Voltage (V)</span>
+                        <span id="txtValVoltage" class="mono text-sky-700 font-bold">24.0 V</span>
+                    </div>
+                    <input id="sliderVoltage" type="range" min="1" max="48" step="0.5" value="24" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-600">
+                </div>
+                <div>
+                    <div class="flex justify-between text-slate-600 font-semibold mb-1">
+                        <span>Mechanical Load Torque (TL)</span>
+                        <span id="txtValLoad" class="mono text-amber-700 font-bold">0.45 N·m</span>
+                    </div>
+                    <input id="sliderLoad" type="range" min="0" max="2.0" step="0.05" value="0.45" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-600">
+                </div>
+            </div>
+
+            <!-- Live Telemetry Readouts -->
+            <div class="grid grid-cols-2 gap-2 text-xs mb-4">
+                <div class="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                    <span class="text-slate-400 block text-[10px]">Actual Speed</span>
+                    <span id="txtTelemetrySpeed" class="font-bold text-slate-800 mono">1850 RPM</span>
+                </div>
+                <div class="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                    <span class="text-slate-400 block text-[10px]">Current Draw (Ia)</span>
+                    <span id="txtTelemetryCurrent" class="font-bold text-sky-700 mono">4.8 A</span>
+                </div>
+                <div class="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                    <span class="text-slate-400 block text-[10px]">Back-EMF (Eb)</span>
+                    <span id="txtTelemetryEMF" class="font-bold text-emerald-700 mono">18.2 V</span>
+                </div>
+                <div class="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                    <span class="text-slate-400 block text-[10px]">Efficiency (η)</span>
+                    <span id="txtTelemetryEff" class="font-bold text-purple-700 mono">82.4%</span>
+                </div>
+                <div class="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                    <span class="text-slate-400 block text-[10px]">Mech Power (P_out)</span>
+                    <span id="txtTelemetryPout" class="font-bold text-slate-800 mono">87.2 W</span>
+                </div>
+                <div class="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                    <span class="text-slate-400 block text-[10px]">Heat Loss (I²R)</span>
+                    <span id="txtTelemetryHeat" class="font-bold text-rose-600 mono">18.6 W</span>
+                </div>
+            </div>
+
+            <!-- Chart Canvas -->
+            <div class="bg-white p-2 rounded-xl border border-slate-200 shadow-inner h-44">
+                <canvas id="motorPerformanceChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Fault Simulation Drawer Panel -->
+        <div id="faultPanel" class="absolute top-4 left-20 z-10 w-80 glass-panel rounded-2xl p-4 border border-rose-200 shadow-xl hidden">
+            <div class="flex items-center justify-between pb-2 border-b border-rose-200 mb-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-triangle-exclamation text-rose-600 text-sm"></i>
+                    <h3 class="font-bold text-rose-950 text-xs uppercase tracking-wider">Fault Diagnostics Engine</h3>
+                </div>
+                <button id="btnCloseFaults" class="text-slate-400 hover:text-slate-700 text-xs"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-2 text-xs">
+                <button class="btn-fault-select w-full p-2.5 rounded-xl text-left border border-slate-200 font-semibold bg-sky-50 text-sky-800 flex items-center justify-between" data-fault="normal">
+                    <span>1. Healthy / Normal Operation</span>
+                    <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                </button>
+                <button class="btn-fault-select w-full p-2.5 rounded-xl text-left border border-slate-200 font-semibold bg-slate-50 hover:bg-rose-50 text-slate-700 flex items-center justify-between" data-fault="brushes">
+                    <span>2. Severely Worn Carbon Brushes</span>
+                    <i class="fa-solid fa-bolt text-amber-500"></i>
+                </button>
+                <button class="btn-fault-select w-full p-2.5 rounded-xl text-left border border-slate-200 font-semibold bg-slate-50 hover:bg-rose-50 text-slate-700 flex items-center justify-between" data-fault="short">
+                    <span>3. Winding Inter-Turn Short Circuit</span>
+                    <i class="fa-solid fa-fire text-rose-500"></i>
+                </button>
+                <button class="btn-fault-select w-full p-2.5 rounded-xl text-left border border-slate-200 font-semibold bg-slate-50 hover:bg-rose-50 text-slate-700 flex items-center justify-between" data-fault="bearing">
+                    <span>4. Damaged Shaft Ball Bearing</span>
+                    <i class="fa-solid fa-gear text-slate-500"></i>
+                </button>
+                <button class="btn-fault-select w-full p-2.5 rounded-xl text-left border border-slate-200 font-semibold bg-slate-50 hover:bg-rose-50 text-slate-700 flex items-center justify-between" data-fault="magnet">
+                    <span>5. Demagnetized Stator Field</span>
+                    <i class="fa-solid fa-magnet text-purple-500"></i>
+                </button>
+            </div>
+            <div id="faultDescriptionBox" class="mt-3 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-900 leading-relaxed">
+                <b>Normal Mode:</b> Balanced electromagnetic flux, nominal brush spark transition, stable speed output.
+            </div>
+        </div>
+
+        <!-- Component Specs Inspector Sidebar -->
+        <aside id="infoPanel" class="absolute top-4 right-4 bottom-24 w-80 md:w-96 glass-panel rounded-2xl p-5 z-10 flex flex-col justify-between border border-slate-200 shadow-xl transition-all duration-300">
+            <div class="flex-1 overflow-y-auto pr-1">
+                <div class="flex items-start justify-between pb-3 border-b border-slate-200">
+                    <div>
+                        <span id="compCategory" class="text-[10px] font-mono tracking-wider uppercase text-sky-600 font-bold">INTEGRATED ENGINE</span>
+                        <h2 id="compTitle" class="text-lg font-bold text-slate-900 mt-0.5">High-Torque DC Motor Cell</h2>
+                    </div>
+                    <div id="compBadge" class="w-10 h-10 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600 border border-sky-200 shadow-sm">
+                        <i class="fa-solid fa-cubes text-lg"></i>
+                    </div>
+                </div>
+
+                <p id="compDescription" class="text-xs md:text-sm text-slate-600 mt-3.5 leading-relaxed">
+                    A high-precision direct current electric motor cell containing CAD parts: a slotted silicon steel armature, enamel wire copper windings, spring carbon brushes, split commutator, and ball bearings.
+                </p>
+
+                <div class="mt-4 space-y-2">
+                    <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Engineering Specs</h3>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                            <span class="text-slate-400 block text-[10px]">Material Grade</span>
+                            <span id="compMaterial" class="font-semibold text-slate-800">AISI Steel & Copper AWG</span>
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                            <span class="text-slate-400 block text-[10px]">Primary Function</span>
+                            <span id="compRole" class="font-semibold text-slate-800">Power Conversion</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-3.5 rounded-xl bg-sky-50 border border-sky-200">
+                    <h3 class="text-xs font-bold text-sky-900 uppercase tracking-wider flex items-center space-x-1.5">
+                        <i class="fa-solid fa-atom text-sky-600"></i>
+                        <span>Physics & Mechanics</span>
+                    </h3>
+                    <p id="compPhysics" class="text-xs text-sky-950 mt-1.5 leading-relaxed">
+                        Converts electrical energy into mechanical rotation via Lorentz forces on armature coils in stator flux density.
+                    </p>
+                    <div id="compFormula" class="mt-2.5 p-2 rounded-lg bg-white text-sky-700 font-mono text-center text-xs border border-sky-200 shadow-sm font-semibold">
+                        \(\vec{F} = I (\vec{L} \times \vec{B})\)
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-200 mt-2">
+                <span class="text-[11px] font-semibold text-slate-500 block mb-2">Isolate Component:</span>
+                <div class="grid grid-cols-4 gap-1.5 text-xs">
+                    <button class="comp-select-btn px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-sky-50 border border-slate-200 text-slate-700 text-center font-medium truncate" data-comp="all">All</button>
+                    <button class="comp-select-btn px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-sky-50 border border-slate-200 text-slate-700 text-center font-medium truncate" data-comp="housing">Casing</button>
+                    <button class="comp-select-btn px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-sky-50 border border-slate-200 text-slate-700 text-center font-medium truncate" data-comp="magnets">Magnets</button>
+                    <button class="comp-select-btn px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-sky-50 border border-slate-200 text-slate-700 text-center font-medium truncate" data-comp="armature">Armature</button>
+                    <button class="comp-select-btn px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-sky-50 border border-slate-200 text-slate-700 text-center font-medium truncate" data-comp="windings">Coils</button>
+                    <button class="comp-select-btn px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-sky-50 border border-slate-200 text-slate-700 text-center font-medium truncate" data-comp="commutator">Commutator</button>
+                    <button class="comp-select-btn px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-sky-50 border border-slate-200 text-slate-700 text-center font-medium truncate" data-comp="brushes">Brushes</button>
+                    <button class="comp-select-btn px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-sky-50 border border-slate-200 text-slate-700 text-center font-medium truncate" data-comp="shaft">Shaft/Bearings</button>
+                </div>
+            </div>
+        </aside>
+
+        <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 w-11/12 max-w-4xl glass-panel rounded-2xl p-3 border border-slate-200 shadow-xl">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-3">
+                <div class="flex items-center space-x-3 w-full md:w-5/12">
+                    <i class="fa-solid fa-arrows-left-right text-sky-600 text-sm"></i>
+                    <div class="flex-1 flex flex-col">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-600 font-semibold">Separation Distance</span>
+                            <span id="explodeValue" class="mono text-sky-700 font-bold">0%</span>
+                        </div>
+                        <input id="sliderExplode" type="range" min="0" max="100" value="0" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-600">
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2 w-full md:w-auto justify-end flex-wrap gap-y-1">
+                    <button id="btnToggleVectors" class="glass-btn px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 flex items-center space-x-1">
+                        <i class="fa-solid fa-arrow-up-long text-rose-500"></i>
+                        <span>Lorentz (F)</span>
+                    </button>
+                    <button id="btnToggleField" class="glass-btn px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 flex items-center space-x-1">
+                        <i class="fa-solid fa-wave-square text-sky-600"></i>
+                        <span>B-Field</span>
+                    </button>
+                    <button id="btnToggleCurrent" class="glass-btn px-2.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 flex items-center space-x-1">
+                        <i class="fa-solid fa-bolt-lightning text-amber-500"></i>
+                        <span>Current (I)</span>
+                    </button>
+                    <button id="btnResetCamera" class="glass-btn p-2 rounded-xl text-xs text-slate-700 hover:text-sky-600" title="Reset View">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Data Definitions for Specs Panel
+        const COMPONENT_DATA = {
+            all: {
+                title: "High-Torque DC Motor Cell", category: "INTEGRATED ENGINE", icon: "fa-cubes",
+                material: "AISI Steel & Copper AWG", role: "Electromechanical Power conversion",
+                description: "A complete, high-precision direct current electric motor cell containing CAD components: a slotted silicon steel armature, enamel wire copper windings, spring carbon brushes, split commutator, and ball bearings.",
+                physics: "Converts electrical energy into mechanical rotation via Lorentz force vectors on active armature coils within the stator flux density (B).",
+                formula: "\\tau = K_t \\cdot \\Phi \\cdot I_a", camPos: { x: 14, y: 9, z: 16 }, targetPos: { x: 0, y: 0, z: 0 }
+            },
+            housing: {
+                title: "Stator Outer Frame & Casing", category: "STRUCTURAL HOUSING", icon: "fa-shield-halved",
+                material: "Cast Aluminum / Ribbed Steel", role: "Enclosure & Heat Dissipation",
+                description: "Heavy-duty cylindrical outer stator housing featuring 12 longitudinal cooling fins for heat dissipation and mounting feet flanges.",
+                physics: "Protects internal components against mechanical damage while dissipating resistive heat losses (I²R).",
+                formula: "Q_{heat} = I^2 \\cdot R_{winding} \\cdot t", camPos: { x: 0, y: 7, z: 12 }, targetPos: { x: 0, y: 0, z: 0 }
+            },
+            magnets: {
+                title: "Curved Stator Permanent Magnets", category: "STATOR FLUX POLES", icon: "fa-magnet",
+                material: "Neodymium Iron Boron (NdFeB)", role: "Transverse B-Field Generation",
+                description: "Arc-curved permanent magnet poles (North = Red, South = Blue) supplying radial magnetic flux density across the rotor air gap.",
+                physics: "Establishes static magnetic field density B across the internal cavity.",
+                formula: "B = \\frac{\\Phi}{A_{pole}}", camPos: { x: 0, y: 5, z: 10 }, targetPos: { x: 0, y: 0, z: 0 }
+            },
+            armature: {
+                title: "Stacked Laminated Rotor Core", category: "ROTOR FLUX CORE", icon: "fa-layer-group",
+                material: "Laminated Silicon Steel (M19)", role: "Magnetic Flux Channeling",
+                description: "Rotor armature core constructed from thin insulated silicon steel sheets stacked sequentially with 8 T-shaped teeth slots.",
+                physics: "High magnetic permeability concentrates magnetic flux while lamination stacks suppress parasitic eddy currents.",
+                formula: "P_e = K_e \\cdot f^2 \\cdot B_m^2 \\cdot t^2", camPos: { x: -3, y: 4, z: 9 }, targetPos: { x: -1.2, y: 0, z: 0 }
+            },
+            windings: {
+                title: "Enamelled Copper Coil Bundles", category: "ELECTRICAL ARMATURE", icon: "fa-draw-polygon",
+                material: "Heavy Enamelled Copper (AWG 20)", role: "Electromagnetic Torque",
+                description: "Dense multi-turn copper wire bundles wound through rotor slots with polyurethane insulation coating.",
+                physics: "When current flows through loops, orthogonal Lorentz forces are produced on opposite coil sides, forming torque.",
+                formula: "\\vec{F} = N \\cdot I \\cdot (\\vec{L} \\times \\vec{B})", camPos: { x: -2, y: 5, z: 8 }, targetPos: { x: -0.5, y: 0, z: 0 }
+            },
+            commutator: {
+                title: "6-Segment Split Commutator", category: "ROTARY SWITCH", icon: "fa-circle-notch",
+                material: "Hard-Drawn Copper & Mica", role: "Mechanical Polarity Inversion",
+                description: "Multi-segment cylindrical copper ring mounted on insulating sleeve with mica gaps separating segments.",
+                physics: "Inverts armature current direction every half-rotation as coils pass neutral zones, maintaining continuous torque.",
+                formula: "f_{comm} = \\frac{P \\cdot N_{rpm}}{120}", camPos: { x: 5, y: 4, z: 7 }, targetPos: { x: 2.2, y: 0, z: 0 }
+            },
+            brushes: {
+                title: "Carbon Brushes & Spring Assembly", category: "POWER CONTACT FEED", icon: "fa-grip-lines-vertical",
+                material: "Electro-Graphite & Brass", role: "Sliding Electrical Power Feed",
+                description: "Rectangular carbon graphite blocks held inside brass sleeves with helical springs and braided copper wires feeding external DC power.",
+                physics: "Maintains sliding electrical contact against rotating commutator copper segments.",
+                formula: "V_{drop} = I \\cdot R_{contact} + V_{brush}", camPos: { x: 6, y: 5, z: 6 }, targetPos: { x: 2.2, y: 0, z: 0 }
+            },
+            shaft: {
+                title: "Hardened Shaft & Ball Bearings", category: "ROTATIONAL OUTPUT", icon: "fa-ruler-horizontal",
+                material: "Hardened Stainless Steel", role: "Torque Transmission & Support",
+                description: "Stainless steel central shaft with keyway slot, supported by deep-groove ball bearings with blue rubber seals.",
+                physics: "Transmits mechanical rotational power (P = τ·ω) to external loads with minimal radial friction.",
+                formula: "P_{mech} = \\tau \\cdot \\left(\\frac{2 \\pi N_{rpm}}{60}\\right)", camPos: { x: 9, y: 4, z: 12 }, targetPos: { x: 0, y: 0, z: 0 }
+            }
+        };
+
+        // 3D Scene Global Variables
+        let scene, camera, renderer, controls, clippingPlane;
+        let motorGroup, shaftGroup, rotorCoreGroup, windingsGroup, commutatorGroup, brushesGroup, statorGroup, housingGroup, sparkParticlesGroup;
+        let fieldLinesGroup, currentArrowsGroup, forceVectorsGroup;
+        let chartInstance;
+
+        // Interactive States & Physics Variables
+        let explodeFactor = 0.0;
+        let isRunning = false;
+        let selectedComponent = 'all';
+        let showFieldLines = false, showCurrentFlow = false, showForceVectors = false;
+        let showCutaway = false, showXRay = false, showThermal = false;
+        let currentInteractionMode = 'orbit'; // 'orbit' or 'drag'
+        let currentFaultMode = 'normal';
+
+        // Physics Motor Parameters
+        let supplyVoltage = 24.0;
+        let loadTorque = 0.45;
+        let actualRPM = 1850;
+        let currentDraw = 4.8;
+        let backEMF = 18.2;
+        let efficiency = 82.4;
+
+        // Assembly Game State
+        let isGameActive = false;
+        let gameStep = 0;
+        let gameTimerSeconds = 0;
+        let gameTimerInterval = null;
+        const gameSequence = ['shaft', 'armature', 'windings', 'commutator', 'brushes', 'magnets', 'housing'];
+
+        // Web Audio Synth Variables
+        let audioCtx = null;
+        let motorOsc = null, motorGain = null, brushNoise = null;
+        let isAudioMuted = true;
+
+        // Cursor Dragging Variables
+        let isDraggingToExplode = false;
+        let dragStartX = 0, dragStartFactor = 0;
+
+        const componentsMap = {};
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+
+            // 1. SCENE & CANVAS
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xffffff);
+
+            // Clipping plane for section cutaway
+            clippingPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
+
+            // 2. CAMERA
+            camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(14, 9, 16);
+
+            // 3. RENDERER
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.15;
+            renderer.localClippingEnabled = true;
+            container.appendChild(renderer.domElement);
+
+            // 4. CONTROLS
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxDistance = 50;
+            controls.minDistance = 2;
+            controls.target.set(0, 0, 0);
+
+            // 5. LIGHTING RIG
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+            scene.add(ambientLight);
+
+            const keyLight = new THREE.DirectionalLight(0xffffff, 1.8);
+            keyLight.position.set(14, 20, 12);
+            keyLight.castShadow = true;
+            keyLight.shadow.mapSize.width = 2048;
+            keyLight.shadow.mapSize.height = 2048;
+            scene.add(keyLight);
+
+            const fillLight = new THREE.DirectionalLight(0xf1f5f9, 1.0);
+            fillLight.position.set(-14, 8, -10);
+            scene.add(fillLight);
+
+            // Shadow Ground Plane
+            const planeGeometry = new THREE.PlaneGeometry(80, 80);
+            const shadowPlane = new THREE.Mesh(planeGeometry, new THREE.ShadowMaterial({ opacity: 0.1 }));
+            shadowPlane.rotation.x = -Math.PI / 2;
+            shadowPlane.position.y = -4.5;
+            shadowPlane.receiveShadow = true;
+            scene.add(shadowPlane);
+
+            const gridHelper = new THREE.GridHelper(30, 30, 0xd1d5db, 0xf3f4f6);
+            gridHelper.position.y = -4.49;
+            scene.add(gridHelper);
+
+            buildPhotorealisticMotor();
+            buildFieldLinesAndVectors();
+
+            // Setup UI Events, Performance Chart & Interactions
+            initPerformanceChart();
+            setupUIEventListeners();
+            setupDragAndRaycasterInteractions(container);
+            updateComponentUI('all');
+
+            window.addEventListener('resize', onWindowResize);
+
+            // Render loop
+            animate();
+        }
+
+        function buildPhotorealisticMotor() {
+            motorGroup = new THREE.Group();
+            scene.add(motorGroup);
+
+            // Materials
+            const steelShaftMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.95, roughness: 0.15 });
+            const ironLaminationMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.35 });
+            const copperWireMat = new THREE.MeshStandardMaterial({ color: 0xb45309, metalness: 0.9, roughness: 0.2 });
+            const copperCommutatorMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.92, roughness: 0.18 });
+            const micaInsulationMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
+            const carbonBrushMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.1, roughness: 0.8 });
+            const brassHolderMat = new THREE.MeshStandardMaterial({ color: 0xca8a04, metalness: 0.88, roughness: 0.25 });
+            const magnetNMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.4, roughness: 0.3 });
+            const magnetSMat = new THREE.MeshStandardMaterial({ color: 0x2563eb, metalness: 0.4, roughness: 0.3 });
+            const housingCastMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.7, roughness: 0.35 });
+            const rubberSealMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.5 });
+            const chromeBallMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.98, roughness: 0.05 });
+
+            // 1. SHAFT & BEARINGS
+            shaftGroup = new THREE.Group();
+            const shaftGeom = new THREE.CylinderGeometry(0.35, 0.35, 12, 32);
+            const shaftMesh = new THREE.Mesh(shaftGeom, steelShaftMat);
+            shaftMesh.rotation.z = Math.PI / 2;
+            shaftMesh.castShadow = true;
+            shaftGroup.add(shaftMesh);
+
+            const keywayGeom = new THREE.BoxGeometry(1.2, 0.1, 0.12);
+            const keywayMesh = new THREE.Mesh(keywayGeom, ironLaminationMat);
+            keywayMesh.position.set(5.2, 0.3, 0);
+            shaftGroup.add(keywayMesh);
+
+            const createBearing = (x) => {
+                const grp = new THREE.Group();
+                const outer = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 0.4, 32, 1, true), steelShaftMat);
+                outer.rotation.z = Math.PI / 2;
+                const inner = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.42, 32, 1, true), steelShaftMat);
+                inner.rotation.z = Math.PI / 2;
+                grp.add(outer, inner);
+
+                const sealGeom = new THREE.RingGeometry(0.51, 1.05, 32);
+                const s1 = new THREE.Mesh(sealGeom, rubberSealMat); s1.position.x = 0.21; s1.rotation.y = Math.PI/2;
+                const s2 = s1.clone(); s2.position.x = -0.21; s2.rotation.y = -Math.PI/2;
+                grp.add(s1, s2);
+
+                for(let b=0; b<8; b++) {
+                    const angle = (b/8) * Math.PI * 2;
+                    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 12), chromeBallMat);
+                    ball.position.set(0, Math.cos(angle)*0.78, Math.sin(angle)*0.78);
+                    grp.add(ball);
+                }
+                grp.position.x = x;
+                return grp;
+            };
+            shaftGroup.add(createBearing(4.2), createBearing(-4.2));
+            componentsMap['shaft'] = shaftGroup;
+            motorGroup.add(shaftGroup);
+
+            // 2. ARMATURE CORE
+            rotorCoreGroup = new THREE.Group();
+            const shape = new THREE.Shape();
+            const outerR = 1.8, innerR = 0.36, teeth = 8;
+            for (let i = 0; i < teeth; i++) {
+                const a1 = (i / teeth) * Math.PI * 2;
+                const a2 = ((i + 0.3) / teeth) * Math.PI * 2;
+                const a3 = ((i + 0.5) / teeth) * Math.PI * 2;
+                const a4 = ((i + 0.8) / teeth) * Math.PI * 2;
+                if (i === 0) shape.moveTo(Math.cos(a1) * outerR, Math.sin(a1) * outerR);
+                else shape.lineTo(Math.cos(a1) * outerR, Math.sin(a1) * outerR);
+                shape.lineTo(Math.cos(a2) * (outerR * 0.6), Math.sin(a2) * (outerR * 0.6));
+                shape.lineTo(Math.cos(a3) * (outerR * 0.6), Math.sin(a3) * (outerR * 0.6));
+                shape.lineTo(Math.cos(a4) * outerR, Math.sin(a4) * outerR);
+            }
+            const holePath = new THREE.Path(); holePath.absarc(0, 0, innerR, 0, Math.PI * 2, true);
+            shape.holes.push(holePath);
+
+            const lamGeom = new THREE.ExtrudeGeometry(shape, { depth: 0.08, bevelEnabled: false });
+            for (let l = 0; l < 30; l++) {
+                const lamMesh = new THREE.Mesh(lamGeom, ironLaminationMat);
+                lamMesh.rotation.y = Math.PI / 2;
+                lamMesh.position.x = -1.2 + (l * 0.09);
+                lamMesh.castShadow = true;
+                rotorCoreGroup.add(lamMesh);
+            }
+            componentsMap['armature'] = rotorCoreGroup;
+            motorGroup.add(rotorCoreGroup);
+
+            // 3. COPPER WINDINGS
+            windingsGroup = new THREE.Group();
+            for (let s = 0; s < 8; s++) {
+                const angle = (s / 8) * Math.PI * 2;
+                const coilBundle = new THREE.Group();
+                const legGeom = new THREE.CylinderGeometry(0.18, 0.18, 2.7, 16);
+                const topLeg = new THREE.Mesh(legGeom, copperWireMat); topLeg.rotation.z = Math.PI / 2; topLeg.position.set(0, 1.25, 0);
+                const botLeg = new THREE.Mesh(legGeom, copperWireMat); botLeg.rotation.z = Math.PI / 2; botLeg.position.set(0, -1.25, 0);
+
+                const endTurnGeom = new THREE.TorusGeometry(1.25, 0.16, 12, 24, Math.PI);
+                const frontEnd = new THREE.Mesh(endTurnGeom, copperWireMat); frontEnd.rotation.y = Math.PI / 2; frontEnd.position.x = 1.35;
+                const rearEnd = new THREE.Mesh(endTurnGeom, copperWireMat); rearEnd.rotation.y = -Math.PI / 2; rearEnd.position.x = -1.35;
+
+                coilBundle.add(topLeg, botLeg, frontEnd, rearEnd);
+                coilBundle.rotation.x = angle;
+                windingsGroup.add(coilBundle);
+            }
+            componentsMap['windings'] = windingsGroup;
+            motorGroup.add(windingsGroup);
+
+            // 4. COMMUTATOR
+            commutatorGroup = new THREE.Group();
+            const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1.3, 32), micaInsulationMat);
+            sleeve.rotation.z = Math.PI / 2; sleeve.position.x = 2.2;
+            commutatorGroup.add(sleeve);
+
+            for (let c = 0; c < 6; c++) {
+                const segAngle = (Math.PI * 2 / 6) - 0.08;
+                const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.72, 1.3, 16, 1, false, c * (Math.PI * 2 / 6), segAngle), copperCommutatorMat);
+                seg.rotation.z = Math.PI / 2; seg.position.x = 2.2;
+                commutatorGroup.add(seg);
+            }
+            componentsMap['commutator'] = commutatorGroup;
+            motorGroup.add(commutatorGroup);
+
+            // 5. CARBON BRUSHES
+            brushesGroup = new THREE.Group();
+            const createBrush = (isTop) => {
+                const grp = new THREE.Group();
+                const y = isTop ? 1 : -1;
+                const brush = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.65, 0.65), carbonBrushMat); brush.position.set(2.2, y * 1.1, 0);
+                const holder = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.75, 0.75), brassHolderMat); holder.position.set(2.2, y * 1.55, 0);
+                grp.add(brush, holder);
+                return grp;
+            };
+            brushesGroup.add(createBrush(true), createBrush(false));
+            componentsMap['brushes'] = brushesGroup;
+            motorGroup.add(brushesGroup);
+
+            // 6. STATOR MAGNETS
+            statorGroup = new THREE.Group();
+            const magArc = Math.PI * 0.68;
+            const magGeom = new THREE.CylinderGeometry(3.0, 3.0, 3.2, 32, 1, true, 0, magArc);
+            const magN = new THREE.Mesh(magGeom, magnetNMat); magN.rotation.z = Math.PI / 2; magN.rotation.x = Math.PI * 0.16;
+            const magS = new THREE.Mesh(magGeom, magnetSMat); magS.rotation.z = Math.PI / 2; magS.rotation.x = Math.PI * 1.16;
+            statorGroup.add(magN, magS);
+            componentsMap['magnets'] = statorGroup;
+            motorGroup.add(statorGroup);
+
+            // 7. HOUSING
+            housingGroup = new THREE.Group();
+            const shell = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.4, 5.8, 32, 1, true), housingCastMat);
+            shell.rotation.z = Math.PI / 2;
+            housingGroup.add(shell);
+
+            for(let f = 0; f < 12; f++) {
+                const fAngle = (f / 12) * Math.PI * 2;
+                const fin = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.35, 0.12), housingCastMat);
+                fin.position.set(0, Math.cos(fAngle) * 3.52, Math.sin(fAngle) * 3.52);
+                fin.rotation.x = -fAngle;
+                housingGroup.add(fin);
+            }
+            componentsMap['housing'] = housingGroup;
+            motorGroup.add(housingGroup);
+
+            sparkParticlesGroup = new THREE.Group();
+            motorGroup.add(sparkParticlesGroup);
+        }
+
+        function buildFieldLinesAndVectors() {
+            // Magnetic Field Lines
+            fieldLinesGroup = new THREE.Group();
+            fieldLinesGroup.visible = false;
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x0284c7, linewidth: 2 });
+            for(let i = 0; i < 16; i++) {
+                const z = -1.4 + (i / 16) * 2.8;
+                const points = [];
+                for(let t = 0; t <= 20; t++) {
+                    const step = t / 20;
+                    points.push(new THREE.Vector3(Math.sin(step * Math.PI) * 0.4, 2.4 - (step * 4.8), z));
+                }
+                fieldLinesGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), lineMat));
+            }
+            motorGroup.add(fieldLinesGroup);
+
+            // Current Arrows
+            currentArrowsGroup = new THREE.Group();
+            currentArrowsGroup.visible = false;
+            const arrowGeo = new THREE.ConeGeometry(0.18, 0.45, 8);
+            const arrowMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+            for(let i = 0; i < 8; i++) {
+                const a1 = new THREE.Mesh(arrowGeo, arrowMat); a1.position.set(-1.8 + (i * 0.4), 1.65, 0); a1.rotation.z = -Math.PI / 2;
+                currentArrowsGroup.add(a1);
+            }
+            motorGroup.add(currentArrowsGroup);
+
+            // Lorentz Force Vectors (F = I x B)
+            forceVectorsGroup = new THREE.Group();
+            forceVectorsGroup.visible = false;
+            const forceArrowGeo = new THREE.CylinderGeometry(0.06, 0.06, 1.2, 8);
+            const forceHeadGeo = new THREE.ConeGeometry(0.18, 0.4, 8);
+            const forceMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+
+            const vTop = new THREE.Group();
+            vTop.add(new THREE.Mesh(forceArrowGeo, forceMat));
+            const headTop = new THREE.Mesh(forceHeadGeo, forceMat); headTop.position.y = 0.6; vTop.add(headTop);
+            vTop.position.set(0, 1.65, 1.2);
+
+            const vBot = new THREE.Group();
+            vBot.add(new THREE.Mesh(forceArrowGeo, forceMat));
+            const headBot = new THREE.Mesh(forceHeadGeo, forceMat); headBot.position.y = -0.6; vBot.add(headBot);
+            headBot.rotation.z = Math.PI;
+            vBot.position.set(0, -1.65, -1.2);
+
+            forceVectorsGroup.add(vTop, vBot);
+            motorGroup.add(forceVectorsGroup);
+        }
+
+        function initPerformanceChart() {
+            const ctx = document.getElementById('motorPerformanceChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['0', '500', '1000', '1500', '2000', '2500', '3000'],
+                    datasets: [
+                        { label: 'Torque (N·m)', data: [1.8, 1.5, 1.2, 0.85, 0.5, 0.2, 0], borderColor: '#0284c7', tension: 0.3 },
+                        { label: 'Current (A)', data: [15, 12.5, 10, 7.2, 4.8, 2.5, 0.8], borderColor: '#f59e0b', tension: 0.3 },
+                        { label: 'Efficiency (%)', data: [0, 45, 72, 85, 82, 60, 0], borderColor: '#10b981', tension: 0.3 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { boxWidth: 10, font: { size: 9 } } } },
+                    scales: { x: { ticks: { font: { size: 8 } } }, y: { ticks: { font: { size: 8 } } } }
+                }
+            });
+        }
+
+        function updatePhysicsCalculations() {
+            // Electrical & Torque Equations
+            const Kt = 0.08, Ke = 0.08, R = 1.2;
+            let currentB = 0.8;
+            let frictionTorque = 0.05;
+
+            if (currentFaultMode === 'short') R = 0.4;
+            if (currentFaultMode === 'bearing') frictionTorque = 0.45;
+            if (currentFaultMode === 'magnet') currentB = 0.35;
+
+            const noLoadSpeed = (supplyVoltage / (Ke * currentB)) * 9.55;
+            const stallTorque = (supplyVoltage / R) * Kt * currentB;
+
+            const netTorque = loadTorque + frictionTorque;
+            actualRPM = Math.max(0, Math.round(noLoadSpeed * (1 - (netTorque / stallTorque))));
+            
+            backEMF = (actualRPM / 9.55) * Ke * currentB;
+            currentDraw = actualRPM === 0 ? (supplyVoltage / R) : Math.max(0.2, (supplyVoltage - backEMF) / R);
+            
+            const pIn = supplyVoltage * currentDraw;
+            const pOut = (netTorque * (actualRPM * 2 * Math.PI / 60));
+            efficiency = pIn > 0 ? Math.min(95, Math.max(0, (pOut / pIn) * 100)) : 0;
+            const heatLoss = Math.pow(currentDraw, 2) * R;
+
+            document.getElementById('txtTelemetrySpeed').innerText = `${actualRPM} RPM`;
+            document.getElementById('txtTelemetryCurrent').innerText = `${currentDraw.toFixed(1)} A`;
+            document.getElementById('txtTelemetryEMF').innerText = `${backEMF.toFixed(1)} V`;
+            document.getElementById('txtTelemetryEff').innerText = `${efficiency.toFixed(1)}%`;
+            document.getElementById('txtTelemetryPout').innerText = `${pOut.toFixed(1)} W`;
+            document.getElementById('txtTelemetryHeat').innerText = `${heatLoss.toFixed(1)} W`;
+
+            // Update Audio Synth Pitch
+            if (!isAudioMuted && motorOsc && audioCtx) {
+                const pitch = Math.max(40, (actualRPM / 3000) * 320);
+                motorOsc.frequency.setTargetAtTime(pitch, audioCtx.currentTime, 0.1);
+            }
+        }
+
+        function initAudioSynth() {
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                motorOsc = audioCtx.createOscillator();
+                motorGain = audioCtx.createGain();
+
+                motorOsc.type = 'sawtooth';
+                motorOsc.frequency.setValueAtTime(120, audioCtx.currentTime);
+                motorGain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+
+                motorOsc.connect(motorGain);
+                motorGain.connect(audioCtx.destination);
+                motorOsc.start();
+            } catch (e) {
+                console.warn("Audio Context init blocked until user click");
+            }
+        }
+
+        function setupUIEventListeners() {
+            // Mode Selectors
+            document.getElementById('btnModeOrbit').addEventListener('click', () => setInteractionMode('orbit'));
+            document.getElementById('btnModeDrag').addEventListener('click', () => setInteractionMode('drag'));
+
+            // Auto Explode / Assemble
+            document.getElementById('btnOneClickExplode').addEventListener('click', () => animateExplodeTo(1.0));
+            document.getElementById('btnOneClickAssemble').addEventListener('click', () => animateExplodeTo(0.0));
+
+            // Slider
+            document.getElementById('sliderExplode').addEventListener('input', (e) => {
+                explodeFactor = parseFloat(e.target.value) / 100;
+                applyExplodePositions(explodeFactor);
+            });
+
+            // Sliders Physics
+            document.getElementById('sliderVoltage').addEventListener('input', (e) => {
+                supplyVoltage = parseFloat(e.target.value);
+                document.getElementById('txtValVoltage').innerText = `${supplyVoltage.toFixed(1)} V`;
+                updatePhysicsCalculations();
+            });
+
+            document.getElementById('sliderLoad').addEventListener('input', (e) => {
+                loadTorque = parseFloat(e.target.value);
+                document.getElementById('txtValLoad').innerText = `${loadTorque.toFixed(2)} N·m`;
+                updatePhysicsCalculations();
+            });
+
+            // Audio Toggle
+            document.getElementById('btnAudioToggle').addEventListener('click', () => {
+                isAudioMuted = !isAudioMuted;
+                const icon = document.getElementById('audioIcon');
+                if (!isAudioMuted) {
+                    if (!audioCtx) initAudioSynth();
+                    icon.className = "fa-solid fa-volume-high text-sky-600";
+                } else {
+                    icon.className = "fa-solid fa-volume-xmark text-slate-400";
+                    if (motorGain) motorGain.gain.setValueAtTime(0, audioCtx.currentTime);
+                }
+            });
+
+            // Run Button
+            const btnRun = document.getElementById('btnToggleRun');
+            btnRun.addEventListener('click', () => {
+                isRunning = !isRunning;
+                document.getElementById('textRun').innerText = isRunning ? "Pause Motor" : "Run Motor";
+                document.getElementById('iconRun').className = isRunning ? "fa-solid fa-pause text-amber-600" : "fa-solid fa-play text-amber-600";
+                btnRun.classList.toggle('active', isRunning);
+            });
+
+            // Vector & Overlay Toggles
+            document.getElementById('btnToggleVectors').addEventListener('click', (e) => {
+                showForceVectors = !showForceVectors;
+                forceVectorsGroup.visible = showForceVectors;
+                e.currentTarget.classList.toggle('active', showForceVectors);
+            });
+
+            document.getElementById('btnToggleField').addEventListener('click', (e) => {
+                showFieldLines = !showFieldLines;
+                fieldLinesGroup.visible = showFieldLines;
+                e.currentTarget.classList.toggle('active', showFieldLines);
+            });
+
+            document.getElementById('btnToggleCurrent').addEventListener('click', (e) => {
+                showCurrentFlow = !showCurrentFlow;
+                currentArrowsGroup.visible = showCurrentFlow;
+                e.currentTarget.classList.toggle('active', showCurrentFlow);
+            });
+
+            // Left Sidebar Tools
+            document.getElementById('btnToolPhysics').addEventListener('click', () => {
+                document.getElementById('physicsDashboardPanel').classList.toggle('hidden');
+            });
+
+            document.getElementById('btnClosePhysics').addEventListener('click', () => {
+                document.getElementById('physicsDashboardPanel').classList.add('hidden');
+            });
+
+            document.getElementById('btnToolCutaway').addEventListener('click', (e) => {
+                showCutaway = !showCutaway;
+                renderer.clippingPlanes = showCutaway ? [clippingPlane] : [];
+                e.currentTarget.classList.toggle('active', showCutaway);
+            });
+
+            document.getElementById('btnToolXRay').addEventListener('click', (e) => {
+                showXRay = !showXRay;
+                motorGroup.traverse(child => {
+                    if (child.isMesh && child.parent !== windingsGroup) {
+                        child.material.transparent = showXRay;
+                        child.material.opacity = showXRay ? 0.25 : 1.0;
+                    }
+                });
+                e.currentTarget.classList.toggle('active', showXRay);
+            });
+
+            document.getElementById('btnToolThermal').addEventListener('click', (e) => {
+                showThermal = !showThermal;
+                const heatColor = new THREE.Color(0xef4444);
+                windingsGroup.traverse(child => {
+                    if (child.isMesh) child.material.color = showThermal ? heatColor : new THREE.Color(0xb45309);
+                });
+                e.currentTarget.classList.toggle('active', showThermal);
+            });
+
+            document.getElementById('btnToolFaults').addEventListener('click', () => {
+                document.getElementById('faultPanel').classList.toggle('hidden');
+            });
+
+            document.getElementById('btnCloseFaults').addEventListener('click', () => {
+                document.getElementById('faultPanel').classList.add('hidden');
+            });
+
+            // Fault Selectors
+            document.querySelectorAll('.btn-fault-select').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    currentFaultMode = e.currentTarget.getAttribute('data-fault');
+                    const descBox = document.getElementById('faultDescriptionBox');
+                    
+                    if (currentFaultMode === 'normal') descBox.innerHTML = "<b>Normal Mode:</b> Balanced electromagnetic flux and continuous rotation.";
+                    if (currentFaultMode === 'brushes') descBox.innerHTML = "<b>Worn Brushes:</b> Causes excessive commutation arcs, brush bounce chatter, and voltage drop spikes.";
+                    if (currentFaultMode === 'short') descBox.innerHTML = "<b>Short Circuit:</b> Reduced winding resistance creates heavy current draw (I²) and severe overheating.";
+                    if (currentFaultMode === 'bearing') descBox.innerHTML = "<b>Damaged Bearing:</b> High mechanical friction drag, shaft wobble, and reduced output speed.";
+                    if (currentFaultMode === 'magnet') descBox.innerHTML = "<b>Weak Stator:</b> Demagnetized field reduces torque constant (Kt) and increases no-load RPM.";
+
+                    updatePhysicsCalculations();
+                });
+            });
+
+            // Assembly Game
+            document.getElementById('btnToolAssembly').addEventListener('click', startBuildGame);
+
+            // Component Quick Isolation Buttons
+            document.querySelectorAll('.comp-select-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    selectComponent(e.target.getAttribute('data-comp'));
+                });
+            });
+
+            document.getElementById('btnResetCamera').addEventListener('click', () => selectComponent('all'));
+        }
+
+        function setInteractionMode(mode) {
+            currentInteractionMode = mode;
+            const btnOrbit = document.getElementById('btnModeOrbit');
+            const btnDrag = document.getElementById('btnModeDrag');
+            const hudText = document.getElementById('hudInstructionText');
+
+            if (mode === 'drag') {
+                controls.enabled = false;
+                btnDrag.classList.add('active-mode'); btnOrbit.classList.remove('active-mode');
+                hudText.innerHTML = "<b>Drag Explode Mode:</b> Click & Pull cursor horizontally to disassemble or assemble";
+            } else {
+                controls.enabled = true;
+                btnOrbit.classList.add('active-mode'); btnDrag.classList.remove('active-mode');
+                hudText.innerHTML = "<b>Orbit Mode:</b> Left Drag to Rotate | Right Drag to Pan | Scroll to Zoom";
+            }
+        }
+
+        function selectComponent(key) {
+            selectedComponent = key;
+            updateComponentUI(key);
+            highlightComponent(key);
+            focusCameraOnComponent(key);
+        }
+
+        function focusCameraOnComponent(key) {
+            const data = COMPONENT_DATA[key] || COMPONENT_DATA.all;
+            gsap.to(camera.position, { x: data.camPos.x, y: data.camPos.y, z: data.camPos.z, duration: 1.2 });
+            gsap.to(controls.target, { x: data.targetPos.x, y: data.targetPos.y, z: data.targetPos.z, duration: 1.2 });
+        }
+
+        function updateComponentUI(key) {
+            const data = COMPONENT_DATA[key] || COMPONENT_DATA.all;
+            document.getElementById('compTitle').innerText = data.title;
+            document.getElementById('compCategory').innerText = data.category;
+            document.getElementById('compMaterial').innerText = data.material;
+            document.getElementById('compRole').innerText = data.role;
+            document.getElementById('compDescription').innerText = data.description;
+            document.getElementById('compPhysics').innerText = data.physics;
+            document.getElementById('compFormula').innerText = data.formula;
+            document.getElementById('compBadge').innerHTML = `<i class="fa-solid ${data.icon}"></i>`;
+        }
+
+        function highlightComponent(key) {
+            Object.keys(componentsMap).forEach(compKey => {
+                const group = componentsMap[compKey];
+                if (!group) return;
+
+                group.traverse(child => {
+                    if (child.isMesh) {
+                        child.material.transparent = (key !== 'all' && key !== compKey);
+                        child.material.opacity = (key === 'all' || key === compKey) ? 1.0 : 0.12;
+                    }
+                });
+            });
+        }
+
+        function applyExplodePositions(factor) {
+            if (shaftGroup && shaftGroup.children.length >= 3) {
+                shaftGroup.children[1].position.x = 4.2 + (factor * 5.0);
+                shaftGroup.children[2].position.x = -4.2 - (factor * 5.0);
+            }
+            if (brushesGroup) {
+                brushesGroup.children[0].position.y = (factor * 3.2);
+                brushesGroup.children[1].position.y = -(factor * 3.2);
+            }
+            if (statorGroup) {
+                statorGroup.children[0].position.y = (factor * 4.2);
+                statorGroup.children[1].position.y = -(factor * 4.2);
+            }
+            if (housingGroup) housingGroup.position.z = (factor * 6.5);
+            if (commutatorGroup) commutatorGroup.position.x = (factor * 2.4);
+            if (rotorCoreGroup) rotorCoreGroup.position.x = -(factor * 1.2);
+
+            document.getElementById('sliderExplode').value = factor * 100;
+            document.getElementById('explodeValue').innerText = `${Math.round(factor * 100)}%`;
+        }
+
+        function animateExplodeTo(targetVal) {
+            gsap.to({ val: explodeFactor }, {
+                val: targetVal, duration: 1.4, ease: "power2.inOut",
+                onUpdate: function() {
+                    explodeFactor = this.targets()[0].val;
+                    applyExplodePositions(explodeFactor);
+                }
+            });
+        }
+
+        function startBuildGame() {
+            isGameActive = true;
+            gameStep = 0;
+            gameTimerSeconds = 0;
+            document.getElementById('assemblyGameHud').classList.remove('hidden');
+            animateExplodeTo(1.0);
+
+            if (gameTimerInterval) clearInterval(gameTimerInterval);
+            gameTimerInterval = setInterval(() => {
+                gameTimerSeconds++;
+                const mins = String(Math.floor(gameTimerSeconds / 60)).padStart(2, '0');
+                const secs = String(gameTimerSeconds % 60).padStart(2, '0');
+                document.getElementById('gameTimer').innerText = `${mins}:${secs}`;
+            }, 1000);
+
+            updateGameTargetPart();
+        }
+
+        function updateGameTargetPart() {
+            if (gameStep >= gameSequence.length) {
+                clearInterval(gameTimerInterval);
+                document.getElementById('targetPartText').innerText = "ASSEMBLY COMPLETE! Perfect Score";
+                animateExplodeTo(0.0);
+                return;
+            }
+            const partKey = gameSequence[gameStep];
+            document.getElementById('targetPartText').innerText = COMPONENT_DATA[partKey].title;
+            document.getElementById('gameProgressBar').style.width = `${(gameStep / gameSequence.length) * 100}%`;
+        }
+
+        function setupDragAndRaycasterInteractions(container) {
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            const hoverTooltip = document.getElementById('hoverTooltip');
+            const dragHud = document.getElementById('dragIndicatorHud');
+
+            // Mouse Down Event for Drag Explode
+            container.addEventListener('mousedown', (e) => {
+                if (currentInteractionMode === 'drag' && e.button === 0) {
+                    isDraggingToExplode = true;
+                    dragStartX = e.clientX;
+                    dragStartFactor = explodeFactor;
+                    dragHud.style.opacity = '1';
+                    // Kill any active GSAP animations to prevent position overrides
+                    gsap.killTweensOf(this);
+                }
+            });
+
+            // Touch Start Support
+            container.addEventListener('touchstart', (e) => {
+                if (currentInteractionMode === 'drag' && e.touches.length === 1) {
+                    isDraggingToExplode = true;
+                    dragStartX = e.touches[0].clientX;
+                    dragStartFactor = explodeFactor;
+                    dragHud.style.opacity = '1';
+                    gsap.killTweensOf(this);
+                }
+            }, { passive: true });
+
+            // Global Pointer Move
+            window.addEventListener('mousemove', (e) => {
+                const rect = renderer.domElement.getBoundingClientRect();
+                mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+                if (isDraggingToExplode && currentInteractionMode === 'drag') {
+                    const deltaX = e.clientX - dragStartX;
+                    // Calculate precise explode factor based on drag distance
+                    explodeFactor = Math.max(0.0, Math.min(1.0, dragStartFactor + (deltaX * 0.0025)));
+                    applyExplodePositions(explodeFactor);
+                    document.getElementById('dragPercentBadge').innerText = `${Math.round(explodeFactor * 100)}%`;
+                    return;
+                }
+
+                // Tooltip Raycast
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(motorGroup.children, true);
+                if (intersects.length > 0) {
+                    let clickedObj = intersects[0].object;
+                    while (clickedObj.parent && clickedObj.parent !== motorGroup) clickedObj = clickedObj.parent;
+                    for (const [key, group] of Object.entries(componentsMap)) {
+                        if (group === clickedObj && COMPONENT_DATA[key]) {
+                            hoverTooltip.innerHTML = `<div class="font-bold">${COMPONENT_DATA[key].title}</div><div class="text-[11px] text-sky-700">Click to Inspect</div>`;
+                            hoverTooltip.style.left = `${e.clientX + 12}px`;
+                            hoverTooltip.style.top = `${e.clientY + 12}px`;
+                            hoverTooltip.style.opacity = '1';
+                            break;
+                        }
+                    }
+                } else {
+                    hoverTooltip.style.opacity = '0';
+                }
+            });
+
+            // Touch Move Support
+            window.addEventListener('touchmove', (e) => {
+                if (isDraggingToExplode && currentInteractionMode === 'drag' && e.touches.length === 1) {
+                    const deltaX = e.touches[0].clientX - dragStartX;
+                    explodeFactor = Math.max(0.0, Math.min(1.0, dragStartFactor + (deltaX * 0.0025)));
+                    applyExplodePositions(explodeFactor);
+                    document.getElementById('dragPercentBadge').innerText = `${Math.round(explodeFactor * 100)}%`;
+                }
+            }, { passive: true });
+
+            // Global Mouse Up - Permanently keep the current position without resetting
+            window.addEventListener('mouseup', () => {
+                if (isDraggingToExplode) {
+                    isDraggingToExplode = false;
+                    dragHud.style.opacity = '0';
+                    // Re-sync UI slider with exact current state
+                    document.getElementById('sliderExplode').value = explodeFactor * 100;
+                    document.getElementById('explodeValue').innerText = `${Math.round(explodeFactor * 100)}%`;
+                }
+            });
+
+            // Touch End Support
+            window.addEventListener('touchend', () => {
+                if (isDraggingToExplode) {
+                    isDraggingToExplode = false;
+                    dragHud.style.opacity = '0';
+                    document.getElementById('sliderExplode').value = explodeFactor * 100;
+                    document.getElementById('explodeValue').innerText = `${Math.round(explodeFactor * 100)}%`;
+                }
+            });
+
+            container.addEventListener('click', () => {
+                if (currentInteractionMode === 'orbit') {
+                    raycaster.setFromCamera(mouse, camera);
+                    const intersects = raycaster.intersectObjects(motorGroup.children, true);
+                    if (intersects.length > 0) {
+                        let clickedObj = intersects[0].object;
+                        while (clickedObj.parent && clickedObj.parent !== motorGroup) clickedObj = clickedObj.parent;
+                        for (const [key, group] of Object.entries(componentsMap)) {
+                            if (group === clickedObj) {
+                                if (isGameActive && gameSequence[gameStep] === key) {
+                                    gameStep++;
+                                    updateGameTargetPart();
+                                }
+                                selectComponent(key);
+                                break;
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createSpark() {
+            if (!sparkParticlesGroup || !isRunning) return;
+            const sparkMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+            const spark = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), sparkMat);
+            spark.position.set(2.2, (Math.random() > 0.5 ? 1.05 : -1.05), (Math.random() - 0.5) * 0.2);
+            sparkParticlesGroup.add(spark);
+            setTimeout(() => sparkParticlesGroup.remove(spark), 120);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (isRunning) {
+                const rotSpeed = (actualRPM / 60) * 0.05;
+                if (shaftGroup) shaftGroup.rotation.x += rotSpeed;
+                if (rotorCoreGroup) rotorCoreGroup.rotation.x += rotSpeed;
+                if (windingsGroup) windingsGroup.rotation.x += rotSpeed;
+                if (commutatorGroup) commutatorGroup.rotation.x += rotSpeed;
+
+                if (Math.random() < (currentFaultMode === 'brushes' ? 0.8 : 0.25)) createSpark();
+
+                if (showCurrentFlow && currentArrowsGroup) {
+                    currentArrowsGroup.children.forEach(a => {
+                        a.position.x += 0.04;
+                        if (a.position.x > 2.2) a.position.x = -2.2;
+                    });
+                }
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.onload = function() {
+            init();
+        };
+    </script>
+</body>
+</html>

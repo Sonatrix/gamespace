@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Image Embedding Visualizer & ESP32-S3 LoRA Bridge</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(51, 65, 85, 0.8);
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(71, 85, 105, 1);
+        }
+        .tab-btn.active {
+            border-bottom: 2px solid #3b82f6;
+            color: #60a5fa;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 h-screen overflow-hidden flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="h-14 bg-slate-900/90 border-b border-slate-800 px-4 flex items-center justify-between z-10 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-blue-600/20 text-blue-400 rounded-lg border border-blue-500/30">
+                <i data-lucide="cpu" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm md:text-base text-slate-100 flex items-center gap-2">
+                    3D Vector Embedding Space <span class="text-xs font-normal px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded border border-blue-500/20">ESP32-S3 Gateway v2.7</span>
+                </h1>
+            </div>
+        </div>
+
+        <!-- Action Controls -->
+        <div class="flex items-center gap-2">
+            <!-- Audio Sound Effects Toggle -->
+            <button id="btn-toggle-sound" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-lg border border-slate-700 flex items-center gap-1.5 transition">
+                <i data-lucide="volume-2" class="w-3.5 h-3.5 text-blue-400" id="icon-sound"></i> 
+                <span id="text-sound">Sound On</span>
+            </button>
+
+            <!-- Add Manual Target Node Trigger -->
+            <button id="btn-open-add-node" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition">
+                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Add Target Node
+            </button>
+
+            <!-- Upload Modal Trigger -->
+            <button id="btn-open-upload" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition">
+                <i data-lucide="upload" class="w-3.5 h-3.5"></i> Upload Images
+            </button>
+
+            <!-- Autoplay Toggle -->
+            <button id="btn-toggle-autoplay" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-lg border border-slate-700 flex items-center gap-1.5 transition">
+                <i data-lucide="play" class="w-3.5 h-3.5 text-amber-400" id="icon-autoplay"></i> 
+                <span id="text-autoplay">Autoplay Demo</span>
+            </button>
+
+            <!-- Serial Connect Button -->
+            <button id="btn-connect-serial" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition">
+                <i data-lucide="plug" class="w-3.5 h-3.5"></i> Connect ESP32-S3
+            </button>
+
+            <!-- Hardware Status Badge -->
+            <div id="badge-hw-status" class="hidden md:flex items-center gap-1.5 px-2.5 py-1 bg-slate-800/80 border border-slate-700 text-slate-400 text-xs rounded-full">
+                <span class="w-2 h-2 rounded-full bg-slate-500" id="status-dot"></span>
+                <span id="status-text">ESP32-S3 Disconnected</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace (Split View) -->
+    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+
+        <!-- Left Column: 3D WebGL Canvas Container -->
+        <div class="flex-1 relative bg-slate-950 flex flex-col">
+            <div id="canvas-container" class="w-full flex-1 cursor-grab active:cursor-grabbing"></div>
+
+            <!-- Canvas Overlay UI (Floating HUD) -->
+            <div class="absolute top-4 left-4 flex flex-col gap-2 pointer-events-none">
+                <!-- Dataset Selector -->
+                <div class="glass-panel p-2 rounded-xl pointer-events-auto flex items-center gap-2 text-xs">
+                    <span class="text-slate-400 font-medium pl-1">Dataset:</span>
+                    <select id="select-dataset" class="bg-slate-800/90 text-slate-200 border border-slate-700 rounded-lg px-2 py-1 outline-none focus:border-blue-500">
+                        <option value="synthetic-coco">COCO Embeddings (Synthetic 128-D)</option>
+                        <option value="imagenet-subset">ImageNet Clusters (256 Nodes)</option>
+                        <option value="custom-uploads" id="option-custom-dataset" disabled>Custom Uploads (0)</option>
+                    </select>
+                </div>
+
+                <!-- Target Node Selector Dropdown -->
+                <div class="glass-panel p-2 rounded-xl pointer-events-auto flex items-center gap-2 text-xs">
+                    <span class="text-emerald-400 font-medium pl-1 flex items-center gap-1">
+                        <i data-lucide="crosshair" class="w-3.5 h-3.5"></i> Target:
+                    </span>
+                    <select id="select-target-node" class="bg-slate-800/90 text-slate-200 border border-slate-700 rounded-lg px-2 py-1 outline-none focus:border-emerald-500 max-w-[200px]">
+                        <option value="">Select Target Node...</option>
+                    </select>
+                </div>
+
+                <!-- Active Selection HUD -->
+                <div id="hud-selected-node" class="glass-panel p-3 rounded-xl pointer-events-auto max-w-xs transition-all opacity-0">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
+                        <span class="text-xs font-semibold text-blue-400 flex items-center gap-1">
+                            <i data-lucide="target" class="w-3.5 h-3.5"></i> Active Target Node
+                        </span>
+                        <span id="hud-node-id" class="text-xs font-mono bg-slate-800 px-1.5 py-0.5 rounded text-slate-300">#000</span>
+                    </div>
+                    <div class="flex gap-3 items-center">
+                        <div id="hud-node-preview" class="w-12 h-12 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
+                            <i data-lucide="image" class="w-6 h-6 text-slate-600"></i>
+                        </div>
+                        <div class="text-xs space-y-1 font-mono text-slate-300">
+                            <div>X: <span id="hud-coord-x" class="text-emerald-400">0.00</span></div>
+                            <div>Y: <span id="hud-coord-y" class="text-emerald-400">0.00</span></div>
+                            <div>Z: <span id="hud-coord-z" class="text-emerald-400">0.00</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas Legend Bottom Left -->
+            <div class="absolute bottom-4 left-4 glass-panel p-2.5 rounded-xl pointer-events-none text-[11px] text-slate-400 space-y-1">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Standard Vector
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span> Uploaded Custom Image
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Manual Target Node
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-2 bg-slate-800 border border-amber-400 rounded-sm"></span> ESP32-S3 Gateway Device
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: LoRA Dashboard & Code Inspector -->
+        <div class="w-full lg:w-[450px] bg-slate-900 border-l border-slate-800 flex flex-col shrink-0">
+            
+            <!-- Tab Headers -->
+            <div class="flex border-b border-slate-800 bg-slate-900/50 text-xs font-medium text-slate-400">
+                <button class="tab-btn active flex-1 py-3 px-3 text-center transition flex items-center justify-center gap-1.5" data-tab="tab-control">
+                    <i data-lucide="radio" class="w-3.5 h-3.5"></i> Control & Telemetry
+                </button>
+                <button class="tab-btn flex-1 py-3 px-3 text-center transition flex items-center justify-center gap-1.5" data-tab="tab-sender">
+                    <i data-lucide="code" class="w-3.5 h-3.5"></i> ESP32-S3 Sender
+                </button>
+                <button class="tab-btn flex-1 py-3 px-3 text-center transition flex items-center justify-center gap-1.5" data-tab="tab-receiver">
+                    <i data-lucide="code" class="w-3.5 h-3.5"></i> ESP32-S3 Receiver
+                </button>
+            </div>
+
+            <!-- Tab Content Container -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
+
+                <!-- TAB 1: CONTROL & TELEMETRY -->
+                <div id="tab-control" class="tab-pane space-y-4">
+
+                    <!-- Transmission Controls Panel -->
+                    <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                                <i data-lucide="send" class="w-3.5 h-3.5 text-blue-400"></i> Transmission Pipeline
+                            </h3>
+                            <span class="text-[10px] text-slate-500">Max Payload: 128 Bytes</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="btn-transmit-node" class="py-2 px-3 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-lg flex items-center justify-center gap-1.5 transition">
+                                <i data-lucide="send" class="w-3.5 h-3.5"></i> Transmit Selected
+                            </button>
+                            <button id="btn-simulate-rx" class="py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium rounded-lg flex items-center justify-center gap-1.5 transition">
+                                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i> Simulate RF RX
+                            </button>
+                        </div>
+
+                        <!-- Autoplay Speed Configuration -->
+                        <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+                            <span>Autoplay Interval:</span>
+                            <div class="flex items-center gap-2">
+                                <input id="slider-autoplay-speed" type="range" min="1" max="5" step="0.5" value="2" class="w-24 accent-blue-500 bg-slate-800">
+                                <span id="label-autoplay-speed" class="font-mono text-slate-200">2.0s</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vector & Packet Spec Card -->
+                    <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800 space-y-3">
+                        <h3 class="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                            <i data-lucide="binary" class="w-3.5 h-3.5 text-emerald-400"></i> Quantized Binary Encoding
+                        </h3>
+
+                        <div class="space-y-2 text-xs">
+                            <div class="flex justify-between py-1 border-b border-slate-800 text-slate-400">
+                                <span>Uncompressed Feature Size:</span>
+                                <span class="font-mono text-slate-200">128-D Float32 (512 Bytes)</span>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-slate-800 text-slate-400">
+                                <span>Quantized Spatial Vector:</span>
+                                <span class="font-mono text-emerald-400">3x INT16 (6 Bytes)</span>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-slate-800 text-slate-400">
+                                <span>Total LoRA Frame Size:</span>
+                                <span class="font-mono text-blue-400">18 Bytes (Header+Payload+CRC)</span>
+                            </div>
+                        </div>
+
+                        <!-- Hex Dump Preview -->
+                        <div class="space-y-1">
+                            <div class="text-[10px] text-slate-500 flex justify-between">
+                                <span>SERIAL BINARY BUFFER (HEX STREAM)</span>
+                                <span class="text-emerald-500 font-mono">18 BYTES</span>
+                            </div>
+                            <div id="hex-buffer-preview" class="p-2.5 bg-slate-900 border border-slate-800 rounded-lg font-mono text-[11px] text-emerald-400 break-all leading-relaxed">
+                                01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Hardware / RF Telemetry Log -->
+                    <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800 space-y-2 flex flex-col h-64">
+                        <div class="flex items-center justify-between shrink-0">
+                            <h3 class="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                                <i data-lucide="terminal" class="w-3.5 h-3.5 text-purple-400"></i> Live Console Telemetry
+                            </h3>
+                            <button id="btn-clear-log" class="text-[10px] text-slate-500 hover:text-slate-300">Clear Log</button>
+                        </div>
+                        <div id="console-log" class="flex-1 bg-slate-900/90 border border-slate-800 rounded-lg p-2.5 font-mono text-[11px] space-y-1 overflow-y-auto custom-scrollbar">
+                            <div class="text-slate-500">[SYSTEM] ESP32-S3 gateway origin initialized. Ready for transmission.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: ESP32-S3 SENDER CODE -->
+                <div id="tab-sender" class="tab-pane hidden space-y-2">
+                    <div class="flex items-center justify-between text-xs text-slate-400">
+                        <span>PlatformIO / Arduino C++ Firmware (ESP32-S3)</span>
+                        <button class="btn-copy-code px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 text-[10px] flex items-center gap-1" data-target="code-sender">
+                            <i data-lucide="copy" class="w-3 h-3"></i> Copy
+                        </button>
+                    </div>
+                    <pre class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-[11px] font-mono text-blue-300 overflow-x-auto custom-scrollbar h-[500px]" id="code-sender"><code>// ESP32-S3 Sender Gateway Firmware
+#include &lt;Arduino.h&gt;
+#include &lt;SPI.h&gt;
+#include &lt;LoRA.h&gt;
+
+#define SCK     12
+#define MISO    13
+#define MOSI    11
+#define SS      10
+#define RST     14
+#define DI0     21
+#define BAND    915E6
+
+struct __attribute__((__packed__)) LoraPacket {
+    uint8_t  msgType;
+    uint16_t nodeId;
+    int16_t  quantX;
+    int16_t  quantY;
+    int16_t  quantZ;
+    uint8_t  vectorSum;
+    uint8_t  padding[6];
+    uint16_t crc16;
+};
+
+void setup() {
+    Serial.begin(115200);
+    SPI.begin(SCK, MISO, MOSI, SS);
+    LoRA.setPins(SS, RST, DI0);
+    if (!LoRA.begin(BAND)) {
+        Serial.println("[ERROR] ESP32-S3 LoRA Init Failed!");
+        while (1);
+    }
+    LoRA.setTxPower(20);
+    Serial.println("[SYSTEM] ESP32-S3 Gateway Origin Ready.");
+}
+
+void loop() {
+    if (Serial.available() >= sizeof(LoraPacket)) {
+        LoraPacket packet;
+        Serial.readBytes((char*)&packet, sizeof(LoraPacket));
+        
+        LoRA.beginPacket();
+        LoRA.write((uint8_t*)&packet, sizeof(LoraPacket));
+        LoRA.endPacket();
+        
+        Serial.print("[TX SUCCESS] ESP32-S3 Transmitted Packet ID: ");
+        Serial.println(packet.nodeId);
+    }
+}</code></pre>
+                </div>
+
+                <!-- TAB 3: ESP32-S3 RECEIVER CODE -->
+                <div id="tab-receiver" class="tab-pane hidden space-y-2">
+                    <div class="flex items-center justify-between text-xs text-slate-400">
+                        <span>PlatformIO / Arduino C++ Firmware (ESP32-S3)</span>
+                        <button class="btn-copy-code px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 text-[10px] flex items-center gap-1" data-target="code-receiver">
+                            <i data-lucide="copy" class="w-3 h-3"></i> Copy
+                        </button>
+                    </div>
+                    <pre class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-[11px] font-mono text-emerald-300 overflow-x-auto custom-scrollbar h-[500px]" id="code-receiver"><code>// ESP32-S3 Receiver Remote Node Firmware
+#include &lt;Arduino.h&gt;
+#include &lt;SPI.h&gt;
+#include &lt;LoRA.h&gt;
+
+#define SCK     12
+#define MISO    13
+#define MOSI    11
+#define SS      10
+#define RST     14
+#define DI0     21
+#define BAND    915E6
+
+struct __attribute__((__packed__)) LoraPacket {
+    uint8_t  msgType;
+    uint16_t nodeId;
+    int16_t  quantX;
+    int16_t  quantY;
+    int16_t  quantZ;
+    uint8_t  vectorSum;
+    uint8_t  padding[6];
+    uint16_t crc16;
+};
+
+void setup() {
+    Serial.begin(115200);
+    SPI.begin(SCK, MISO, MOSI, SS);
+    LoRA.setPins(SS, RST, DI0);
+    if (!LoRA.begin(BAND)) {
+        Serial.println("[ERROR] ESP32-S3 LoRA Init Failed!");
+        while (1);
+    }
+    Serial.println("[SYSTEM] ESP32-S3 Receiver Active. Listening...");
+}
+
+void loop() {
+    int packetSize = LoRA.parsePacket();
+    if (packetSize == sizeof(LoraPacket)) {
+        LoraPacket packet;
+        LoRA.readBytes((uint8_t*)&packet, sizeof(LoraPacket));
+        
+        float x = (packet.quantX / 32767.0f) * 100.0f;
+        float y = (packet.quantY / 32767.0f) * 100.0f;
+        float z = (packet.quantZ / 32767.0f) * 100.0f;
+        
+        Serial.print("[RX ESP32-S3] Node:"); Serial.print(packet.nodeId);
+        Serial.print(" | X:"); Serial.print(x);
+        Serial.print(" Y:"); Serial.print(y);
+        Serial.print(" Z:"); Serial.print(z);
+        Serial.print(" | RSSI:"); Serial.print(LoRA.packetRssi());
+        Serial.print(" SNR:"); Serial.println(LoRA.packetSnr());
+    }
+}</code></pre>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Add Manual Target Node -->
+    <div id="modal-add-node" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 hidden p-4">
+        <div class="glass-panel w-full max-w-md rounded-2xl p-6 space-y-4 border border-slate-800">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-400"></i> Add Target Node Manually
+                </h3>
+                <button id="btn-close-add-node" class="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-200">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-400 leading-relaxed">
+                Specify custom spatial coordinates $(X,Y,Z)$ and an optional custom label/ID to inject a target vector into the 3D space.
+            </p>
+
+            <form id="form-add-node" class="space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1">Node ID / Number</label>
+                        <input type="number" id="input-node-id" placeholder="e.g. 999" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 outline-none focus:border-emerald-500 font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-400 mb-1">Label Tag</label>
+                        <input type="text" id="input-node-label" placeholder="e.g. Sensor Node A" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-[11px] font-medium text-slate-400">3D Coordinates [-100.0 to +100.0]</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <span class="text-[10px] text-slate-500">X Position</span>
+                            <input type="number" step="0.1" id="input-node-x" placeholder="0.0" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-emerald-400 outline-none focus:border-emerald-500 font-mono">
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-500">Y Position</span>
+                            <input type="number" step="0.1" id="input-node-y" placeholder="0.0" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-emerald-400 outline-none focus:border-emerald-500 font-mono">
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-500">Z Position</span>
+                            <input type="number" step="0.1" id="input-node-z" placeholder="0.0" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-emerald-400 outline-none focus:border-emerald-500 font-mono">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Create & Target Node
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Upload Custom Image Modal -->
+    <div id="modal-upload" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 hidden p-4">
+        <div class="glass-panel w-full max-w-md rounded-2xl p-6 space-y-4 border border-slate-800">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+                    <i data-lucide="image-plus" class="w-5 h-5 text-indigo-400"></i> Add Custom Images
+                </h3>
+                <button id="btn-close-upload" class="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-200">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-400 leading-relaxed">
+                Upload image files (.jpg, .png, .webp). The client extracts 128-D color/texture histograms, projects them into 3D, and renders them directly into the point cloud space.
+            </p>
+
+            <div id="drop-zone" class="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer bg-slate-900/50 transition">
+                <i data-lucide="upload-cloud" class="w-8 h-8 text-indigo-400 mb-2"></i>
+                <span class="text-xs font-medium text-slate-300">Click to select or drag and drop</span>
+                <span class="text-[10px] text-slate-500 mt-1">PNG, JPG, WEBP up to 10MB</span>
+                <input type="file" id="input-file-images" multiple accept="image/*" class="hidden">
+            </div>
+
+            <div id="upload-progress" class="hidden space-y-2">
+                <div class="flex justify-between text-xs text-slate-400">
+                    <span>Extracting 128-D Feature Vectors...</span>
+                    <span id="upload-progress-text">0%</span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                    <div id="upload-progress-bar" class="bg-indigo-500 h-full w-0 transition-all duration-300"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script Logic -->
+    <script>
+        // GLOBAL STATE
+        const state = {
+            dataset: 'synthetic-coco',
+            nodes: [],
+            customNodes: [],
+            manualNodes: [],
+            selectedNode: null,
+            soundEnabled: true,
+            audioCtx: null,
+            autoplay: false,
+            autoplayInterval: 2000,
+            autoplayTimer: null,
+            serialPort: null,
+            serialWriter: null,
+            scene: null,
+            camera: null,
+            renderer: null,
+            controls: null,
+            gatewayGroup: null,
+            gatewayLedMesh: null,
+            activeBeams: []
+        };
+
+        // AUDIO SYNTHESIZER ENGINE (Web Audio API)
+        function initAudio() {
+            if (!state.audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                state.audioCtx = new AudioContext();
+            }
+            if (state.audioCtx.state === 'suspended') {
+                state.audioCtx.resume();
+            }
+        }
+
+        function playSoundTx() {
+            if (!state.soundEnabled) return;
+            initAudio();
+
+            const now = state.audioCtx.currentTime;
+            const osc = state.audioCtx.createOscillator();
+            const gain = state.audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+            osc.connect(gain);
+            gain.connect(state.audioCtx.destination);
+
+            osc.start(now);
+            osc.stop(now + 0.15);
+        }
+
+        function playSoundRxAck() {
+            if (!state.soundEnabled) return;
+            initAudio();
+
+            const now = state.audioCtx.currentTime;
+            const osc = state.audioCtx.createOscillator();
+            const gain = state.audioCtx.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(1200, now);
+            osc.frequency.exponentialRampToValueAtTime(600, now + 0.2);
+
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+
+            osc.connect(gain);
+            gain.connect(state.audioCtx.destination);
+
+            osc.start(now);
+            osc.stop(now + 0.2);
+        }
+
+        // THREE.JS INITIALIZATION
+        function init3D() {
+            const container = document.getElementById('canvas-container');
+            
+            state.scene = new THREE.Scene();
+            state.scene.background = new THREE.Color(0x020617);
+            state.scene.fog = new THREE.FogExp2(0x020617, 0.003);
+
+            state.camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            state.camera.position.set(120, 80, 150);
+
+            state.renderer = new THREE.WebGLRenderer({ antialias: true });
+            state.renderer.setSize(container.clientWidth, container.clientHeight);
+            state.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(state.renderer.domElement);
+
+            state.controls = new THREE.OrbitControls(state.camera, state.renderer.domElement);
+            state.controls.enableDamping = true;
+            state.controls.dampingFactor = 0.05;
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            state.scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
+            dirLight.position.set(100, 100, 50);
+            state.scene.add(dirLight);
+
+            const gridHelper = new THREE.GridHelper(300, 30, 0x1e293b, 0x0f172a);
+            gridHelper.position.y = -60;
+            state.scene.add(gridHelper);
+
+            buildEsp32S3Gateway();
+            loadDataset('synthetic-coco');
+
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+
+            container.addEventListener('click', (e) => {
+                const rect = container.getBoundingClientRect();
+                mouse.x = ((e.clientX - rect.left) / container.clientWidth) * 2 - 1;
+                mouse.y = -((e.clientY - rect.top) / container.clientHeight) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, state.camera);
+                const intersects = raycaster.intersectObjects(state.scene.children, true);
+
+                for (let hit of intersects) {
+                    if (hit.object.userData && hit.object.userData.nodeData) {
+                        selectNode(hit.object.userData.nodeData);
+                        break;
+                    }
+                }
+            });
+
+            window.addEventListener('resize', () => {
+                state.camera.aspect = container.clientWidth / container.clientHeight;
+                state.camera.updateProjectionMatrix();
+                state.renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+
+            function animate() {
+                requestAnimationFrame(animate);
+                state.controls.update();
+
+                if (state.gatewayGroup) {
+                    state.gatewayGroup.rotation.y += 0.005;
+                }
+
+                if (state.autoplay) {
+                    state.scene.rotation.y += 0.0015;
+                }
+
+                updateBeams();
+                state.renderer.render(state.scene, state.camera);
+            }
+            animate();
+        }
+
+        function buildEsp32S3Gateway() {
+            state.gatewayGroup = new THREE.Group();
+
+            const pcbGeo = new THREE.BoxGeometry(16, 1.2, 28);
+            const pcbMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.2 });
+            const pcb = new THREE.Mesh(pcbGeo, pcbMat);
+            state.gatewayGroup.add(pcb);
+
+            const shieldGeo = new THREE.BoxGeometry(10, 2, 12);
+            const shieldMat = new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.9, roughness: 0.1 });
+            const shield = new THREE.Mesh(shieldGeo, shieldMat);
+            shield.position.set(0, 1.2, -2);
+            state.gatewayGroup.add(shield);
+
+            const usbGeo = new THREE.BoxGeometry(5, 1.8, 4);
+            const usbMat = new THREE.MeshStandardMaterial({ color: 0x9ca3af, metalness: 0.8 });
+            
+            const usb1 = new THREE.Mesh(usbGeo, usbMat);
+            usb1.position.set(-3.5, 1.2, 12.5);
+            state.gatewayGroup.add(usb1);
+
+            const usb2 = new THREE.Mesh(usbGeo, usbMat);
+            usb2.position.set(3.5, 1.2, 12.5);
+            state.gatewayGroup.add(usb2);
+
+            const pinGeo = new THREE.BoxGeometry(1.2, 3, 24);
+            const pinMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
+            
+            const pinLeft = new THREE.Mesh(pinGeo, pinMat);
+            pinLeft.position.set(-7.2, 0.5, 0);
+            state.gatewayGroup.add(pinLeft);
+
+            const pinRight = new THREE.Mesh(pinGeo, pinMat);
+            pinRight.position.set(7.2, 0.5, 0);
+            state.gatewayGroup.add(pinRight);
+
+            const ledGeo = new THREE.SphereGeometry(0.8, 16, 16);
+            const ledMat = new THREE.MeshStandardMaterial({
+                color: 0x10b981,
+                emissive: 0x059669,
+                emissiveIntensity: 1.0
+            });
+            state.gatewayLedMesh = new THREE.Mesh(ledGeo, ledMat);
+            state.gatewayLedMesh.position.set(0, 2.2, 8);
+            state.gatewayGroup.add(state.gatewayLedMesh);
+
+            state.gatewayGroup.position.set(0, -58, 0);
+            state.scene.add(state.gatewayGroup);
+        }
+
+        function loadDataset(datasetKey) {
+            state.nodes.forEach(n => { if (n.mesh) state.scene.remove(n.mesh); });
+            state.nodes = [];
+
+            let count = datasetKey === 'imagenet-subset' ? 256 : 100;
+            
+            if (datasetKey === 'custom-uploads') {
+                state.nodes = [...state.customNodes, ...state.manualNodes];
+            } else {
+                for (let i = 0; i < count; i++) {
+                    const id = i + 1;
+                    const x = (Math.random() - 0.5) * 180;
+                    const y = (Math.random() - 0.5) * 100;
+                    const z = (Math.random() - 0.5) * 180;
+                    
+                    const vector = Array.from({length: 128}, () => (Math.random() * 2 - 1).toFixed(3));
+                    state.nodes.push({ id, label: `Node #${id}`, x, y, z, vector, isCustom: false, isManual: false });
+                }
+                state.nodes = [...state.nodes, ...state.manualNodes];
+            }
+
+            state.nodes.forEach(node => {
+                const geo = new THREE.SphereGeometry(node.isCustom || node.isManual ? 3.5 : 2, 16, 16);
+                let mat;
+
+                if (node.texture) {
+                    mat = new THREE.MeshBasicMaterial({ map: node.texture });
+                } else {
+                    let color = 0x3b82f6;
+                    if (node.isManual) color = 0x10b981;
+                    else if (node.isCustom) color = 0x818cf8;
+
+                    mat = new THREE.MeshStandardMaterial({
+                        color,
+                        roughness: 0.3,
+                        metalness: 0.2
+                    });
+                }
+
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(node.x, node.y, node.z);
+                mesh.userData = { nodeData: node };
+
+                state.scene.add(mesh);
+                node.mesh = mesh;
+            });
+
+            populateTargetDropdown();
+            logTelemetry(`[DATASET] Loaded '${datasetKey}' with ${state.nodes.length} nodes.`);
+        }
+
+        function populateTargetDropdown() {
+            const dropdown = document.getElementById('select-target-node');
+            dropdown.innerHTML = '<option value="">Select Target Node...</option>';
+
+            state.nodes.forEach(node => {
+                const opt = document.createElement('option');
+                opt.value = node.id;
+                opt.textContent = `${node.label || 'Node #' + node.id} (X:${node.x.toFixed(0)}, Y:${node.y.toFixed(0)})`;
+                if (state.selectedNode && state.selectedNode.id === node.id) {
+                    opt.selected = true;
+                }
+                dropdown.appendChild(opt);
+            });
+        }
+
+        function selectNode(node) {
+            state.selectedNode = node;
+
+            const dropdown = document.getElementById('select-target-node');
+            dropdown.value = node.id;
+
+            document.getElementById('hud-selected-node').style.opacity = '1';
+            document.getElementById('hud-node-id').textContent = node.label || `#${node.id}`;
+            document.getElementById('hud-coord-x').textContent = node.x.toFixed(2);
+            document.getElementById('hud-coord-y').textContent = node.y.toFixed(2);
+            document.getElementById('hud-coord-z').textContent = node.z.toFixed(2);
+
+            updateHexPreview(node);
+        }
+
+        function encodeLoraPacket(node) {
+            const buffer = new ArrayBuffer(18);
+            const view = new DataView(buffer);
+
+            const qX = Math.max(-32768, Math.min(32767, Math.round((node.x / 100) * 32767)));
+            const qY = Math.max(-32768, Math.min(32767, Math.round((node.y / 100) * 32767)));
+            const qZ = Math.max(-32768, Math.min(32767, Math.round((node.z / 100) * 32767)));
+
+            view.setUint8(0, 0x01);
+            view.setUint16(1, node.id, false);
+            view.setInt16(3, qX, false);
+            view.setInt16(5, qY, false);
+            view.setInt16(7, qZ, false);
+            view.setUint8(9, 0x8A);
+
+            for (let i = 10; i < 16; i++) view.setUint8(i, 0x00);
+            view.setUint16(16, 0xE491, false);
+
+            return { buffer, qX, qY, qZ };
+        }
+
+        function updateHexPreview(node) {
+            const { buffer } = encodeLoraPacket(node);
+            const bytes = new Uint8Array(buffer);
+            const hexString = Array.from(bytes).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+            document.getElementById('hex-buffer-preview').textContent = hexString;
+        }
+
+        function triggerTransmission(node) {
+            if (!node) {
+                node = state.nodes[Math.floor(Math.random() * state.nodes.length)];
+                if (node) selectNode(node);
+            }
+
+            if (!node) return;
+
+            playSoundTx();
+
+            const startPos = new THREE.Vector3(node.x, node.y, node.z);
+            const endPos = state.gatewayGroup.position.clone().add(new THREE.Vector3(0, 2, 0));
+
+            const midPos = startPos.clone().add(endPos).multiplyScalar(0.5);
+            midPos.y += 30;
+
+            const curve = new THREE.QuadraticBezierCurve3(startPos, midPos, endPos);
+            const points = curve.getPoints(50);
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+            const material = new THREE.LineBasicMaterial({
+                color: 0x38bdf8,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            const curveObject = new THREE.Line(geometry, material);
+            state.scene.add(curveObject);
+
+            const particleGeo = new THREE.SphereGeometry(1.5, 8, 8);
+            const particleMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+            const particle = new THREE.Mesh(particleGeo, particleMat);
+            state.scene.add(particle);
+
+            state.activeBeams.push({
+                curve,
+                line: curveObject,
+                particle,
+                progress: 0,
+                node
+            });
+
+            if (state.gatewayLedMesh) {
+                state.gatewayLedMesh.material.color.setHex(0xf59e0b);
+                state.gatewayLedMesh.material.emissive.setHex(0xd97706);
+            }
+
+            const packet = encodeLoraPacket(node);
+            logTelemetry(`[LORA TX] ${node.label || 'Node #' + node.id} -> ESP32-S3 Gateway | Q(X:${packet.qX}, Y:${packet.qY}, Z:${packet.qZ})`);
+
+            if (state.serialWriter) {
+                state.serialWriter.write(new Uint8Array(packet.buffer));
+            }
+        }
+
+        function updateBeams() {
+            for (let i = state.activeBeams.length - 1; i >= 0; i--) {
+                const beam = state.activeBeams[i];
+                beam.progress += 0.03;
+
+                if (beam.progress >= 1) {
+                    state.scene.remove(beam.line);
+                    state.scene.remove(beam.particle);
+                    state.activeBeams.splice(i, 1);
+
+                    playSoundRxAck();
+
+                    if (state.gatewayLedMesh) {
+                        state.gatewayLedMesh.material.color.setHex(0x10b981);
+                        state.gatewayLedMesh.material.emissive.setHex(0x059669);
+                    }
+
+                    const rssi = -65 - Math.floor(Math.random() * 25);
+                    const snr = (7 + Math.random() * 5).toFixed(1);
+                    logTelemetry(`[ESP32-S3 RX ACK] Recv ${beam.node.label || 'Node #' + beam.node.id} | RSSI: ${rssi}dBm, SNR: ${snr}dB`);
+                } else {
+                    const point = beam.curve.getPoint(beam.progress);
+                    beam.particle.position.copy(point);
+                }
+            }
+        }
+
+        function logTelemetry(msg) {
+            const consoleEl = document.getElementById('console-log');
+            const time = new Date().toLocaleTimeString().split(' ')[0];
+            const div = document.createElement('div');
+            div.className = 'text-slate-300 border-l border-blue-500/40 pl-2 py-0.5';
+            div.innerHTML = `<span class="text-slate-500">[${time}]</span> ${msg}`;
+            consoleEl.appendChild(div);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        async function connectSerial() {
+            if (!('serial' in navigator)) {
+                alert('Web Serial API is not supported in your browser. Please use Chrome or Edge.');
+                return;
+            }
+
+            try {
+                state.serialPort = await navigator.serial.requestPort();
+                await state.serialPort.open({ baudRate: 115200 });
+
+                const writableStream = state.serialPort.writable;
+                state.serialWriter = writableStream.getWriter();
+
+                document.getElementById('status-dot').className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+                document.getElementById('status-text').textContent = 'ESP32-S3 Connected (115200)';
+                logTelemetry('[HARDWARE] Web Serial Connected to ESP32-S3 Gateway.');
+            } catch (err) {
+                logTelemetry(`[HARDWARE ERROR] ${err.message}`);
+            }
+        }
+
+        function processUploadedImages(files) {
+            const progressContainer = document.getElementById('upload-progress');
+            const progressBar = document.getElementById('upload-progress-bar');
+            const progressText = document.getElementById('upload-progress-text');
+            progressContainer.classList.remove('hidden');
+
+            let processed = 0;
+            Array.from(files).forEach((file) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 64;
+                        canvas.height = 64;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, 64, 64);
+
+                        const imgData = ctx.getImageData(0, 0, 64, 64).data;
+                        const vector = [];
+                        for (let i = 0; i < 128; i++) {
+                            let sum = 0;
+                            for (let j = i * 32; j < (i + 1) * 32; j += 4) {
+                                sum += imgData[j] || 0;
+                            }
+                            vector.push(((sum / 255) * 2 - 1).toFixed(3));
+                        }
+
+                        const x = (parseFloat(vector[0]) * 80).toFixed(2);
+                        const y = (parseFloat(vector[1]) * 50).toFixed(2);
+                        const z = (parseFloat(vector[2]) * 80).toFixed(2);
+
+                        const texture = new THREE.CanvasTexture(canvas);
+                        const id = 500 + state.customNodes.length + 1;
+
+                        const newNode = {
+                            id,
+                            label: `Img Node #${id}`,
+                            x: parseFloat(x),
+                            y: parseFloat(y),
+                            z: parseFloat(z),
+                            vector,
+                            texture,
+                            isCustom: true,
+                            isManual: false
+                        };
+
+                        state.customNodes.push(newNode);
+                        processed++;
+
+                        const pct = Math.round((processed / files.length) * 100);
+                        progressBar.style.width = `${pct}%`;
+                        progressText.textContent = `${pct}%`;
+
+                        if (processed === files.length) {
+                            setTimeout(() => {
+                                progressContainer.classList.add('hidden');
+                                document.getElementById('modal-upload').classList.add('hidden');
+
+                                const customOpt = document.getElementById('option-custom-dataset');
+                                customOpt.disabled = false;
+                                customOpt.textContent = `Custom Uploads (${state.customNodes.length})`;
+                                customOpt.selected = true;
+
+                                loadDataset('custom-uploads');
+                                selectNode(newNode);
+                                logTelemetry(`[UPLOAD] Added ${files.length} images into 3D embedding space.`);
+                            }, 500);
+                        }
+                    };
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function handleAddManualNode(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('input-node-id').value);
+            const labelTag = document.getElementById('input-node-label').value.trim();
+            const x = parseFloat(document.getElementById('input-node-x').value);
+            const y = parseFloat(document.getElementById('input-node-y').value);
+            const z = parseFloat(document.getElementById('input-node-z').value);
+
+            const vector = Array.from({length: 128}, () => (Math.random() * 2 - 1).toFixed(3));
+            const newNode = {
+                id,
+                label: labelTag || `Target #${id}`,
+                x, y, z,
+                vector,
+                isCustom: false,
+                isManual: true
+            };
+
+            state.manualNodes.push(newNode);
+            
+            loadDataset(document.getElementById('select-dataset').value);
+            selectNode(newNode);
+
+            document.getElementById('modal-add-node').classList.add('hidden');
+            document.getElementById('form-add-node').reset();
+            logTelemetry(`[MANUAL NODE] Created Target Node #${id} at (${x}, ${y}, ${z})`);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            init3D();
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+
+                    btn.classList.add('active');
+                    document.getElementById(btn.dataset.tab).classList.remove('hidden');
+                });
+            });
+
+            document.getElementById('btn-toggle-sound').addEventListener('click', () => {
+                state.soundEnabled = !state.soundEnabled;
+                const icon = document.getElementById('icon-sound');
+                const text = document.getElementById('text-sound');
+
+                if (state.soundEnabled) {
+                    icon.setAttribute('data-lucide', 'volume-2');
+                    icon.className = 'w-3.5 h-3.5 text-blue-400';
+                    text.textContent = 'Sound On';
+                } else {
+                    icon.setAttribute('data-lucide', 'volume-x');
+                    icon.className = 'w-3.5 h-3.5 text-slate-500';
+                    text.textContent = 'Muted';
+                }
+                lucide.createIcons();
+            });
+
+            document.getElementById('select-dataset').addEventListener('change', (e) => {
+                loadDataset(e.target.value);
+            });
+
+            document.getElementById('select-target-node').addEventListener('change', (e) => {
+                const targetId = parseInt(e.target.value);
+                const found = state.nodes.find(n => n.id === targetId);
+                if (found) selectNode(found);
+            });
+
+            document.getElementById('btn-transmit-node').addEventListener('click', () => {
+                triggerTransmission(state.selectedNode);
+            });
+
+            document.getElementById('btn-simulate-rx').addEventListener('click', () => {
+                triggerTransmission(state.selectedNode);
+            });
+
+            const btnAutoplay = document.getElementById('btn-toggle-autoplay');
+            btnAutoplay.addEventListener('click', () => {
+                state.autoplay = !state.autoplay;
+                const icon = document.getElementById('icon-autoplay');
+                const text = document.getElementById('text-autoplay');
+
+                if (state.autoplay) {
+                    btnAutoplay.classList.add('bg-amber-600', 'text-white');
+                    icon.setAttribute('data-lucide', 'pause');
+                    text.textContent = 'Pause Autoplay';
+
+                    state.autoplayTimer = setInterval(() => {
+                        triggerTransmission(null);
+                    }, state.autoplayInterval);
+                } else {
+                    btnAutoplay.classList.remove('bg-amber-600', 'text-white');
+                    icon.setAttribute('data-lucide', 'play');
+                    text.textContent = 'Autoplay Demo';
+                    clearInterval(state.autoplayTimer);
+                }
+                lucide.createIcons();
+            });
+
+            document.getElementById('slider-autoplay-speed').addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                state.autoplayInterval = val * 1000;
+                document.getElementById('label-autoplay-speed').textContent = `${val.toFixed(1)}s`;
+
+                if (state.autoplay) {
+                    clearInterval(state.autoplayTimer);
+                    state.autoplayTimer = setInterval(() => triggerTransmission(null), state.autoplayInterval);
+                }
+            });
+
+            document.getElementById('btn-connect-serial').addEventListener('click', connectSerial);
+
+            document.getElementById('btn-open-add-node').addEventListener('click', () => {
+                document.getElementById('modal-add-node').classList.remove('hidden');
+            });
+            document.getElementById('btn-close-add-node').addEventListener('click', () => {
+                document.getElementById('modal-add-node').classList.add('hidden');
+            });
+            document.getElementById('form-add-node').addEventListener('submit', handleAddManualNode);
+
+            document.getElementById('btn-open-upload').addEventListener('click', () => {
+                document.getElementById('modal-upload').classList.remove('hidden');
+            });
+            document.getElementById('btn-close-upload').addEventListener('click', () => {
+                document.getElementById('modal-upload').classList.add('hidden');
+            });
+
+            const dropZone = document.getElementById('drop-zone');
+            const inputFile = document.getElementById('input-file-images');
+
+            dropZone.addEventListener('click', () => inputFile.click());
+            inputFile.addEventListener('change', (e) => processUploadedImages(e.target.files));
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-indigo-500', 'bg-slate-800/80');
+            });
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('border-indigo-500', 'bg-slate-800/80');
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-indigo-500', 'bg-slate-800/80');
+                if (e.dataTransfer.files.length) {
+                    processUploadedImages(e.dataTransfer.files);
+                }
+            });
+
+            document.getElementById('btn-clear-log').addEventListener('click', () => {
+                document.getElementById('console-log').innerHTML = '';
+            });
+
+            document.querySelectorAll('.btn-copy-code').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const code = document.getElementById(btn.dataset.target).textContent;
+                    navigator.clipboard.writeText(code);
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => btn.innerHTML = `<i data-lucide="copy" class="w-3 h-3"></i> Copy`, 2000);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
