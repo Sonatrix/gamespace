@@ -1,0 +1,3 @@
+[submodule "frequency-converter-embedded"]
+	path = frequency-converter-embedded
+	url = https://github.com/Sonatrix/frequency-converter-embedded
