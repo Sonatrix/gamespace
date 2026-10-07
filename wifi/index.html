@@ -1,0 +1,2144 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wi-Fi Signal & Network Interactive Simulator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            bg: '#05070c',
+                            panel: '#0c121e',
+                            border: '#1e293b',
+                            cyan: '#00f0ff',
+                            purple: '#8b5cf6',
+                            pink: '#ec4899',
+                            green: '#10b981',
+                            yellow: '#f59e0b',
+                            red: '#ef4444'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: #05070c;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #05070c; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00f0ff; }
+
+        .glass-panel {
+            background: rgba(12, 18, 30, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glow-cyan { box-shadow: 0 0 20px rgba(0, 240, 255, 0.25); }
+        .glow-purple { box-shadow: 0 0 20px rgba(139, 92, 246, 0.25); }
+
+        .custom-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #1e293b;
+            outline: none;
+        }
+        .custom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #00f0ff;
+            cursor: pointer;
+            box-shadow: 0 0 10px #00f0ff;
+            transition: transform 0.2s;
+        }
+        .custom-slider::-webkit-slider-thumb:hover { transform: scale(1.25); }
+
+        canvas { touch-action: none; }
+
+        .cw-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .cw-btn.active {
+            background-color: #00f0ff !important;
+            color: #05070c !important;
+            font-weight: 800 !important;
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.6) !important;
+            border-color: #00f0ff !important;
+        }
+
+        .tab-btn.active {
+            background-color: #00f0ff !important;
+            color: #05070c !important;
+            font-weight: 800 !important;
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.4) !important;
+        }
+
+        @media print {
+            body { background: white; color: black; }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between select-none">
+
+    <header class="glass-panel sticky top-0 z-50 border-b border-cyber-border px-4 py-3 flex flex-wrap items-center justify-between gap-4 no-print">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyber-purple via-blue-600 to-cyber-cyan flex items-center justify-center glow-cyan">
+                <i class="fa-solid fa-wifi text-xl text-black font-extrabold"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-none tracking-wide text-white flex items-center gap-2">
+                    WIFI-PHYSX <span class="text-[10px] px-2 py-0.5 rounded bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan/40 font-mono font-bold">PRO LAB 2026</span>
+                </h1>
+                <p class="text-xs text-slate-400 mt-1">RF Physics, Wi-Fi 7 MLO, Channel Spectrum & Network Protocol Engine</p>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex flex-wrap bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs font-semibold gap-1">
+            <button id="tab-sim" onclick="switchTab('sim')" class="tab-btn active px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-satellite-dish"></i> RF Floorplan
+            </button>
+            <button id="tab-inspector" onclick="switchTab('inspector')" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-tower-broadcast text-cyber-cyan"></i> Live Network Inspector
+            </button>
+            <button id="tab-wifi7" onclick="switchTab('wifi7')" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-bolt text-cyber-yellow"></i> Wi-Fi 7 Deep-Dive
+            </button>
+            <button id="tab-spectrum" onclick="switchTab('spectrum')" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-chart-simple"></i> Spectrum & Highway
+            </button>
+            <button id="tab-csmaca" onclick="switchTab('csmaca')" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-diagram-project"></i> CSMA/CA
+            </button>
+            <button id="tab-security" onclick="switchTab('security')" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-shield-halved"></i> Security Sandbox
+            </button>
+            <button id="tab-doctor" onclick="switchTab('doctor')" class="tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-stethoscope text-cyber-green"></i> Network Doctor
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-[1920px] w-full mx-auto p-3 lg:p-4 flex flex-col gap-4">
+
+        <!-- VIEW 1: RF FLOORPLAN SIMULATOR -->
+        <div id="view-sim" class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
+            
+            <!-- Left Controls Sidebar -->
+            <div class="lg:col-span-3 flex flex-col gap-3">
+                <div class="glass-panel rounded-2xl p-4 border border-cyber-border flex flex-col gap-3">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <h2 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-cyber-cyan"></i> RF Transceiver Controls
+                        </h2>
+                        <span class="w-2 h-2 rounded-full bg-cyber-green animate-pulse"></span>
+                    </div>
+
+                    <!-- Frequency Band Switcher -->
+                    <div>
+                        <label class="text-[11px] text-slate-400 mb-1 block">Frequency Band</label>
+                        <div class="grid grid-cols-3 gap-1 p-1 bg-slate-900/90 rounded-xl border border-slate-800 text-xs font-mono">
+                            <button id="band-24" onclick="setBand('2.4')" class="py-1.5 rounded-lg font-bold text-slate-400 hover:text-white">2.4 GHz</button>
+                            <button id="band-5" onclick="setBand('5')" class="py-1.5 rounded-lg font-bold bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan/30">5.0 GHz</button>
+                            <button id="band-6" onclick="setBand('6')" class="py-1.5 rounded-lg font-bold text-slate-400 hover:text-white">6.0 GHz</button>
+                        </div>
+                    </div>
+
+                    <!-- Channel Width Control -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-400">Channel Width</span>
+                            <span id="lbl-channel-width" class="text-cyber-cyan font-mono font-bold">80 MHz</span>
+                        </div>
+                        <div class="grid grid-cols-5 gap-1 p-1 bg-slate-900/90 rounded-xl border border-slate-800 text-xs font-mono">
+                            <button id="cw-20" onclick="setChannelWidth(20)" class="cw-btn py-1.5 rounded-lg text-slate-400 border border-transparent">20M</button>
+                            <button id="cw-40" onclick="setChannelWidth(40)" class="cw-btn py-1.5 rounded-lg text-slate-400 border border-transparent">40M</button>
+                            <button id="cw-80" onclick="setChannelWidth(80)" class="cw-btn active py-1.5 rounded-lg text-slate-400 border border-transparent">80M</button>
+                            <button id="cw-160" onclick="setChannelWidth(160)" class="cw-btn py-1.5 rounded-lg text-slate-400 border border-transparent">160M</button>
+                            <button id="cw-320" onclick="setChannelWidth(320)" class="cw-btn py-1.5 rounded-lg text-slate-400 border border-transparent">320M</button>
+                        </div>
+                    </div>
+
+                    <!-- Transmit Power Slider -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-slate-400">Transmit Power (EIRP)</span>
+                            <span id="lbl-tx-power" class="text-cyber-cyan font-mono font-bold">20 dBm (100mW)</span>
+                        </div>
+                        <input type="range" id="slider-tx" min="5" max="30" value="20" class="custom-slider" oninput="window.updateTxPower ? window.updateTxPower(this.value) : updateTxPower(this.value)">
+                    </div>
+
+                    <!-- Smart Beamforming & Roaming Toggles -->
+                    <div class="space-y-2 pt-1 border-t border-slate-800">
+                        <label class="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-bullseye text-cyber-purple"></i> Phased Beamforming Array</span>
+                            <input type="checkbox" id="toggle-beamforming" checked onchange="toggleBeamforming(this.checked)" class="rounded bg-slate-900 border-slate-700 text-cyber-purple focus:ring-0">
+                        </label>
+                        <label class="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-diagram-next text-cyber-green"></i> 802.11r Fast Roaming</span>
+                            <input type="checkbox" id="toggle-roaming" checked onchange="toggleRoaming(this.checked)" class="rounded bg-slate-900 border-slate-700 text-cyber-green focus:ring-0">
+                        </label>
+                    </div>
+
+                    <!-- Layer Overlays -->
+                    <div class="pt-2 border-t border-slate-800">
+                        <label class="text-[11px] text-slate-400 mb-1.5 block">Simulation Overlays</label>
+                        <div class="grid grid-cols-2 gap-2 text-[11px]">
+                            <label class="flex items-center gap-1.5 text-slate-300 cursor-pointer"><input type="checkbox" id="chk-waves" checked onchange="toggleLayer('waves', this.checked)"> Wave Pulse</label>
+                            <label class="flex items-center gap-1.5 text-slate-300 cursor-pointer"><input type="checkbox" id="chk-heatmap" checked onchange="toggleLayer('heatmap', this.checked)"> RSSI Heatmap</label>
+                            <label class="flex items-center gap-1.5 text-slate-300 cursor-pointer"><input type="checkbox" id="chk-rays" checked onchange="toggleLayer('rays', this.checked)"> Ray Propagation</label>
+                            <label class="flex items-center gap-1.5 text-slate-300 cursor-pointer"><input type="checkbox" id="chk-mesh" checked onchange="toggleLayer('mesh', this.checked)"> Mesh Mesh-Link</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Palette for Adding Objects -->
+                <div class="glass-panel rounded-2xl p-4 border border-cyber-border flex flex-col gap-2.5">
+                    <h2 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-cubes text-cyber-purple"></i> Add Infrastructure & Obstacles
+                    </h2>
+                    
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <button onclick="addMeshNode()" class="p-2 rounded-xl bg-purple-950/40 border border-purple-800/60 hover:border-purple-500 flex items-center gap-2 transition text-purple-200 font-semibold">
+                            <i class="fa-solid fa-network-wired text-cyber-purple"></i> Mesh Extender
+                        </button>
+                        <button onclick="addObstacle('concrete')" class="p-2 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-400 flex items-center gap-2 transition text-slate-200">
+                            <span class="w-2.5 h-2.5 rounded bg-slate-500"></span> Concrete Wall
+                        </button>
+                        <button onclick="addObstacle('drywall')" class="p-2 rounded-xl bg-slate-900 border border-slate-700 hover:border-amber-600 flex items-center gap-2 transition text-slate-200">
+                            <span class="w-2.5 h-2.5 rounded bg-amber-700"></span> Drywall
+                        </button>
+                        <button onclick="addObstacle('glass')" class="p-2 rounded-xl bg-slate-900 border border-slate-700 hover:border-sky-300 flex items-center gap-2 transition text-slate-200">
+                            <span class="w-2.5 h-2.5 rounded bg-sky-200"></span> Glass Window
+                        </button>
+                        <button onclick="addObstacle('metal')" class="p-2 rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-500 flex items-center gap-2 transition text-slate-200">
+                            <span class="w-2.5 h-2.5 rounded bg-cyan-400"></span> Metal Door
+                        </button>
+                        <button onclick="addObstacle('water')" class="p-2 rounded-xl bg-slate-900 border border-slate-700 hover:border-blue-500 flex items-center gap-2 transition text-slate-200">
+                            <span class="w-2.5 h-2.5 rounded bg-blue-600"></span> Water Tank
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-800">
+                        <button onclick="addDevice('phone')" class="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyber-cyan flex items-center gap-2 transition text-slate-300">
+                            <i class="fa-solid fa-mobile-screen text-cyber-cyan"></i> Smartphone
+                        </button>
+                        <button onclick="addDevice('tv')" class="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyber-green flex items-center gap-2 transition text-slate-300">
+                            <i class="fa-solid fa-tv text-cyber-green"></i> Smart TV
+                        </button>
+                    </div>
+
+                    <button onclick="resetFloorplan()" class="mt-1 w-full py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-semibold transition">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Reset Floorplan Layout
+                    </button>
+                </div>
+            </div>
+
+            <!-- Central Simulation Canvas -->
+            <div class="lg:col-span-6 flex flex-col gap-2">
+                <div class="relative glass-panel rounded-2xl border border-cyber-border overflow-hidden flex-1 flex flex-col min-h-[540px]">
+                    <div class="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-none gap-2">
+                        <div class="bg-slate-950/90 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-800 text-xs text-slate-300 font-mono pointer-events-auto flex items-center gap-2">
+                            <i class="fa-solid fa-hand-pointer text-cyber-cyan"></i>
+                            <span>Drag APs, Clients, & Obstacles to observe real-time attenuation</span>
+                        </div>
+
+                        <div id="roam-alert" class="hidden bg-cyber-green/20 border border-cyber-green/50 px-3 py-1.5 rounded-xl text-xs text-cyber-green font-mono font-bold animate-bounce pointer-events-auto">
+                            <i class="fa-solid fa-wifi mr-1"></i> 802.11r Fast Roam Handshake Triggered!
+                        </div>
+                    </div>
+
+                    <canvas id="sim-canvas" class="w-full h-full flex-1 bg-slate-950 cursor-crosshair"></canvas>
+
+                    <div class="bg-slate-900/90 border-t border-slate-800 px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-2 font-mono text-slate-400">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-cyber-cyan"></span>
+                            <span>Friis Log-Distance Path Loss Model</span>
+                        </div>
+                        <div class="flex items-center gap-4 text-[11px]">
+                            <span>Associated AP: <strong id="lbl-active-ap" class="text-cyber-cyan">Main Router</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Telemetry Sidebar -->
+            <div class="lg:col-span-3 flex flex-col gap-3">
+                <div class="glass-panel rounded-2xl p-4 border border-cyber-border flex flex-col gap-3">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <h2 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-gauge-high text-cyber-cyan"></i> Selected Node Telemetry HUD
+                        </h2>
+                        <span id="node-type-badge" class="px-2 py-0.5 rounded bg-cyber-cyan/20 text-cyber-cyan text-[10px] font-mono border border-cyber-cyan/40 font-bold">SMARTPHONE</span>
+                    </div>
+
+                    <!-- Signal Gauge -->
+                    <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs text-slate-400">Received Signal (RSSI)</span>
+                            <span id="tel-rssi" class="font-mono text-base font-bold text-cyber-green">-46 dBm</span>
+                        </div>
+                        <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden p-0.5">
+                            <div id="bar-rssi" class="h-full bg-gradient-to-r from-red-500 via-yellow-400 to-cyber-green rounded-full transition-all duration-300" style="width: 88%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Primary Stats Grid -->
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                            <span class="text-slate-400 text-[11px] block">Effective Throughput</span>
+                            <span id="tel-speed" class="text-base font-bold font-mono text-cyber-cyan">1,201 Mbps</span>
+                        </div>
+                        <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                            <span class="text-slate-400 text-[11px] block">Modulation Rate</span>
+                            <span id="tel-mcs" class="text-base font-bold font-mono text-cyber-purple">MCS 11 (1024-QAM)</span>
+                        </div>
+                        <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                            <span class="text-slate-400 text-[11px] block">Signal-to-Noise (SNR)</span>
+                            <span id="tel-snr" class="text-base font-bold font-mono text-white">49 dB</span>
+                        </div>
+                        <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                            <span class="text-slate-400 text-[11px] block">Est. Latency</span>
+                            <span id="tel-latency" class="text-base font-bold font-mono text-cyber-green">3 ms</span>
+                        </div>
+                    </div>
+
+                    <!-- Loss Factors Breakdown -->
+                    <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-xs font-mono space-y-1 text-[11px]">
+                        <div class="flex justify-between"><span class="text-slate-400">FSPL Path Loss:</span><span id="loss-fspl">-50.2 dB</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Obstacle Loss:</span><span id="loss-obstacles" class="text-cyber-yellow">-12.0 dB</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Noise Floor:</span><span class="text-slate-300">-95 dBm</span></div>
+                    </div>
+                </div>
+
+                <!-- Mesh Backhaul Telemetry Card -->
+                <div class="glass-panel rounded-2xl p-4 border border-cyber-border flex flex-col gap-2">
+                    <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center justify-between">
+                        <span><i class="fa-solid fa-network-wired text-cyber-purple mr-1"></i> Multi-Hop Mesh Link</span>
+                        <span id="mesh-backhaul-type" class="text-[10px] text-cyber-cyan font-mono">Dedicated 6GHz</span>
+                    </h3>
+                    <p id="mesh-status-desc" class="text-xs text-slate-400 leading-relaxed">Wireless backhaul established. Automatic 802.11k neighbor list active.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: WI-FI 7 DEEP-DIVE -->
+        <div id="view-wifi7" class="hidden flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4">
+            
+            <div class="lg:col-span-5 flex flex-col gap-4">
+                <div class="glass-panel rounded-2xl p-5 border border-cyber-border flex flex-col gap-3">
+                    <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+                        <i class="fa-solid fa-bolt text-cyber-yellow text-xl"></i>
+                        <div>
+                            <h2 class="text-sm font-bold text-white uppercase tracking-wider">Wi-Fi 7 (802.11be) Innovations</h2>
+                            <p class="text-xs text-slate-400">Next-Generation Extreme Throughput (EHT)</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 text-xs">
+                        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+                            <h4 class="font-bold text-cyber-cyan mb-1 flex items-center justify-between">
+                                <span>Multi-Link Operation (MLO)</span>
+                                <span class="text-[10px] bg-cyber-cyan/20 text-cyber-cyan px-2 py-0.5 rounded">STR Mode</span>
+                            </h4>
+                            <p class="text-slate-300 text-[11px] leading-relaxed">
+                                Allows devices to send and receive data simultaneously across multiple frequency bands (2.4 GHz, 5 GHz, 6 GHz), bypassing interference in real time.
+                            </p>
+                        </div>
+
+                        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+                            <h4 class="font-bold text-cyber-purple mb-1">4096-QAM Modulation</h4>
+                            <p class="text-slate-300 text-[11px] leading-relaxed">
+                                Encodes 12 bits per symbol (compared to 10 bits in 1024-QAM), yielding a 20% increase in peak data rates.
+                            </p>
+                        </div>
+
+                        <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+                            <h4 class="font-bold text-cyber-yellow mb-1">Preamble Puncturing</h4>
+                            <p class="text-slate-300 text-[11px] leading-relaxed">
+                                Rather than dropping an entire 160/320 MHz channel due to localized interference, Wi-Fi 7 "punctures" only the affected sub-channel while keeping the rest active.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl p-4 border border-cyber-border text-xs flex flex-col gap-2">
+                    <span class="text-slate-400 font-mono">Interactive Control:</span>
+                    <button onclick="toggleMLOMode()" class="w-full py-2.5 bg-cyber-purple/20 text-cyber-purple border border-cyber-purple/40 hover:bg-cyber-purple/30 font-bold rounded-xl text-xs transition">
+                        <i class="fa-solid fa-arrows-split-up-and-left mr-1"></i> Toggle MLO Mode (Simultaneous Multi-Band vs Single-Band)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Wi-Fi 7 Constellation Plot & Preamble Visualizer -->
+            <div class="lg:col-span-7 flex flex-col gap-4">
+                <div class="glass-panel rounded-2xl p-5 border border-cyber-border flex-1 flex flex-col justify-between gap-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">4096-QAM Constellation Symbol Map</h3>
+                        <span id="qam-status" class="text-xs font-mono text-cyber-cyan">12 Bits / Symbol Active</span>
+                    </div>
+
+                    <div class="w-full h-72 bg-slate-950 rounded-xl border border-slate-800 relative overflow-hidden flex items-center justify-center">
+                        <canvas id="qam-canvas" class="w-full h-full"></canvas>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 text-xs font-mono">
+                        <div class="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                            <span class="text-slate-400 block text-[11px]">Symbol Density</span>
+                            <span class="text-base font-bold text-cyber-cyan">4,096 Points</span>
+                        </div>
+                        <div class="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                            <span class="text-slate-400 block text-[11px]">EVN Target</span>
+                            <span class="text-base font-bold text-cyber-green">&lt; -38 dB</span>
+                        </div>
+                        <div class="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                            <span class="text-slate-400 block text-[11px]">Max Channel</span>
+                            <span class="text-base font-bold text-cyber-purple">320 MHz Wide</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 3: SPECTRUM & HIGHWAY ANIMATOR -->
+        <div id="view-spectrum" class="hidden flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4">
+            
+            <div class="lg:col-span-4 glass-panel rounded-2xl p-5 border border-cyber-border flex flex-col gap-4">
+                <div class="border-b border-slate-800 pb-3">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-chart-simple text-cyber-cyan"></i> RF Spectrum & Channel Bonding
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Visualize channel overlap, bonding, and sub-carrier allocation</p>
+                </div>
+
+                <div class="space-y-3 text-xs">
+                    <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+                        <h4 class="font-bold text-cyber-cyan mb-1">OFDMA (Orthogonal Frequency Division Multiple Access)</h4>
+                        <p class="text-[11px] text-slate-300 font-sans leading-relaxed">
+                            Splits channels into smaller Resource Units (RUs). Allows an AP to communicate with multiple devices simultaneously in a single time slot.
+                        </p>
+                    </div>
+
+                    <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+                        <h4 class="font-bold text-cyber-purple mb-1">MU-MIMO Spatial Streams</h4>
+                        <p class="text-[11px] text-slate-300 font-sans leading-relaxed">
+                            Uses multi-antenna arrays to transmit distinct beamformed spatial streams to separate devices at the exact same frequency.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-8 glass-panel rounded-2xl p-5 border border-cyber-border flex flex-col justify-between gap-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">OFDMA Spectrum Highway vs MU-MIMO Streams</h3>
+                    <span class="text-xs font-mono text-cyber-cyan">Live Resource Allocation</span>
+                </div>
+
+                <div class="w-full h-80 bg-slate-950 rounded-xl border border-slate-800 relative overflow-hidden">
+                    <canvas id="spectrum-canvas" class="w-full h-full"></canvas>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 text-xs font-mono">
+                    <div class="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                        <span class="text-slate-400 block text-[11px]">OFDMA RU Allocation</span>
+                        <span class="text-base font-bold text-cyber-cyan">26 / 52 / 106 Tones</span>
+                    </div>
+                    <div class="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                        <span class="text-slate-400 block text-[11px]">Spatial Streams</span>
+                        <span class="text-base font-bold text-cyber-purple">8x8 MU-MIMO</span>
+                    </div>
+                    <div class="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                        <span class="text-slate-400 block text-[11px]">Airtime Efficiency</span>
+                        <span class="text-base font-bold text-cyber-green">+400% in High Density</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 4: CSMA/CA PROTOCOL ENGINE -->
+        <div id="view-csmaca" class="hidden flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4">
+            
+            <div class="lg:col-span-4 glass-panel rounded-2xl p-5 border border-cyber-border flex flex-col justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2 border-b border-slate-800 pb-3 mb-3">
+                        <i class="fa-solid fa-diagram-project text-cyber-cyan text-xl"></i>
+                        <div>
+                            <h2 class="text-sm font-bold text-white uppercase tracking-wider">CSMA/CA Protocol Engine</h2>
+                            <p class="text-xs text-slate-400">Carrier Sense Multiple Access / Collision Avoidance</p>
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                        Because Wi-Fi radios are half-duplex, CSMA/CA uses Listen-Before-Talk (LBT) and exponential backoffs to share airtime without packet destruction.
+                    </p>
+
+                    <div class="space-y-3">
+                        <button onclick="runCSMACAStep()" class="w-full py-2.5 bg-cyber-cyan text-slate-950 font-bold rounded-xl text-xs hover:bg-cyan-300 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-play"></i> Step Next Protocol Phase
+                        </button>
+                        <button onclick="triggerPacketCollision()" class="w-full py-2.5 bg-red-500/20 text-red-300 border border-red-500/40 hover:bg-red-500/30 font-bold rounded-xl text-xs transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-explosion"></i> Simulate Airtime Collision
+                        </button>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+                    <span class="text-[10px] text-cyber-cyan font-mono font-bold block mb-1">ACTIVE PHASE STATUS</span>
+                    <p id="csmaca-status-text" class="text-xs text-slate-200 font-mono">Phase 1: Carrier Sensing (DIFS) - Checking if channel is clear...</p>
+                </div>
+            </div>
+
+            <div class="lg:col-span-8 glass-panel rounded-2xl p-5 border border-cyber-border flex flex-col justify-between gap-4">
+                <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">Packet Exchange Timeline Visualizer</h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-2 text-xs font-mono">
+                    <div id="cstep-1" class="p-3 rounded-xl bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan font-bold">1. DIFS / LBT</div>
+                    <div id="cstep-2" class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-500">2. Backoff Slot</div>
+                    <div id="cstep-3" class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-500">3. RTS / CTS</div>
+                    <div id="cstep-4" class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-500">4. Payload Frame</div>
+                    <div id="cstep-5" class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-500">5. ACK Receipt</div>
+                </div>
+
+                <div class="w-full h-64 bg-slate-950 rounded-xl border border-slate-800 relative overflow-hidden">
+                    <canvas id="csmaca-canvas" class="w-full h-full"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 5: SECURITY & WPA3 SANDBOX -->
+        <div id="view-security" class="hidden flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4">
+            
+            <div class="lg:col-span-5 glass-panel rounded-2xl p-5 border border-cyber-border flex flex-col gap-4">
+                <div class="border-b border-slate-800 pb-3">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-cyber-purple"></i> Security & Encryption Sandbox
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Explore WEP, WPA2 4-Way Handshake, and WPA3 Dragonfly SAE</p>
+                </div>
+
+                <div class="space-y-2 text-xs">
+                    <button onclick="setSecurityMode('wep')" class="w-full text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 transition">
+                        <div class="flex justify-between font-bold text-red-400"><span>WEP (Deprecated)</span><span>RC4 Stream (Broken)</span></div>
+                    </button>
+                    <button onclick="setSecurityMode('wpa2')" class="w-full text-left p-3 rounded-xl bg-cyber-purple/10 border border-cyber-purple/40 text-cyber-purple transition">
+                        <div class="flex justify-between font-bold"><span>WPA2-Personal</span><span>4-Way Handshake (AES-CCMP)</span></div>
+                    </button>
+                    <button onclick="setSecurityMode('wpa3')" class="w-full text-left p-3 rounded-xl bg-cyber-green/10 border border-cyber-green/40 text-cyber-green transition">
+                        <div class="flex justify-between font-bold"><span>WPA3-SAE</span><span>Dragonfly Key Exchange</span></div>
+                    </button>
+                </div>
+
+                <button onclick="triggerRogueAPAlert()" class="py-2.5 bg-red-500/20 text-red-300 border border-red-500/40 hover:bg-red-500/30 font-bold rounded-xl text-xs transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-user-ninja"></i> Trigger Evil Twin / Rogue AP Simulation
+                </button>
+            </div>
+
+            <div class="lg:col-span-7 glass-panel rounded-2xl p-5 border border-cyber-border flex flex-col justify-between gap-4">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h3 id="sec-title" class="text-xs font-bold text-cyber-green uppercase tracking-wider">WPA3-SAE (Simultaneous Authentication of Equals)</h3>
+                    <span id="sec-badge" class="px-2 py-0.5 rounded bg-cyber-green/20 text-cyber-green text-xs font-mono font-bold">Zero-Knowledge Proof</span>
+                </div>
+
+                <p id="sec-desc" class="text-xs text-slate-300 leading-relaxed">
+                    WPA3 uses the Dragonfly key exchange algorithm based on Elliptic Curve Cryptography. It prevents offline dictionary attacks and provides Forward Secrecy even if password is compromised later.
+                </p>
+
+                <div class="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-2 font-mono text-xs">
+                    <div class="text-cyber-cyan flex justify-between"><span>1. Commit Exchange:</span><span>P1 + Password -&gt; Scalar Element</span></div>
+                    <div class="text-cyber-purple flex justify-between"><span>2. Confirm Phase:</span><span>KCK Hash Verification</span></div>
+                    <div class="text-cyber-green flex justify-between"><span>3. Pairwise Master Key:</span><span>PMK Generated (No Dictionary Leak)</span></div>
+                </div>
+
+                <div id="rogue-alert-box" class="hidden p-3 bg-red-950/60 border border-red-500/50 rounded-xl text-red-200 text-xs flex items-center gap-2 animate-pulse">
+                    <i class="fa-solid fa-triangle-exclamation text-red-400 text-lg"></i>
+                    <span><strong>ROGUE AP DETECTED:</strong> Unencrypted BSSID mimicking target SSID! 802.11w Protected Management Frames (PMF) active.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 6: NETWORK DOCTOR & AUDITOR -->
+        <div id="view-doctor" class="hidden flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4">
+            
+            <div class="lg:col-span-4 glass-panel rounded-2xl p-5 border border-cyber-border flex flex-col justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2 border-b border-slate-800 pb-3 mb-3">
+                        <i class="fa-solid fa-stethoscope text-cyber-green text-xl"></i>
+                        <div>
+                            <h2 class="text-sm font-bold text-white uppercase tracking-wider">Network Doctor Auditor</h2>
+                            <p class="text-xs text-slate-400">Automated RF Health & Coverage Diagnostic</p>
+                        </div>
+                    </div>
+
+                    <button onclick="runNetworkAudit()" class="w-full py-2.5 bg-cyber-green text-slate-950 font-bold rounded-xl text-xs hover:bg-emerald-300 transition flex items-center justify-center gap-2 mb-3">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i> Execute Real-Time Floorplan Scan
+                    </button>
+
+                    <button onclick="window.print()" class="w-full py-2 bg-slate-800 text-slate-200 font-semibold rounded-xl text-xs hover:bg-slate-700 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-file-pdf"></i> Export Printable Diagnostic Audit
+                    </button>
+                </div>
+
+                <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 text-xs font-mono">
+                    <span class="text-slate-400 block text-[10px]">Overall Network Health Index</span>
+                    <span id="health-score" class="text-2xl font-bold text-cyber-green">94 / 100</span>
+                </div>
+            </div>
+
+            <div class="lg:col-span-8 glass-panel rounded-2xl p-5 border border-cyber-border flex flex-col justify-between gap-4">
+                <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">Diagnostic Findings & Optimization Recommendations</h3>
+
+                <div id="audit-results-list" class="space-y-3 text-xs">
+                    <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-start gap-3">
+                        <i class="fa-solid fa-circle-check text-cyber-green text-base mt-0.5"></i>
+                        <div>
+                            <h4 class="font-bold text-white">AP Placement Geometry</h4>
+                            <p class="text-slate-400 text-[11px] mt-0.5">Main router is centrally located. Minimal attenuation through load-bearing walls.</p>
+                        </div>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-start gap-3">
+                        <i class="fa-solid fa-triangle-exclamation text-cyber-yellow text-base mt-0.5"></i>
+                        <div>
+                            <h4 class="font-bold text-white">5 GHz Channel Width Recommendation</h4>
+                            <p class="text-slate-400 text-[11px] mt-0.5">Currently on 80 MHz. If high obstacle density is added, consider 40 MHz for improved link budget.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 7: CURRENT WI-FI NETWORK INSPECTOR -->
+        <div id="view-inspector" class="hidden flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4">
+            
+            <!-- Left Live Hardware Telemetry Panel -->
+            <div class="lg:col-span-4 flex flex-col gap-4">
+                <div class="glass-panel rounded-2xl p-5 border border-cyber-border flex flex-col gap-3">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-tower-broadcast text-cyber-cyan text-xl"></i>
+                            <div>
+                                <h2 class="text-sm font-bold text-white uppercase tracking-wider">Host Wi-Fi Telemetry</h2>
+                                <p class="text-[11px] text-slate-400">Network Information API & WebRTC Probing</p>
+                            </div>
+                        </div>
+                        <span id="live-online-status" class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyber-green/20 text-cyber-green border border-cyber-green/40 flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-cyber-green animate-ping"></span> ONLINE
+                        </span>
+                    </div>
+
+                    <!-- Live Hardware Meters -->
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                            <span class="text-slate-400 text-[11px] block">Downlink Bandwidth</span>
+                            <span id="live-downlink" class="text-lg font-bold font-mono text-cyber-cyan">-- Mbps</span>
+                            <span class="text-[10px] text-slate-500 block mt-0.5">Peak Interface Cap</span>
+                        </div>
+                        <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                            <span class="text-slate-400 text-[11px] block">Round-Trip Time (RTT)</span>
+                            <span id="live-rtt" class="text-lg font-bold font-mono text-cyber-green">-- ms</span>
+                            <span class="text-[10px] text-slate-500 block mt-0.5">Base Gateway Latency</span>
+                        </div>
+                        <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                            <span class="text-slate-400 text-[11px] block">Network Technology</span>
+                            <span id="live-type" class="text-sm font-bold font-mono text-cyber-purple">802.11 / Wi-Fi</span>
+                            <span id="live-effective-type" class="text-[10px] text-slate-500 block mt-0.5">Class: 4G/5G Tier</span>
+                        </div>
+                        <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                            <span class="text-slate-400 text-[11px] block">Local Subnet IP</span>
+                            <span id="live-ip" class="text-sm font-bold font-mono text-white truncate">Probing...</span>
+                            <span class="text-[10px] text-slate-500 block mt-0.5">Private Gateway Range</span>
+                        </div>
+                    </div>
+
+                    <!-- Band Classification Heuristic -->
+                    <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800 space-y-1 text-xs">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-400 text-[11px]">Probable Frequency Band:</span>
+                            <span id="live-band-guess" class="font-mono font-bold text-cyber-cyan px-2 py-0.5 rounded bg-cyber-cyan/10 border border-cyber-cyan/30 text-[11px]">5.0 GHz (802.11ac/ax)</span>
+                        </div>
+                        <div class="flex justify-between text-[11px] text-slate-400">
+                            <span>Data Saver Flag:</span>
+                            <span id="live-save-data" class="font-mono text-slate-300">Disabled</span>
+                        </div>
+                    </div>
+
+                    <!-- Real-Time Ping & Jitter Benchmark Button -->
+                    <button onclick="runLivePingBenchmark()" id="btn-ping-test" class="w-full py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-extrabold rounded-xl text-xs shadow-lg shadow-cyan-500/20 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-play"></i> Run Live Ping & Jitter Diagnostic
+                    </button>
+
+                    <!-- Import into Simulation Button -->
+                    <button onclick="syncLiveToSimulator()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs transition border border-slate-700 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-arrow-down-up-across-line text-cyber-purple"></i> Sync Detected Specs to RF Simulator
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Diagnostic Graphs & Spectrum Airspace Visualizer -->
+            <div class="lg:col-span-8 flex flex-col gap-4">
+                <!-- Ping / Jitter Monitor Card -->
+                <div class="glass-panel rounded-2xl p-5 border border-cyber-border flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-cyber-green"></i> Live Latency & Jitter Trace
+                        </h3>
+                        <div class="flex items-center gap-3 text-xs font-mono">
+                            <span class="text-slate-400">Min: <strong id="ping-min" class="text-cyber-green">--</strong></span>
+                            <span class="text-slate-400">Avg: <strong id="ping-avg" class="text-cyber-cyan">--</strong></span>
+                            <span class="text-slate-400">Jitter: <strong id="ping-jitter" class="text-cyber-yellow">--</strong></span>
+                        </div>
+                    </div>
+
+                    <div class="w-full h-44 bg-slate-950 rounded-xl border border-slate-800 relative overflow-hidden flex items-center justify-center">
+                        <canvas id="live-ping-canvas" class="w-full h-full"></canvas>
+                        <div id="ping-prompt" class="absolute text-xs text-slate-500 font-mono pointer-events-none">
+                            Click 'Run Live Ping & Jitter Diagnostic' to capture latency packets
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Available Wi-Fi Networks Airspace Scanner -->
+                <div class="glass-panel rounded-2xl p-5 border border-cyber-border flex flex-col gap-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                                    <i class="fa-solid fa-list-check text-cyber-cyan"></i> Airspace Wi-Fi Networks Scanner
+                                </h3>
+                                <span id="scan-count-badge" class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan/40">
+                                    6 Networks Detected
+                                </span>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-0.5">802.11 Beacon frame broadcast detection across 2.4 GHz, 5 GHz, and 6 GHz spectrum</p>
+                        </div>
+                        
+                        <div class="flex items-center gap-2">
+                            <button onclick="scanAirspaceNetworks()" id="btn-rescan-airspace" class="px-3 py-1.5 bg-cyber-cyan/20 hover:bg-cyber-cyan/30 text-cyber-cyan border border-cyber-cyan/40 rounded-xl text-xs font-mono font-semibold transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-arrows-rotate"></i> Scan Airspace
+                            </button>
+                            <button onclick="toggleAddNetworkModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl text-xs font-mono font-semibold transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-plus text-cyber-green"></i> Add Custom SSID
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filter Bar & Scanning Status Bar -->
+                    <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div class="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800 font-mono text-[11px]">
+                            <span class="text-slate-500 px-2">Filter:</span>
+                            <button id="filter-all" onclick="filterAirspaceNetworks('all')" class="px-2.5 py-1 rounded-lg bg-cyber-cyan text-slate-950 font-bold">All Bands</button>
+                            <button id="filter-24" onclick="filterAirspaceNetworks('2.4')" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white">2.4 GHz</button>
+                            <button id="filter-5" onclick="filterAirspaceNetworks('5')" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white">5.0 GHz</button>
+                            <button id="filter-6" onclick="filterAirspaceNetworks('6')" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white">6.0 GHz</button>
+                        </div>
+
+                        <!-- Progress Bar during Active Airspace Scan -->
+                        <div id="scan-progress-box" class="hidden flex-1 max-w-xs items-center gap-2">
+                            <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+                                <div id="scan-progress-bar" class="h-full bg-gradient-to-r from-cyan-500 to-purple-500 transition-all duration-200" style="width: 0%;"></div>
+                            </div>
+                            <span id="scan-freq-label" class="text-[10px] font-mono text-cyber-cyan whitespace-nowrap">Ch 36...</span>
+                        </div>
+                    </div>
+
+                    <!-- Available Networks Table / List -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs font-mono">
+                            <thead>
+                                <tr class="text-slate-400 border-b border-slate-800 text-[11px] pb-2">
+                                    <th class="py-2 px-2.5 font-semibold">SSID / Network Name</th>
+                                    <th class="py-2 px-2.5 font-semibold">Signal (RSSI)</th>
+                                    <th class="py-2 px-2.5 font-semibold">Band & Channel</th>
+                                    <th class="py-2 px-2.5 font-semibold">Standard</th>
+                                    <th class="py-2 px-2.5 font-semibold">Security</th>
+                                    <th class="py-2 px-2.5 text-right font-semibold">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="airspace-networks-body" class="divide-y divide-slate-800/60 text-slate-200">
+                                <!-- Populated dynamically by renderAirspaceNetworks() -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Native OS Terminal Commands for Real Hardware Beacon Scanning -->
+                    <div class="p-3.5 bg-slate-900/80 rounded-xl border border-slate-800 flex flex-col gap-2.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+                                <i class="fa-solid fa-terminal text-cyber-purple"></i> Pull Exact Real-World Airspace List From Your OS:
+                            </span>
+                            <span class="text-[10px] text-slate-500">Click to copy command</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                            <button onclick="copyTerminalCmd('win')" class="p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-cyber-cyan text-left transition group">
+                                <div class="flex justify-between items-center text-[10px] text-slate-400 group-hover:text-cyber-cyan">
+                                    <span>Windows (CMD / PowerShell)</span>
+                                    <i class="fa-regular fa-copy"></i>
+                                </div>
+                                <code class="text-[11px] text-slate-200 font-mono truncate block mt-0.5">netsh wlan show networks mode=bssid</code>
+                            </button>
+
+                            <button onclick="copyTerminalCmd('mac')" class="p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-cyber-purple text-left transition group">
+                                <div class="flex justify-between items-center text-[10px] text-slate-400 group-hover:text-cyber-purple">
+                                    <span>macOS (Terminal)</span>
+                                    <i class="fa-regular fa-copy"></i>
+                                </div>
+                                <code class="text-[11px] text-slate-200 font-mono truncate block mt-0.5">airport -s</code>
+                            </button>
+
+                            <button onclick="copyTerminalCmd('linux')" class="p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-cyber-green text-left transition group">
+                                <div class="flex justify-between items-center text-[10px] text-slate-400 group-hover:text-cyber-green">
+                                    <span>Linux (Bash)</span>
+                                    <i class="fa-regular fa-copy"></i>
+                                </div>
+                                <code class="text-[11px] text-slate-200 font-mono truncate block mt-0.5">nmcli dev wifi list</code>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Network Modal (Hidden by Default) -->
+                <div id="modal-add-network" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div class="glass-panel max-w-md w-full rounded-2xl p-5 border border-cyber-border shadow-2xl flex flex-col gap-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-wifi text-cyber-cyan"></i> Add Custom Wi-Fi Network
+                            </h3>
+                            <button onclick="toggleAddNetworkModal()" class="text-slate-400 hover:text-white text-base">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+
+                        <div class="space-y-3 text-xs font-mono">
+                            <div>
+                                <label class="text-slate-400 block mb-1">SSID Name</label>
+                                <input type="text" id="input-custom-ssid" placeholder="e.g., MyHome_Fiber_5G" class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-cyber-cyan">
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-slate-400 block mb-1">Band</label>
+                                    <select id="select-custom-band" class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-cyber-cyan">
+                                        <option value="5">5.0 GHz</option>
+                                        <option value="2.4">2.4 GHz</option>
+                                        <option value="6">6.0 GHz</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-slate-400 block mb-1">Channel</label>
+                                    <input type="number" id="input-custom-channel" value="36" class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-cyber-cyan">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-slate-400 block mb-1">Security</label>
+                                    <select id="select-custom-sec" class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-cyber-cyan">
+                                        <option value="WPA3-SAE">WPA3-SAE</option>
+                                        <option value="WPA2-PSK">WPA2-PSK</option>
+                                        <option value="Open">Open (None)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-slate-400 block mb-1">Signal (dBm)</label>
+                                    <input type="number" id="input-custom-rssi" value="-48" class="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-cyber-cyan">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+                            <button onclick="toggleAddNetworkModal()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs font-semibold hover:bg-slate-700">Cancel</button>
+                            <button onclick="submitCustomNetwork()" class="px-4 py-2 bg-cyber-cyan text-slate-950 font-bold rounded-xl text-xs hover:bg-cyan-300">Add to Airspace</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Toast Notification Box -->
+                <div id="toast-notify" class="hidden fixed bottom-6 right-6 z-50 bg-slate-900 border border-cyber-cyan/50 text-white px-4 py-2.5 rounded-xl shadow-2xl font-mono text-xs flex items-center gap-2 transition-all">
+                    <i class="fa-solid fa-circle-check text-cyber-green"></i>
+                    <span id="toast-text">Command copied to clipboard!</span>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Global State & Simulation Data
+        const simState = {
+            activeTab: 'sim',
+            band: '5',
+            channelWidth: 80,
+            txPower: 20,
+            beamforming: true,
+            roaming: true,
+            layers: { waves: true, heatmap: true, rays: true, mesh: true },
+            selectedNode: null,
+            isDragging: false,
+            mloMode: true,
+            securityMode: 'wpa3',
+            
+            // Nodes on Canvas
+            aps: [
+                { id: 'ap-main', type: 'ap', name: 'Main Router', x: 200, y: 220, isMain: true }
+            ],
+            devices: [
+                { id: 'dev-phone', type: 'phone', name: 'Smartphone', x: 420, y: 180 },
+                { id: 'dev-tv', type: 'tv', name: 'Smart TV', x: 480, y: 340 }
+            ],
+            obstacles: [
+                { id: 'obs-1', material: 'concrete', x1: 320, y1: 80, x2: 320, y2: 380, dbLoss: 12 }
+            ],
+            waveRadius: 0
+        };
+
+        // Material Loss Specs
+        const MAT_LOSS = {
+            concrete: 12,
+            drywall: 3,
+            glass: 2,
+            metal: 20,
+            water: 8
+        };
+
+        // DOM Element Cache
+        let canvas, ctx;
+        let qamCanvas, qamCtx;
+        let specCanvas, specCtx;
+        let csCanvas, csCtx;
+
+        // Hoisted function declarations ensure immediate availability on window
+        function switchTab(tabId) {
+            simState.activeTab = tabId;
+            const tabs = ['sim', 'inspector', 'wifi7', 'spectrum', 'csmaca', 'security', 'doctor'];
+            
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const view = document.getElementById(`view-${t}`);
+                if (btn && view) {
+                    if (t === tabId) {
+                        btn.classList.add('active');
+                        view.classList.remove('hidden');
+                        view.classList.add('grid');
+                    } else {
+                        btn.classList.remove('active');
+                        view.classList.add('hidden');
+                        view.classList.remove('grid');
+                    }
+                }
+            });
+
+            // Trigger canvas redraws when switching views with defensive dimension updates
+            if (tabId === 'wifi7') {
+                initQAMCanvas();
+                drawQAM();
+            } else if (tabId === 'spectrum') {
+                initSpectrumCanvas();
+                drawSpectrum();
+            } else if (tabId === 'csmaca') {
+                initCSMACACanvas();
+                drawCSMACA();
+            } else if (tabId === 'inspector') {
+                initPingCanvas();
+                inspectCurrentNetwork();
+            } else if (tabId === 'sim') {
+                resizeCanvas();
+            }
+        }
+
+        function setBand(b) {
+            simState.band = b;
+            ['24', '5', '6'].forEach(id => {
+                const btn = document.getElementById(`band-${id}`);
+                if (btn) {
+                    if ((id === '24' && b === '2.4') || (id === '5' && b === '5') || (id === '6' && b === '6')) {
+                        btn.className = "py-1.5 rounded-lg font-bold bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan/30";
+                    } else {
+                        btn.className = "py-1.5 rounded-lg font-bold text-slate-400 hover:text-white";
+                    }
+                }
+            });
+            updateTelemetryHUD();
+        }
+
+        function setChannelWidth(w) {
+            simState.channelWidth = w;
+            const lbl = document.getElementById('lbl-channel-width');
+            if (lbl) lbl.innerText = `${w} MHz`;
+            updateChannelWidthButtonsUI();
+            updateTelemetryHUD();
+        }
+
+        function updateChannelWidthButtonsUI() {
+            const widths = [20, 40, 80, 160, 320];
+            widths.forEach(w => {
+                const btn = document.getElementById(`cw-${w}`);
+                if (btn) {
+                    if (w === simState.channelWidth) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                }
+            });
+        }
+
+        function updateTxPower(val) {
+            simState.txPower = parseInt(val, 10);
+            const mW = Math.round(Math.pow(10, simState.txPower / 10));
+            const lbl = document.getElementById('lbl-tx-power');
+            if (lbl) lbl.innerText = `${simState.txPower} dBm (${mW}mW)`;
+            updateTelemetryHUD();
+        }
+
+        function toggleBeamforming(val) { simState.beamforming = val; }
+        function toggleRoaming(val) { simState.roaming = val; }
+        function toggleLayer(layer, val) { simState.layers[layer] = val; }
+
+        // Bind all functions to window for inline onclick/oninput compatibility
+        window.switchTab = switchTab;
+        window.setBand = setBand;
+        window.setChannelWidth = setChannelWidth;
+        window.updateTxPower = updateTxPower;
+        window.toggleBeamforming = toggleBeamforming;
+        window.toggleRoaming = toggleRoaming;
+        window.toggleLayer = toggleLayer;
+
+        function initCanvas() {
+            canvas = document.getElementById('sim-canvas');
+            if (!canvas) return;
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // Dragging Interaction Setup
+            canvas.addEventListener('pointerdown', handlePointerDown);
+            canvas.addEventListener('pointermove', handlePointerMove);
+            canvas.addEventListener('pointerup', handlePointerUp);
+            canvas.addEventListener('pointercancel', handlePointerUp);
+        }
+
+        function resizeCanvas() {
+            if (!canvas || !canvas.parentElement) return;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+            }
+        }
+
+        function simLoop() {
+            if (simState.activeTab === 'sim' && ctx && canvas && canvas.width > 0) {
+                drawSimulation();
+            }
+            requestAnimationFrame(simLoop);
+        }
+
+        function drawSimulation() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Grid lines
+            ctx.strokeStyle = 'rgba(30, 41, 59, 0.4)';
+            ctx.lineWidth = 1;
+            const gridSize = 40;
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
+
+            // Draw Heatmap Overlay
+            if (simState.layers.heatmap && simState.aps.length > 0) {
+                drawHeatmap();
+            }
+
+            // Draw Wave Pulses
+            if (simState.layers.waves) {
+                simState.waveRadius = (simState.waveRadius + 1.5) % 180;
+                simState.aps.forEach(ap => {
+                    ctx.beginPath();
+                    ctx.arc(ap.x, ap.y, simState.waveRadius, 0, Math.PI * 2);
+                    ctx.strokeStyle = ap.isMain ? 'rgba(0, 240, 255, 0.3)' : 'rgba(139, 92, 246, 0.3)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                });
+            }
+
+            // Draw Rays to Devices
+            if (simState.layers.rays && simState.aps.length > 0) {
+                const mainAP = simState.aps[0];
+                simState.devices.forEach(dev => {
+                    ctx.beginPath();
+                    ctx.moveTo(mainAP.x, mainAP.y);
+                    ctx.lineTo(dev.x, dev.y);
+                    ctx.strokeStyle = simState.beamforming ? 'rgba(0, 240, 255, 0.6)' : 'rgba(255, 255, 255, 0.15)';
+                    ctx.lineWidth = simState.beamforming ? 2 : 1;
+                    ctx.setLineDash(simState.beamforming ? [4, 4] : []);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                });
+            }
+
+            // Draw Mesh Connections
+            if (simState.layers.mesh && simState.aps.length > 1) {
+                const mainAP = simState.aps[0];
+                for (let i = 1; i < simState.aps.length; i++) {
+                    const ext = simState.aps[i];
+                    ctx.beginPath();
+                    ctx.moveTo(mainAP.x, mainAP.y);
+                    ctx.lineTo(ext.x, ext.y);
+                    ctx.strokeStyle = '#8b5cf6';
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([6, 6]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+            }
+
+            // Draw Obstacles
+            simState.obstacles.forEach(obs => {
+                ctx.beginPath();
+                ctx.moveTo(obs.x1, obs.y1);
+                ctx.lineTo(obs.x2, obs.y2);
+                ctx.lineWidth = 8;
+                
+                if (obs.material === 'concrete') ctx.strokeStyle = '#64748b';
+                else if (obs.material === 'drywall') ctx.strokeStyle = '#b45309';
+                else if (obs.material === 'glass') ctx.strokeStyle = '#38bdf8';
+                else if (obs.material === 'metal') ctx.strokeStyle = '#22d3ee';
+                else ctx.strokeStyle = '#2563eb';
+
+                ctx.stroke();
+            });
+
+            // Draw APs
+            simState.aps.forEach(ap => {
+                ctx.beginPath();
+                ctx.arc(ap.x, ap.y, 16, 0, Math.PI * 2);
+                ctx.fillStyle = ap.isMain ? '#00f0ff' : '#8b5cf6';
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.fillStyle = '#05070c';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(ap.isMain ? 'AP' : 'M', ap.x, ap.y + 4);
+            });
+
+            // Draw Devices
+            simState.devices.forEach(dev => {
+                ctx.beginPath();
+                ctx.arc(dev.x, dev.y, 12, 0, Math.PI * 2);
+                ctx.fillStyle = simState.selectedNode === dev ? '#10b981' : '#334155';
+                ctx.fill();
+                ctx.strokeStyle = '#00f0ff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '10px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(dev.name[0], dev.x, dev.y + 3);
+            });
+        }
+
+        function drawHeatmap() {
+            if (!simState.aps || simState.aps.length === 0) return;
+            const mainAP = simState.aps[0];
+            const gradient = ctx.createRadialGradient(mainAP.x, mainAP.y, 20, mainAP.x, mainAP.y, 350);
+            gradient.addColorStop(0, 'rgba(0, 240, 255, 0.25)');
+            gradient.addColorStop(0.5, 'rgba(139, 92, 246, 0.12)');
+            gradient.addColorStop(1, 'rgba(5, 7, 12, 0)');
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(mainAP.x, mainAP.y, 350, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function handlePointerDown(e) {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            // Check APs
+            for (let ap of simState.aps) {
+                if (Math.hypot(ap.x - mouseX, ap.y - mouseY) < 22) {
+                    simState.selectedNode = ap;
+                    simState.isDragging = true;
+                    return;
+                }
+            }
+
+            // Check Devices
+            for (let dev of simState.devices) {
+                if (Math.hypot(dev.x - mouseX, dev.y - mouseY) < 20) {
+                    simState.selectedNode = dev;
+                    simState.isDragging = true;
+                    const badge = document.getElementById('node-type-badge');
+                    if (badge) badge.innerText = dev.name.toUpperCase();
+                    updateTelemetryHUD();
+                    return;
+                }
+            }
+        }
+
+        function handlePointerMove(e) {
+            if (!simState.isDragging || !simState.selectedNode) return;
+            const rect = canvas.getBoundingClientRect();
+            simState.selectedNode.x = e.clientX - rect.left;
+            simState.selectedNode.y = e.clientY - rect.top;
+
+            // Roaming trigger logic
+            if (simState.roaming && simState.aps.length > 1 && simState.selectedNode.type !== 'ap') {
+                const distToMain = Math.hypot(simState.selectedNode.x - simState.aps[0].x, simState.selectedNode.y - simState.aps[0].y);
+                const distToExt = Math.hypot(simState.selectedNode.x - simState.aps[1].x, simState.selectedNode.y - simState.aps[1].y);
+                
+                const roamAlert = document.getElementById('roam-alert');
+                const lblActiveAp = document.getElementById('lbl-active-ap');
+                if (distToExt < distToMain) {
+                    if (roamAlert) roamAlert.classList.remove('hidden');
+                    if (lblActiveAp) lblActiveAp.innerText = 'Mesh Extender (802.11r BSS)';
+                } else {
+                    if (roamAlert) roamAlert.classList.add('hidden');
+                    if (lblActiveAp) lblActiveAp.innerText = 'Main Router';
+                }
+            }
+
+            updateTelemetryHUD();
+        }
+
+        function handlePointerUp() {
+            simState.isDragging = false;
+        }
+
+        function addMeshNode() {
+            simState.aps.push({ id: `mesh-${Date.now()}`, type: 'mesh', name: 'Mesh Extender', x: 500, y: 150, isMain: false });
+        }
+
+        function addObstacle(mat) {
+            simState.obstacles.push({
+                id: `obs-${Date.now()}`,
+                material: mat,
+                x1: 250 + Math.random() * 100,
+                y1: 100,
+                x2: 250 + Math.random() * 100,
+                y2: 350,
+                dbLoss: MAT_LOSS[mat] || 5
+            });
+            updateTelemetryHUD();
+        }
+
+        function addDevice(type) {
+            simState.devices.push({
+                id: `dev-${Date.now()}`,
+                type: type,
+                name: type === 'phone' ? 'Smartphone' : 'Smart TV',
+                x: 350 + Math.random() * 100,
+                y: 200 + Math.random() * 100
+            });
+            updateTelemetryHUD();
+        }
+
+        function resetFloorplan() {
+            simState.aps = [{ id: 'ap-main', type: 'ap', name: 'Main Router', x: 200, y: 220, isMain: true }];
+            simState.devices = [{ id: 'dev-phone', type: 'phone', name: 'Smartphone', x: 420, y: 180 }];
+            simState.obstacles = [{ id: 'obs-1', material: 'concrete', x1: 320, y1: 80, x2: 320, y2: 380, dbLoss: 12 }];
+            simState.selectedNode = simState.devices[0];
+            const badge = document.getElementById('node-type-badge');
+            if (badge) badge.innerText = 'SMARTPHONE';
+            updateTelemetryHUD();
+        }
+
+        window.addMeshNode = addMeshNode;
+        window.addObstacle = addObstacle;
+        window.addDevice = addDevice;
+        window.resetFloorplan = resetFloorplan;
+
+        function updateTelemetryHUD() {
+            if (!simState.devices || simState.devices.length === 0 || !simState.aps || simState.aps.length === 0) return;
+            const dev = simState.selectedNode && simState.selectedNode.type !== 'ap' ? simState.selectedNode : simState.devices[0];
+            const ap = simState.aps[0];
+            
+            const distPixels = Math.hypot(dev.x - ap.x, dev.y - ap.y);
+            const distMeters = Math.max(1, distPixels / 20);
+
+            // Free-Space Path Loss (FSPL) Formula
+            const freqGHz = parseFloat(simState.band) || 5;
+            const fspl = 20 * Math.log10(distMeters) + 20 * Math.log10(freqGHz * 1000) - 27.55;
+
+            // Obstacle Attenuation
+            let obsLoss = 0;
+            simState.obstacles.forEach(o => { obsLoss += o.dbLoss; });
+
+            const rssi = Math.round(simState.txPower - fspl - obsLoss);
+            const snr = Math.max(0, rssi - (-95)); // -95 dBm noise floor
+
+            // Throughput calculation approximation
+            let maxSpeed = simState.channelWidth * 15;
+            if (simState.band === '6') maxSpeed *= 1.4;
+            const speed = Math.round(Math.max(10, maxSpeed * (snr / 50)));
+
+            const telRssi = document.getElementById('tel-rssi');
+            const telSpeed = document.getElementById('tel-speed');
+            const telSnr = document.getElementById('tel-snr');
+            const lossFspl = document.getElementById('loss-fspl');
+            const lossObs = document.getElementById('loss-obstacles');
+
+            if (telRssi) telRssi.innerText = `${rssi} dBm`;
+            if (telSpeed) telSpeed.innerText = `${speed.toLocaleString()} Mbps`;
+            if (telSnr) telSnr.innerText = `${snr} dB`;
+            if (lossFspl) lossFspl.innerText = `-${fspl.toFixed(1)} dB`;
+            if (lossObs) lossObs.innerText = `-${obsLoss.toFixed(1)} dB`;
+
+            const bar = document.getElementById('bar-rssi');
+            if (bar) bar.style.width = `${Math.min(100, Math.max(5, rssi + 100))}%`;
+        }
+
+        function initQAMCanvas() {
+            qamCanvas = document.getElementById('qam-canvas');
+            if (!qamCanvas || !qamCanvas.parentElement) return;
+            qamCtx = qamCanvas.getContext('2d');
+            const w = qamCanvas.parentElement.clientWidth || 400;
+            const h = qamCanvas.parentElement.clientHeight || 280;
+            qamCanvas.width = w;
+            qamCanvas.height = h;
+            drawQAM();
+        }
+
+        function drawQAM() {
+            if (!qamCtx || !qamCanvas || qamCanvas.width === 0) return;
+            qamCtx.clearRect(0, 0, qamCanvas.width, qamCanvas.height);
+            const cols = 32; const rows = 32;
+            const stepX = qamCanvas.width / cols;
+            const stepY = qamCanvas.height / rows;
+
+            qamCtx.fillStyle = '#00f0ff';
+            for (let i = 0; i < cols; i++) {
+                for (let j = 0; j < rows; j++) {
+                    const jitterX = (Math.random() - 0.5) * 2;
+                    const jitterY = (Math.random() - 0.5) * 2;
+                    qamCtx.fillRect(i * stepX + stepX/2 + jitterX, j * stepY + stepY/2 + jitterY, 2, 2);
+                }
+            }
+        }
+
+        function toggleMLOMode() {
+            simState.mloMode = !simState.mloMode;
+            const status = document.getElementById('qam-status');
+            if (status) status.innerText = simState.mloMode ? 'MLO Active (2.4 + 5 + 6 GHz)' : 'Single Link Active (5 GHz Only)';
+        }
+        window.toggleMLOMode = toggleMLOMode;
+
+        function initSpectrumCanvas() {
+            specCanvas = document.getElementById('spectrum-canvas');
+            if (!specCanvas || !specCanvas.parentElement) return;
+            specCtx = specCanvas.getContext('2d');
+            const w = specCanvas.parentElement.clientWidth || 500;
+            const h = specCanvas.parentElement.clientHeight || 300;
+            specCanvas.width = w;
+            specCanvas.height = h;
+            drawSpectrum();
+        }
+
+        function drawSpectrum() {
+            if (!specCtx || !specCanvas || specCanvas.width === 0) return;
+            specCtx.clearRect(0, 0, specCanvas.width, specCanvas.height);
+            
+            const w = specCanvas.width;
+            const h = specCanvas.height;
+
+            specCtx.strokeStyle = 'rgba(255,255,255,0.15)';
+            specCtx.lineWidth = 1;
+            specCtx.beginPath();
+            specCtx.moveTo(20, h - 30);
+            specCtx.lineTo(w - 20, h - 30);
+            specCtx.stroke();
+
+            const channels = [
+                { center: w * 0.22, width: w * 0.28, color: 'rgba(0, 240, 255, 0.8)', name: 'CH 36 (80MHz)' },
+                { center: w * 0.50, width: w * 0.28, color: 'rgba(139, 92, 246, 0.8)', name: 'CH 52 (80MHz DFS)' },
+                { center: w * 0.78, width: w * 0.28, color: 'rgba(16, 185, 129, 0.8)', name: 'CH 100 (80MHz)' }
+            ];
+
+            channels.forEach(ch => {
+                specCtx.beginPath();
+                specCtx.moveTo(ch.center - ch.width / 2, h - 30);
+                specCtx.quadraticCurveTo(ch.center, 50, ch.center + ch.width / 2, h - 30);
+                specCtx.strokeStyle = ch.color;
+                specCtx.lineWidth = 3;
+                specCtx.stroke();
+
+                specCtx.fillStyle = ch.color;
+                specCtx.font = 'bold 11px monospace';
+                specCtx.textAlign = 'center';
+                specCtx.fillText(ch.name, ch.center, h - 40);
+            });
+        }
+
+        let csmaStep = 1;
+        function initCSMACACanvas() {
+            csCanvas = document.getElementById('csmaca-canvas');
+            if (!csCanvas || !csCanvas.parentElement) return;
+            csCtx = csCanvas.getContext('2d');
+            const w = csCanvas.parentElement.clientWidth || 500;
+            const h = csCanvas.parentElement.clientHeight || 200;
+            csCanvas.width = w;
+            csCanvas.height = h;
+            drawCSMACA();
+        }
+
+        function drawCSMACA() {
+            if (!csCtx || !csCanvas || csCanvas.width === 0) return;
+            csCtx.clearRect(0, 0, csCanvas.width, csCanvas.height);
+            
+            csCtx.fillStyle = '#1e293b';
+            csCtx.fillRect(20, csCanvas.height / 2 - 15, csCanvas.width - 40, 30);
+
+            csCtx.fillStyle = '#00f0ff';
+            const pos = (csmaStep / 5) * (csCanvas.width - 40);
+            csCtx.fillRect(20, csCanvas.height / 2 - 15, pos, 30);
+
+            csCtx.beginPath();
+            csCtx.arc(20 + pos, csCanvas.height / 2, 8, 0, Math.PI * 2);
+            csCtx.fillStyle = '#ffffff';
+            csCtx.fill();
+        }
+
+        function runCSMACAStep() {
+            csmaStep = (csmaStep % 5) + 1;
+            drawCSMACA();
+
+            for (let i = 1; i <= 5; i++) {
+                const el = document.getElementById(`cstep-${i}`);
+                if (el) {
+                    if (i === csmaStep) {
+                        el.className = "p-3 rounded-xl bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan font-bold";
+                    } else {
+                        el.className = "p-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-500";
+                    }
+                }
+            }
+
+            const statusTexts = [
+                "Phase 1: DIFS / Listen-Before-Talk Carrier Sense...",
+                "Phase 2: Random Contention Backoff Window active...",
+                "Phase 3: Request-to-Send (RTS) / Clear-to-Send (CTS) Handshake...",
+                "Phase 4: High-throughput Data Frame Airtime Transmission...",
+                "Phase 5: Block ACK Transmission Confirmation Received!"
+            ];
+            const statusEl = document.getElementById('csmaca-status-text');
+            if (statusEl) statusEl.innerText = statusTexts[csmaStep - 1];
+        }
+
+        function triggerPacketCollision() {
+            const statusEl = document.getElementById('csmaca-status-text');
+            if (statusEl) statusEl.innerText = "COLLISION DETECTED! Airtime corrupted. Doubling Contention Window Backoff Range...";
+        }
+
+        window.runCSMACAStep = runCSMACAStep;
+        window.triggerPacketCollision = triggerPacketCollision;
+
+        function setSecurityMode(mode) {
+            simState.securityMode = mode;
+            const title = document.getElementById('sec-title');
+            const desc = document.getElementById('sec-desc');
+            const badge = document.getElementById('sec-badge');
+
+            if (!title || !desc || !badge) return;
+
+            if (mode === 'wep') {
+                title.innerText = "WEP (Wired Equivalent Privacy)";
+                desc.innerText = "Uses weak 24-bit Initialization Vectors (IV) with RC4 stream cipher. Vulnerable to total key recovery in minutes via statistical FMS/KoreK attacks.";
+                badge.innerText = "Deprecated / Insecure";
+                badge.className = "px-2 py-0.5 rounded bg-red-500/20 text-red-400 text-xs font-mono font-bold";
+            } else if (mode === 'wpa2') {
+                title.innerText = "WPA2-Personal (AES-CCMP)";
+                desc.innerText = "Uses 4-Way Handshake to establish Pairwise Transient Key (PTK). Vulnerable to offline 4-way dictionary capture (KRACK & Hashcat brute-force) if passphrases lack entropy.";
+                badge.innerText = "Legacy Standard";
+                badge.className = "px-2 py-0.5 rounded bg-cyber-purple/20 text-cyber-purple text-xs font-mono font-bold";
+            } else {
+                title.innerText = "WPA3-SAE (Simultaneous Authentication of Equals)";
+                desc.innerText = "Uses the Dragonfly key exchange algorithm based on Elliptic Curve Cryptography. Prevents offline dictionary attacks and enforces Protected Management Frames (PMF).";
+                badge.innerText = "Zero-Knowledge Security";
+                badge.className = "px-2 py-0.5 rounded bg-cyber-green/20 text-cyber-green text-xs font-mono font-bold";
+            }
+        }
+
+        function triggerRogueAPAlert() {
+            const box = document.getElementById('rogue-alert-box');
+            if (box) box.classList.remove('hidden');
+        }
+
+        function runNetworkAudit() {
+            const score = document.getElementById('health-score');
+            if (score) score.innerText = "96 / 100";
+            const list = document.getElementById('audit-results-list');
+            if (list) {
+                list.innerHTML = `
+                    <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-start gap-3">
+                        <i class="fa-solid fa-circle-check text-cyber-green text-base mt-0.5"></i>
+                        <div>
+                            <h4 class="font-bold text-white">Path Loss & SNR Budget</h4>
+                            <p class="text-slate-400 text-[11px] mt-0.5">All active client nodes maintain &gt;25 dB SNR. MCS rates operating at maximum QAM efficiency.</p>
+                        </div>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-start gap-3">
+                        <i class="fa-solid fa-circle-check text-cyber-cyan text-base mt-0.5"></i>
+                        <div>
+                            <h4 class="font-bold text-white">802.11k/v Neighbor Reports</h4>
+                            <p class="text-slate-400 text-[11px] mt-0.5">Mesh topology beacon intervals optimized. Fast BSS Transition (802.11r) keys cached.</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        window.setSecurityMode = setSecurityMode;
+        window.triggerRogueAPAlert = triggerRogueAPAlert;
+        window.runNetworkAudit = runNetworkAudit;
+
+        // Live Network Inspector Variables & State
+        let pingHistory = [];
+        let pingCanvas, pingCtx;
+        let isPinging = false;
+        let isAirspaceScanning = false;
+        let airspaceBandFilter = 'all';
+
+        let detectedNetworkStats = {
+            downlink: 100,
+            rtt: 20,
+            effectiveType: '4g',
+            band: '5',
+            estimatedRssi: -52
+        };
+
+        // Available Networks Airspace Database
+        let airspaceNetworks = [
+            {
+                id: 'net-current',
+                ssid: 'Current_Connected_BSS',
+                bssid: 'A4:2B:B0:18:94:E1',
+                rssi: -45,
+                band: '5',
+                channel: 36,
+                channelWidth: 80,
+                standard: 'Wi-Fi 6 (802.11ax)',
+                security: 'WPA3-SAE',
+                isConnected: true
+            },
+            {
+                id: 'net-mesh-ext',
+                ssid: 'AeroLink_Mesh_Office',
+                bssid: 'BC:FE:D9:42:11:80',
+                rssi: -58,
+                band: '5',
+                channel: 44,
+                channelWidth: 80,
+                standard: 'Wi-Fi 6 (802.11ax)',
+                security: 'WPA3-SAE',
+                isConnected: false
+            },
+            {
+                id: 'net-be-ultra',
+                ssid: 'Quantum_7_EHT320',
+                bssid: '98:48:27:01:DF:72',
+                rssi: -52,
+                band: '6',
+                channel: 69,
+                channelWidth: 320,
+                standard: 'Wi-Fi 7 (802.11be)',
+                security: 'WPA3-SAE',
+                isConnected: false
+            },
+            {
+                id: 'net-guest',
+                ssid: 'Guest_HighSpeed_Open',
+                bssid: '30:91:8F:7C:E0:12',
+                rssi: -67,
+                band: '2.4',
+                channel: 6,
+                channelWidth: 20,
+                standard: 'Wi-Fi 5 (802.11ac)',
+                security: 'Open',
+                isConnected: false
+            },
+            {
+                id: 'net-iot',
+                ssid: 'SmartHome_IoT_Hub',
+                bssid: 'E8:65:D4:A2:88:51',
+                rssi: -72,
+                band: '2.4',
+                channel: 1,
+                channelWidth: 20,
+                standard: 'Wi-Fi 4 (802.11n)',
+                security: 'WPA2-PSK',
+                isConnected: false
+            },
+            {
+                id: 'net-neighbor',
+                ssid: 'Neighbor_Net_5G',
+                bssid: '70:85:C2:55:09:AF',
+                rssi: -81,
+                band: '5',
+                channel: 149,
+                channelWidth: 40,
+                standard: 'Wi-Fi 5 (802.11ac)',
+                security: 'WPA2-PSK',
+                isConnected: false
+            }
+        ];
+
+        function renderAirspaceNetworks() {
+            const tbody = document.getElementById('airspace-networks-body');
+            const countBadge = document.getElementById('scan-count-badge');
+            if (!tbody) return;
+
+            const filtered = airspaceNetworks.filter(net => {
+                if (airspaceBandFilter === 'all') return true;
+                return net.band === airspaceBandFilter;
+            });
+
+            if (countBadge) countBadge.innerText = `${filtered.length} Networks Detected`;
+
+            tbody.innerHTML = '';
+            filtered.forEach(net => {
+                // Signal color & bars
+                let sigColor = 'text-cyber-green';
+                let bars = 4;
+                if (net.rssi < -78) {
+                    sigColor = 'text-red-400'; bars = 1;
+                } else if (net.rssi < -68) {
+                    sigColor = 'text-cyber-yellow'; bars = 2;
+                } else if (net.rssi < -55) {
+                    sigColor = 'text-cyber-cyan'; bars = 3;
+                }
+
+                // Security badge
+                let secBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-cyber-green/20 text-cyber-green border border-cyber-green/40">${net.security}</span>`;
+                if (net.security === 'Open') {
+                    secBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-red-500/20 text-red-400 border border-red-500/40">Open</span>`;
+                } else if (net.security === 'WPA2-PSK') {
+                    secBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-cyber-purple/20 text-cyber-purple border border-cyber-purple/40">WPA2</span>`;
+                }
+
+                // Wi-Fi Standard badge
+                let stdBadge = net.standard.includes('Wi-Fi 7') 
+                    ? `<span class="text-cyber-yellow font-bold">${net.standard}</span>` 
+                    : (net.standard.includes('Wi-Fi 6') ? `<span class="text-cyber-cyan font-bold">${net.standard}</span>` : `<span class="text-slate-400">${net.standard}</span>`);
+
+                const tr = document.createElement('tr');
+                tr.className = `hover:bg-slate-900/50 transition-colors ${net.isConnected ? 'bg-cyber-cyan/5 border-l-2 border-cyber-cyan' : ''}`;
+                tr.innerHTML = `
+                    <td class="py-3 px-2.5">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-wifi ${sigColor}"></i>
+                            <div>
+                                <span class="font-bold text-white block">${net.ssid}</span>
+                                <span class="text-[10px] text-slate-500 font-mono">${net.bssid} ${net.isConnected ? '<span class="text-cyber-green font-bold ml-1">• Connected</span>' : ''}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3 px-2.5">
+                        <span class="font-bold ${sigColor}">${net.rssi} dBm</span>
+                        <div class="flex items-center gap-0.5 mt-1">
+                            ${[1,2,3,4].map(b => `<span class="w-1 h-${b*1.5} rounded-xs ${b <= bars ? 'bg-cyber-cyan' : 'bg-slate-800'}"></span>`).join('')}
+                        </div>
+                    </td>
+                    <td class="py-3 px-2.5">
+                        <span class="font-bold text-slate-200">${net.band} GHz</span>
+                        <span class="text-[10px] text-slate-400 block">Ch ${net.channel} (${net.channelWidth} MHz)</span>
+                    </td>
+                    <td class="py-3 px-2.5">${stdBadge}</td>
+                    <td class="py-3 px-2.5">${secBadge}</td>
+                    <td class="py-3 px-2.5 text-right">
+                        ${net.isConnected 
+                            ? `<span class="px-2 py-1 bg-cyber-green/20 text-cyber-green rounded-lg text-[10px] font-bold">Active Link</span>`
+                            : `<button onclick="connectAirspaceNetwork('${net.id}')" class="px-2.5 py-1 bg-slate-800 hover:bg-cyber-cyan hover:text-slate-950 text-slate-300 font-bold rounded-lg text-[10px] transition border border-slate-700">Connect &amp; Test</button>`
+                        }
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterAirspaceNetworks(band) {
+            airspaceBandFilter = band;
+            ['all', '24', '5', '6'].forEach(id => {
+                const btn = document.getElementById(`filter-${id}`);
+                if (btn) {
+                    if ((id === 'all' && band === 'all') || (id === '24' && band === '2.4') || (id === '5' && band === '5') || (id === '6' && band === '6')) {
+                        btn.className = "px-2.5 py-1 rounded-lg bg-cyber-cyan text-slate-950 font-bold";
+                    } else {
+                        btn.className = "px-2.5 py-1 rounded-lg text-slate-400 hover:text-white";
+                    }
+                }
+            });
+            renderAirspaceNetworks();
+        }
+
+        async function scanAirspaceNetworks() {
+            if (isAirspaceScanning) return;
+            isAirspaceScanning = true;
+
+            const btn = document.getElementById('btn-rescan-airspace');
+            const pbox = document.getElementById('scan-progress-box');
+            const pbar = document.getElementById('scan-progress-bar');
+            const plbl = document.getElementById('scan-freq-label');
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Scanning Frequencies...`;
+            }
+            if (pbox) pbox.classList.remove('hidden');
+
+            const channelsToProbe = [
+                { ch: 1, band: '2.4 GHz' },
+                { ch: 6, band: '2.4 GHz' },
+                { ch: 11, band: '2.4 GHz' },
+                { ch: 36, band: '5.0 GHz' },
+                { ch: 48, band: '5.0 GHz' },
+                { ch: 149, band: '5.0 GHz' },
+                { ch: 69, band: '6.0 GHz' },
+                { ch: 117, band: '6.0 GHz' }
+            ];
+
+            for (let i = 0; i < channelsToProbe.length; i++) {
+                const target = channelsToProbe[i];
+                const pct = Math.round(((i + 1) / channelsToProbe.length) * 100);
+                if (pbar) pbar.style.width = `${pct}%`;
+                if (plbl) plbl.innerText = `Probing ${target.band} Ch ${target.ch}...`;
+
+                // Slight dynamic signal jitter to reflect real radio noise
+                airspaceNetworks.forEach(n => {
+                    if (Math.random() > 0.4) {
+                        n.rssi = Math.max(-92, Math.min(-35, n.rssi + Math.round((Math.random() - 0.5) * 4)));
+                    }
+                });
+                renderAirspaceNetworks();
+                await new Promise(r => setTimeout(r, 180));
+            }
+
+            if (pbox) pbox.classList.add('hidden');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-arrows-rotate mr-1"></i> Scan Airspace`;
+            }
+            isAirspaceScanning = false;
+            showToast("Airspace scan complete! 6 Beacon frames captured.");
+        }
+
+        function connectAirspaceNetwork(id) {
+            const net = airspaceNetworks.find(n => n.id === id);
+            if (!net) return;
+
+            airspaceNetworks.forEach(n => { n.isConnected = (n.id === id); });
+            renderAirspaceNetworks();
+
+            // Update host telemetry specs with this network
+            detectedNetworkStats.band = net.band;
+            setBand(net.band);
+            setChannelWidth(net.channelWidth);
+
+            const typeEl = document.getElementById('live-type');
+            if (typeEl) typeEl.innerText = `${net.ssid} (${net.band} GHz)`;
+
+            showToast(`Connected to ${net.ssid}! Specs applied to RF Simulator.`);
+        }
+
+        function toggleAddNetworkModal() {
+            const modal = document.getElementById('modal-add-network');
+            if (modal) modal.classList.toggle('hidden');
+        }
+
+        function submitCustomNetwork() {
+            const ssidInput = document.getElementById('input-custom-ssid');
+            const bandSelect = document.getElementById('select-custom-band');
+            const chInput = document.getElementById('input-custom-channel');
+            const secSelect = document.getElementById('select-custom-sec');
+            const rssiInput = document.getElementById('input-custom-rssi');
+
+            const ssid = (ssidInput && ssidInput.value.trim()) || `Custom_WiFi_${Math.floor(Math.random()*900 + 100)}`;
+            const band = (bandSelect && bandSelect.value) || '5';
+            const ch = parseInt(chInput ? chInput.value : 36, 10) || 36;
+            const sec = (secSelect && secSelect.value) || 'WPA3-SAE';
+            const rssi = parseInt(rssiInput ? rssiInput.value : -48, 10) || -48;
+
+            const randomMac = () => Array.from({length: 6}, () => Math.floor(Math.random()*256).toString(16).padStart(2, '0').toUpperCase()).join(':');
+
+            airspaceNetworks.unshift({
+                id: `net-user-${Date.now()}`,
+                ssid: ssid,
+                bssid: randomMac(),
+                rssi: rssi,
+                band: band,
+                channel: ch,
+                channelWidth: band === '6' ? 160 : (band === '5' ? 80 : 20),
+                standard: band === '6' ? 'Wi-Fi 7 (802.11be)' : (band === '5' ? 'Wi-Fi 6 (802.11ax)' : 'Wi-Fi 4 (802.11n)'),
+                security: sec,
+                isConnected: false
+            });
+
+            toggleAddNetworkModal();
+            renderAirspaceNetworks();
+            showToast(`Added '${ssid}' to airspace directory!`);
+        }
+
+        function copyTerminalCmd(os) {
+            let cmd = 'netsh wlan show networks mode=bssid';
+            if (os === 'mac') {
+                cmd = '/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -s';
+            } else if (os === 'linux') {
+                cmd = 'nmcli dev wifi list';
+            }
+
+            // Clipboard fallback using textarea
+            const temp = document.createElement('textarea');
+            temp.value = cmd;
+            document.body.appendChild(temp);
+            temp.select();
+            try {
+                document.execCommand('copy');
+                showToast(`Copied ${os.toUpperCase()} scanning command! Paste in terminal.`);
+            } catch(e) {}
+            document.body.removeChild(temp);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast-notify');
+            const txt = document.getElementById('toast-text');
+            if (!toast || !txt) return;
+            txt.innerText = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3600);
+        }
+
+        window.renderAirspaceNetworks = renderAirspaceNetworks;
+        window.filterAirspaceNetworks = filterAirspaceNetworks;
+        window.scanAirspaceNetworks = scanAirspaceNetworks;
+        window.connectAirspaceNetwork = connectAirspaceNetwork;
+        window.toggleAddNetworkModal = toggleAddNetworkModal;
+        window.submitCustomNetwork = submitCustomNetwork;
+        window.copyTerminalCmd = copyTerminalCmd;
+        window.showToast = showToast;
+
+        function inspectCurrentNetwork() {
+            const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            const downlinkEl = document.getElementById('live-downlink');
+            const rttEl = document.getElementById('live-rtt');
+            const typeEl = document.getElementById('live-type');
+            const effTypeEl = document.getElementById('live-effective-type');
+            const saveDataEl = document.getElementById('live-save-data');
+            const bandGuessEl = document.getElementById('live-band-guess');
+            const statusEl = document.getElementById('live-online-status');
+
+            if (statusEl) {
+                if (navigator.onLine) {
+                    statusEl.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-cyber-green animate-ping"></span> ONLINE`;
+                    statusEl.className = "px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyber-green/20 text-cyber-green border border-cyber-green/40 flex items-center gap-1.5";
+                } else {
+                    statusEl.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> OFFLINE`;
+                    statusEl.className = "px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-red-500/20 text-red-400 border border-red-500/40 flex items-center gap-1.5";
+                }
+            }
+
+            if (conn) {
+                const dl = conn.downlink || 50;
+                const rtt = conn.rtt || 25;
+                const effType = (conn.effectiveType || '4g').toUpperCase();
+                const type = conn.type ? conn.type.toUpperCase() : 'WLAN / WI-FI';
+
+                if (downlinkEl) downlinkEl.innerText = `${dl} Mbps`;
+                if (rttEl) rttEl.innerText = `${rtt} ms`;
+                if (typeEl) typeEl.innerText = type;
+                if (effTypeEl) effTypeEl.innerText = `Class: ${effType} Tier`;
+                if (saveDataEl) saveDataEl.innerText = conn.saveData ? "Enabled (Data Saver Active)" : "Disabled (Unrestricted)";
+
+                detectedNetworkStats.downlink = dl;
+                detectedNetworkStats.rtt = rtt;
+                detectedNetworkStats.effectiveType = effType;
+
+                // Frequency Band Classification Heuristic
+                if (dl >= 300 || rtt < 10) {
+                    detectedNetworkStats.band = '6';
+                    if (bandGuessEl) bandGuessEl.innerText = "6.0 GHz (Wi-Fi 6E/7 Ultra-Wide)";
+                } else if (dl >= 60 || rtt < 40) {
+                    detectedNetworkStats.band = '5';
+                    if (bandGuessEl) bandGuessEl.innerText = "5.0 GHz (802.11ac/ax Standard)";
+                } else {
+                    detectedNetworkStats.band = '2.4';
+                    if (bandGuessEl) bandGuessEl.innerText = "2.4 GHz (High-Range / Congested)";
+                }
+
+                // Listen for network changes in real time
+                if (!conn._hasListener) {
+                    conn.addEventListener('change', () => inspectCurrentNetwork());
+                    conn._hasListener = true;
+                }
+            } else {
+                if (downlinkEl) downlinkEl.innerText = "150 Mbps (Est.)";
+                if (rttEl) rttEl.innerText = "18 ms";
+                if (bandGuessEl) bandGuessEl.innerText = "5.0 GHz (Dual-Band Default)";
+            }
+
+            // Probe WebRTC Local Subnet IP
+            probeLocalSubnetIP();
+        }
+
+        function probeLocalSubnetIP() {
+            const ipEl = document.getElementById('live-ip');
+            try {
+                const pc = new (window.RTCPeerConnection || window.webkitRTCPeerConnection)({
+                    iceServers: []
+                });
+                pc.createDataChannel('');
+                pc.createOffer().then(offer => pc.setLocalDescription(offer)).catch(() => {});
+                pc.onicecandidate = (ice) => {
+                    if (!ice || !ice.candidate || !ice.candidate.candidate) return;
+                    const match = ice.candidate.candidate.match(/([0-9]{1,3}(\.[0-9]{1,3}){3})/);
+                    if (match && ipEl) {
+                        ipEl.innerText = `${match[1]} (LAN)`;
+                        pc.close();
+                    }
+                };
+                setTimeout(() => {
+                    if (ipEl && ipEl.innerText === "Probing...") {
+                        ipEl.innerText = "192.168.1.x (Subnet)";
+                        try { pc.close(); } catch(e){}
+                    }
+                }, 1800);
+            } catch (err) {
+                if (ipEl) ipEl.innerText = "192.168.0.x (Subnet)";
+            }
+        }
+
+        function initPingCanvas() {
+            pingCanvas = document.getElementById('live-ping-canvas');
+            if (!pingCanvas || !pingCanvas.parentElement) return;
+            pingCtx = pingCanvas.getContext('2d');
+            const w = pingCanvas.parentElement.clientWidth || 600;
+            const h = pingCanvas.parentElement.clientHeight || 180;
+            pingCanvas.width = w;
+            pingCanvas.height = h;
+            drawPingTrace();
+        }
+
+        function drawPingTrace() {
+            if (!pingCtx || !pingCanvas) return;
+            pingCtx.clearRect(0, 0, pingCanvas.width, pingCanvas.height);
+
+            const w = pingCanvas.width;
+            const h = pingCanvas.height;
+
+            // Background grid
+            pingCtx.strokeStyle = 'rgba(30, 41, 59, 0.4)';
+            pingCtx.lineWidth = 1;
+            for (let y = 30; y < h; y += 30) {
+                pingCtx.beginPath();
+                pingCtx.moveTo(0, y);
+                pingCtx.lineTo(w, y);
+                pingCtx.stroke();
+            }
+
+            if (pingHistory.length < 2) return;
+
+            // Draw ping trace line
+            const maxPing = Math.max(80, ...pingHistory.map(p => p.val));
+            const stepX = w / Math.max(15, pingHistory.length - 1);
+
+            pingCtx.beginPath();
+            pingHistory.forEach((p, idx) => {
+                const x = idx * stepX;
+                const y = h - 20 - (p.val / maxPing) * (h - 40);
+                if (idx === 0) pingCtx.moveTo(x, y);
+                else pingCtx.lineTo(x, y);
+            });
+            pingCtx.strokeStyle = '#00f0ff';
+            pingCtx.lineWidth = 2.5;
+            pingCtx.stroke();
+
+            // Gradient area below line
+            pingCtx.lineTo((pingHistory.length - 1) * stepX, h);
+            pingCtx.lineTo(0, h);
+            const grad = pingCtx.createLinearGradient(0, 0, 0, h);
+            grad.addColorStop(0, 'rgba(0, 240, 255, 0.25)');
+            grad.addColorStop(1, 'rgba(0, 240, 255, 0.0)');
+            pingCtx.fillStyle = grad;
+            pingCtx.fill();
+
+            // Draw dots
+            pingHistory.forEach((p, idx) => {
+                const x = idx * stepX;
+                const y = h - 20 - (p.val / maxPing) * (h - 40);
+                pingCtx.beginPath();
+                pingCtx.arc(x, y, 3.5, 0, Math.PI * 2);
+                pingCtx.fillStyle = p.val > 60 ? '#f59e0b' : '#10b981';
+                pingCtx.fill();
+            });
+        }
+
+        async function runLivePingBenchmark() {
+            if (isPinging) return;
+            isPinging = true;
+            pingHistory = [];
+            
+            const btn = document.getElementById('btn-ping-test');
+            const prompt = document.getElementById('ping-prompt');
+            if (prompt) prompt.style.display = 'none';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> Measuring Round-Trip Latency...`;
+            }
+
+            const samples = 10;
+            for (let i = 0; i < samples; i++) {
+                const t0 = performance.now();
+                try {
+                    // Cache-busted fetch to test real-world round-trip network socket
+                    await fetch(`https://www.cloudflare.com/cdn-cgi/trace?cache=${Date.now()}_${i}`, { mode: 'no-cors', cache: 'no-store' });
+                } catch (e) {
+                    // Fallback local timing
+                }
+                const rttVal = Math.round(performance.now() - t0);
+                // Clamp within realistic human Wi-Fi boundary if no-cors resolved early
+                const cleanRtt = Math.max(8, Math.min(250, rttVal));
+                pingHistory.push({ val: cleanRtt, time: Date.now() });
+
+                // Update live canvas
+                drawPingTrace();
+
+                // Live calculate min, avg, jitter
+                const values = pingHistory.map(p => p.val);
+                const min = Math.min(...values);
+                const avg = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+                let diffSum = 0;
+                for (let k = 1; k < values.length; k++) {
+                    diffSum += Math.abs(values[k] - values[k-1]);
+                }
+                const jitter = values.length > 1 ? Math.round(diffSum / (values.length - 1)) : 1;
+
+                const minEl = document.getElementById('ping-min');
+                const avgEl = document.getElementById('ping-avg');
+                const jitEl = document.getElementById('ping-jitter');
+                if (minEl) minEl.innerText = `${min} ms`;
+                if (avgEl) avgEl.innerText = `${avg} ms`;
+                if (jitEl) jitEl.innerText = `±${jitter} ms`;
+
+                await new Promise(r => setTimeout(r, 160));
+            }
+
+            // Update Airspace Health Assessment
+            const healthEl = document.getElementById('airspace-health');
+            const avgVal = pingHistory.reduce((a, b) => a + b.val, 0) / pingHistory.length;
+            if (healthEl) {
+                if (avgVal < 30) {
+                    healthEl.innerText = "EXCELLENT (LOW JITTER)";
+                    healthEl.className = "text-cyber-green font-bold";
+                } else if (avgVal < 70) {
+                    healthEl.innerText = "MODERATE (USABLE)";
+                    healthEl.className = "text-cyber-cyan font-bold";
+                } else {
+                    healthEl.innerText = "CONGESTED (HIGH RETRIES)";
+                    healthEl.className = "text-cyber-yellow font-bold";
+                }
+            }
+
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-rotate-right mr-1"></i> Re-Run Live Ping Benchmark`;
+            }
+            isPinging = false;
+        }
+
+        function syncLiveToSimulator() {
+            // Apply detected band and estimated link to floorplan simulator
+            setBand(detectedNetworkStats.band);
+            if (detectedNetworkStats.downlink > 120) {
+                setChannelWidth(80);
+            } else if (detectedNetworkStats.downlink > 50) {
+                setChannelWidth(40);
+            } else {
+                setChannelWidth(20);
+            }
+
+            // Switch to simulator tab to immediately see synced configuration
+            switchTab('sim');
+
+            // Trigger temporary notification
+            const roamAlert = document.getElementById('roam-alert');
+            if (roamAlert) {
+                roamAlert.innerHTML = `<i class="fa-solid fa-check-circle mr-1"></i> Host Network Synced: ${detectedNetworkStats.band} GHz / ${detectedNetworkStats.downlink} Mbps Cap`;
+                roamAlert.classList.remove('hidden');
+                setTimeout(() => roamAlert.classList.add('hidden'), 4500);
+            }
+        }
+
+        window.inspectCurrentNetwork = inspectCurrentNetwork;
+        window.runLivePingBenchmark = runLivePingBenchmark;
+        window.syncLiveToSimulator = syncLiveToSimulator;
+        window.initPingCanvas = initPingCanvas;
+
+        function initEventListeners() {
+            const sliderTx = document.getElementById('slider-tx');
+            if (sliderTx) {
+                sliderTx.addEventListener('input', (e) => updateTxPower(e.target.value));
+            }
+            window.addEventListener('online', inspectCurrentNetwork);
+            window.addEventListener('offline', inspectCurrentNetwork);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initEventListeners();
+            initCanvas();
+            updateChannelWidthButtonsUI();
+            updateTelemetryHUD();
+            inspectCurrentNetwork();
+            requestAnimationFrame(simLoop);
+        });
+
+        window.addEventListener('load', () => {
+            initEventListeners();
+            initCanvas();
+            initQAMCanvas();
+            initSpectrumCanvas();
+            initCSMACACanvas();
+            initPingCanvas();
+            updateTelemetryHUD();
+            inspectCurrentNetwork();
+            renderAirspaceNetworks();
+        });
+    </script>
+</body>
+</html>
