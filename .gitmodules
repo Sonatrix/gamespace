@@ -2,5 +2,5 @@
 	path = frequency-converter-embedded
 	url = https://github.com/Sonatrix/frequency-converter-embedded
 [submodule "bird-robot-kinematics"]
-	path = bird-robot-kinematics
-	url = git@github.com:Sonatrix/bird-robot-kinematics.git
+    path = bird-robot-kinematics
+    url = https://github.com/Sonatrix/bird-robot-kinematics.git
