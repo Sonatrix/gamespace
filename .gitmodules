@@ -4,3 +4,6 @@
 [submodule "bird-robot-kinematics"]
     path = bird-robot-kinematics
     url = https://github.com/Sonatrix/bird-robot-kinematics.git
+[submodule "esp32-drone-servos"]
+	path = esp32-drone-servos
+	url = https://github.com/Sonatrix/esp32-drone-servos.git
