@@ -7,3 +7,6 @@
 [submodule "esp32-drone-servos"]
 	path = esp32-drone-servos
 	url = https://github.com/Sonatrix/esp32-drone-servos.git
+[submodule "logic-lab"]
+	path = logic-lab
+	url = https://github.com/Sonatrix/logic-lab.git
