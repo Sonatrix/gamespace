@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- GameSpace sitemap — https://pyratrix.com/ -->
+<!-- GameSpace learning, robotics and engineering sitemap — https://pyratrix.com/ -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://pyratrix.com/</loc><priority>1.0</priority></url>
   <url><loc>https://pyratrix.com/bunny-hop.html</loc><priority>0.8</priority></url>
@@ -20,4 +20,13 @@
   <url><loc>https://pyratrix.com/clock-time.html</loc><priority>0.8</priority></url>
   <url><loc>https://pyratrix.com/odd-one-out.html</loc><priority>0.8</priority></url>
   <url><loc>https://pyratrix.com/alphabet-racer.html</loc><priority>0.8</priority></url>
+  <url><loc>https://pyratrix.com/actuator-explorer/actuator-study.html</loc><priority>0.8</priority></url>
+  <url><loc>https://pyratrix.com/bird-robot-kinematics/</loc><priority>0.8</priority></url>
+  <url><loc>https://pyratrix.com/esp32-dev.html</loc><priority>0.8</priority></url>
+  <url><loc>https://pyratrix.com/esp32-drone-servos/</loc><priority>0.8</priority></url>
+  <url><loc>https://pyratrix.com/esp32-lora-embeddings.html</loc><priority>0.8</priority></url>
+  <url><loc>https://pyratrix.com/frequency-converter-embedded/</loc><priority>0.8</priority></url>
+  <url><loc>https://pyratrix.com/logic-lab/</loc><priority>0.8</priority></url>
+  <url><loc>https://pyratrix.com/motor_cell.html</loc><priority>0.8</priority></url>
+  <url><loc>https://pyratrix.com/wifi/</loc><priority>0.8</priority></url>
 </urlset>
