@@ -5,12 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <!-- ================= SEO =================
-     Site: https://pyratrix.com/
-     TODO: add an og-image.png (1200x630) to the repo for
-     nicer link previews on social media. -->
-<title>GameSpace — 18 Free Learning Games for Kids Ages 2–8 | Play Online</title>
-<meta name="description" content="GameSpace is a free online playground of 18 learning games for kids ages 2–8: counting, phonics, spelling, telling time, mazes, memory, music and more. No ads, no downloads, works offline — every game has voice narration and gentle no-fail gameplay.">
-<meta name="keywords" content="free kids games, learning games for kids, educational games online, preschool games, kindergarten games, counting games, phonics games, ABC games, math games for kids, spelling games, telling time game, maze game for kids, memory game, coloring game, toddler games">
+     Site: https://pyratrix.com/ -->
+<title>GameSpace — Kids Learning, Robotics, AI &amp; Electronics</title>
+<meta name="description" content="Explore hands-on robotics, AI and electronics projects, alongside free learning games for kids. Interactive simulators and playful activities for curious minds.">
+<meta name="keywords" content="kids learning games, robotics projects, robotics simulator, AI learning, electronics simulator, ESP32 projects, logic circuits, educational games">
 <meta name="author" content="GameSpace">
 <meta name="robots" content="index, follow">
 <meta name="theme-color" content="#FFC93C">
@@ -19,16 +17,16 @@
 <!-- Open Graph (Facebook, WhatsApp, LinkedIn previews) -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="GameSpace">
-<meta property="og:title" content="GameSpace — 18 Free Learning Games for Kids Ages 2–8">
-<meta property="og:description" content="A free online playground for little learners: counting, phonics, spelling, mazes, music, memory and more. No ads, voice narration, no-fail gameplay.">
+<meta property="og:title" content="GameSpace — Kids Learning, Robotics, AI &amp; Electronics">
+<meta property="og:description" content="Discover hands-on robotics, AI and electronics projects, plus playful learning games for kids.">
 <meta property="og:url" content="https://pyratrix.com/">
 <meta property="og:image" content="https://pyratrix.com/og-image.png">
 <meta property="og:locale" content="en_US">
 
 <!-- Twitter / X card -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="GameSpace — 18 Free Learning Games for Kids Ages 2–8">
-<meta name="twitter:description" content="Counting, phonics, spelling, mazes, music, memory and more — free, no ads, voice-narrated, no-fail games for little learners.">
+<meta name="twitter:title" content="GameSpace — Kids Learning, Robotics, AI &amp; Electronics">
+<meta name="twitter:description" content="Explore hands-on robotics, AI and electronics projects, alongside playful learning games for kids.">
 <meta name="twitter:image" content="https://pyratrix.com/og-image.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
@@ -54,9 +52,8 @@
       "@type": "WebSite",
       "name": "GameSpace",
       "url": "https://pyratrix.com/",
-      "description": "18 free learning games for kids ages 2 to 8 — counting, phonics, spelling, telling time, mazes, memory, music and creative play.",
-      "inLanguage": "en",
-      "audience": { "@type": "PeopleAudience", "suggestedMinAge": 2, "suggestedMaxAge": 8 }
+      "description": "Interactive robotics, AI and electronics projects, plus free learning games for kids.",
+      "inLanguage": "en"
     },
     {
       "@type": "ItemList",
@@ -88,9 +85,8 @@
 </script>
 <style>
   /* ============================================================
-     GAMESPACE — landing page for the kids' game collection
-     A bright carnival where every game card is a doorway into
-     that game's own little world.
+     GAMESPACE — hands-on learning across kids' games, robotics,
+     AI and electronics.
 
      ➜ To point the GitHub button at your repo, change the ONE
        link marked "EDIT-ME" in the HTML below.
@@ -125,20 +121,6 @@
     overflow-x: hidden;
   }
 
-  /* --- Floating background friends -------------------------------- */
-  .floaty {
-    position: fixed;
-    font-size: 2rem;
-    opacity: 0.5;
-    pointer-events: none;
-    animation: floatAround 16s ease-in-out infinite;
-    z-index: 0;
-  }
-  @keyframes floatAround {
-    0%, 100% { transform: translateY(0) rotate(-6deg); }
-    50%      { transform: translateY(-34px) rotate(8deg); }
-  }
-
   /* --- GitHub ribbon ------------------------------------------------ */
   .gh-btn {
     position: fixed;
@@ -168,7 +150,7 @@
   .hero {
     position: relative;
     text-align: center;
-    padding: 64px 16px 30px;
+    padding: 56px 16px 24px;
     z-index: 1;
   }
 
@@ -228,14 +210,60 @@
     background: linear-gradient(90deg, var(--pink), var(--orange), var(--gold), var(--green), var(--blue), var(--purple));
   }
 
-  /* --- Game cards ------------------------------------------------------ */
+  .site-nav {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 24px auto 0;
+  }
+  .site-nav a {
+    color: var(--ink);
+    background: rgba(255, 255, 255, 0.85);
+    border: 2px solid rgba(74, 59, 92, 0.12);
+    border-radius: 999px;
+    padding: 9px 16px;
+    font-weight: bold;
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .site-nav a:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 0 rgba(74, 59, 92, 0.12);
+  }
+  .site-nav a:focus-visible { outline: 4px solid var(--gold); }
+
+  /* --- Project and game cards ------------------------------------------ */
+  .category-section {
+    position: relative;
+    z-index: 1;
+    padding: 26px clamp(14px, 4vw, 48px) 20px;
+    scroll-margin-top: 20px;
+  }
+  .category-heading {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 4px;
+  }
+  .category-heading h2 {
+    font-size: clamp(1.8rem, 5vw, 2.5rem);
+    margin: 0;
+    color: var(--ink);
+  }
+  .category-heading p {
+    color: var(--ink-soft);
+    font-size: 1.08rem;
+    line-height: 1.6;
+    margin: 6px 0 0;
+    max-width: 68ch;
+  }
   .games {
     position: relative;
     z-index: 1;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
     gap: 22px;
-    padding: 34px clamp(14px, 4vw, 48px) 20px;
+    padding: 24px 0 8px;
     max-width: 1180px;
     margin: 0 auto;
   }
@@ -339,6 +367,10 @@
   .card.clock   { --c: #4A6FE0; --c-dark: #3A57B8; --scene: linear-gradient(180deg, #E8ECFB, #D4DBF5); }
   .card.oddone  { --c: #E0566B; --c-dark: #C23B50; --scene: linear-gradient(180deg, #FDECEF, #F8D6DD); }
   .card.racer   { --c: #F2913D; --c-dark: #D4731F; --scene: linear-gradient(180deg, #FFEFE3, #FFDFC8); }
+  .card.robotics { --c: #4386D8; --c-dark: #3166AD; --scene: linear-gradient(180deg, #DCEBFF, #C8E2F8); }
+  .card.ai { --c: #8065D8; --c-dark: #6249B5; --scene: linear-gradient(180deg, #E9E2FF, #D9D0FA); }
+  .card.electronics { --c: #20A39E; --c-dark: #178783; --scene: linear-gradient(180deg, #D8F5F0, #BCE8DE); }
+  .card.engineering { --c: #F2913D; --c-dark: #D4731F; --scene: linear-gradient(180deg, #FFF0D9, #F9DEB9); }
 
   /* --- Footer ------------------------------------------------------------ */
   footer {
@@ -358,34 +390,38 @@
   footer .heart { color: var(--pink); }
 
   @media (prefers-reduced-motion: reduce) {
-    .floaty, .hero-characters span { animation: none; }
-    .card, .card:hover, .play-btn, .gh-btn { transition: none; transform: none; }
+    .hero-characters span { animation: none; }
+    .card, .card:hover, .play-btn, .gh-btn, .site-nav a { transition: none; transform: none; }
   }
 </style>
 </head>
 <body>
 
-<!-- drifting background friends -->
-<span class="floaty" style="left:4%;  top:22%; animation-delay:0s;">☁️</span>
-<span class="floaty" style="left:90%; top:34%; animation-delay:3s;">🎈</span>
-<span class="floaty" style="left:8%;  top:70%; animation-delay:6s;">⭐</span>
-<span class="floaty" style="left:86%; top:74%; animation-delay:2s;">🦋</span>
-<span class="floaty" style="left:46%; top:88%; animation-delay:5s;">🌈</span>
-
 <!-- hero -->
 <header class="hero">
   <div class="hero-characters" aria-hidden="true">
-    <span>🐰</span><span>🎈</span><span>🔥</span><span>🍎</span><span>🗺️</span><span>🃏</span><span>🎉</span><span>🧱</span><span>🎹</span><span>✏️</span><span>🔷</span><span>🏪</span><span>🔢</span><span>🦉</span><span>🎨</span><span>🕐</span><span>👀</span>
+    <span>🤖</span><span>🧠</span><span>🔧</span><span>🎮</span><span>💡</span>
   </div>
   <h1 class="wordmark" aria-label="GameSpace">
     <span>G</span><span>a</span><span>m</span><span>e</span><span>S</span><span>p</span><span>a</span><span>c</span><span>e</span>
   </h1>
-  <p class="tagline">Eighteen happy little games for little explorers — a whole playground of jumping, counting, spelling, singing, sorting and exploring!</p>
+  <p class="tagline">Big ideas start with curious minds. Explore robotics, AI and electronics — or find a playful learning game for kids.</p>
+  <nav class="site-nav" aria-label="Explore GameSpace">
+    <a href="#kids">Kids learning</a>
+    <a href="#robotics">Robotics</a>
+    <a href="#ai">AI</a>
+    <a href="#electronics">Electronics</a>
+  </nav>
   <div class="rainbow-rule" aria-hidden="true"></div>
 </header>
 
-<!-- game cards -->
-<main class="games">
+<main>
+<section class="category-section" id="kids">
+  <div class="category-heading">
+    <h2>🎨 Kids learning</h2>
+    <p>Playful, friendly activities for little learners—from first letters and numbers to music, puzzles and creative play.</p>
+  </div>
+  <div class="games">
 
   <article class="card bunny">
     <div class="scene" aria-hidden="true">🌻<span class="big">🐰</span>🍄</div>
@@ -567,10 +603,102 @@
     <a class="play-btn" href="alphabet-racer.html">▶ PLAY</a>
   </article>
 
+  </div>
+</section>
+
+<section class="category-section" id="robotics">
+  <div class="category-heading">
+    <h2>🤖 Robotics</h2>
+    <p>Explore how robots move, balance and respond—from kinematics and actuators to flight controls.</p>
+  </div>
+  <div class="games">
+    <article class="card robotics">
+      <div class="scene" aria-hidden="true">🦿<span class="big">🐦</span>⚙️</div>
+      <h2>Bird Robot Kinematics</h2>
+      <p>Move a bird-inspired robot and explore joints, forward and inverse kinematics, and motion.</p>
+      <div class="meta"><span class="tag">Interactive simulator</span><span class="tag">Robot motion</span></div>
+      <a class="play-btn" href="bird-robot-kinematics/index.html">EXPLORE</a>
+    </article>
+    <article class="card robotics">
+      <div class="scene" aria-hidden="true">🎮<span class="big">🚁</span>〰️</div>
+      <h2>ESP32 Drone Servo Lab</h2>
+      <p>Experiment with servo signals, flight controls, gimbals, wiring and quadcopter mixing.</p>
+      <div class="meta"><span class="tag">ESP32</span><span class="tag">Drone controls</span></div>
+      <a class="play-btn" href="esp32-drone-servos/index.html">EXPLORE</a>
+    </article>
+    <article class="card robotics">
+      <div class="scene" aria-hidden="true">⚙️<span class="big">🦾</span>🔩</div>
+      <h2>Actuator Explorer</h2>
+      <p>Inspect a planetary actuator in 3D, explore its components, and watch the 4:1 gear reduction in motion.</p>
+      <div class="meta"><span class="tag">3D mechanism</span><span class="tag">Planetary gears</span></div>
+      <a class="play-btn" href="actuator-explorer/actuator-study.html">EXPLORE</a>
+    </article>
+  </div>
+</section>
+
+<section class="category-section" id="ai">
+  <div class="category-heading">
+    <h2>🧠 AI &amp; machine learning</h2>
+    <p>See how images become vectors and explore an ESP32-S3 bridge for working with embeddings.</p>
+  </div>
+  <div class="games">
+    <article class="card ai">
+      <div class="scene" aria-hidden="true">🖼️<span class="big">🧠</span>✨</div>
+      <h2>Image Embedding Explorer</h2>
+      <p>Visualize image embeddings in 3D and explore the ESP32-S3 LoRA bridge demo.</p>
+      <div class="meta"><span class="tag">AI concepts</span><span class="tag">3D visualization</span></div>
+      <a class="play-btn" href="esp32-lora-embeddings.html">EXPLORE</a>
+    </article>
+  </div>
+</section>
+
+<section class="category-section" id="electronics">
+  <div class="category-heading">
+    <h2>🔌 Electronics &amp; engineering</h2>
+    <p>Learn by exploring circuit logic, microcontrollers, motors, signals and wireless networks.</p>
+  </div>
+  <div class="games">
+    <article class="card electronics">
+      <div class="scene" aria-hidden="true">🔋<span class="big">⚡</span>🔀</div>
+      <h2>Logic Lab</h2>
+      <p>Build and test digital circuits while learning how logic gates and signals work together.</p>
+      <div class="meta"><span class="tag">Digital circuits</span><span class="tag">Interactive</span></div>
+      <a class="play-btn" href="logic-lab/index.html">EXPLORE</a>
+    </article>
+    <article class="card electronics">
+      <div class="scene" aria-hidden="true">🧩<span class="big">🔌</span>📟</div>
+      <h2>ESP32-S3 Simulator</h2>
+      <p>Explore a 3D ESP32-S3 DevKitC-1 and get familiar with its board and components.</p>
+      <div class="meta"><span class="tag">Microcontrollers</span><span class="tag">3D simulator</span></div>
+      <a class="play-btn" href="esp32-dev.html">EXPLORE</a>
+    </article>
+    <article class="card engineering">
+      <div class="scene" aria-hidden="true">🧲<span class="big">⚙️</span>🔄</div>
+      <h2>Electric Motor Visualizer</h2>
+      <p>Explore the parts and engineering principles behind an electric motor.</p>
+      <div class="meta"><span class="tag">Motors</span><span class="tag">Engineering</span></div>
+      <a class="play-btn" href="motor_cell.html">EXPLORE</a>
+    </article>
+    <article class="card engineering">
+      <div class="scene" aria-hidden="true">〰️<span class="big">📈</span>⚡</div>
+      <h2>Frequency Converter Suite</h2>
+      <p>Explore frequency-converter concepts and interactive engineering tools.</p>
+      <div class="meta"><span class="tag">Signals</span><span class="tag">Engineering</span></div>
+      <a class="play-btn" href="frequency-converter-embedded/index.html">EXPLORE</a>
+    </article>
+    <article class="card electronics">
+      <div class="scene" aria-hidden="true">📡<span class="big">📶</span>🌐</div>
+      <h2>Wi-Fi Network Simulator</h2>
+      <p>Explore Wi-Fi signals and network behavior with an interactive simulator.</p>
+      <div class="meta"><span class="tag">Wireless</span><span class="tag">Network simulator</span></div>
+      <a class="play-btn" href="wifi/index.html">EXPLORE</a>
+    </article>
+  </div>
+</section>
 </main>
 
 <footer>
-  Made with <span class="heart">❤</span> for little learners · works offline
+  Made with <span class="heart">❤</span> for curious minds · learn, build and play
 </footer>
 
 </body>

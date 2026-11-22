@@ -10,3 +10,6 @@
 [submodule "logic-lab"]
 	path = logic-lab
 	url = https://github.com/Sonatrix/logic-lab.git
+[submodule "actuator-explorer"]
+	path = actuator-explorer
+	url = https://github.com/Sonatrix/actuator-explorer.git
